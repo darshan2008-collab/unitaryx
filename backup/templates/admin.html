@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Command Center | Unitary X</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}?v=1.1">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        @keyframes pulse-glow {
+            0% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+
+            100% {
+                opacity: 0.3;
+            }
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            box-shadow: 0 0 10px #10b981;
+            animation: pulse-glow 2s infinite;
+        }
+    </style>
+</head>
+
+<body class="admin-body">
+    <div class="admin-bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <!-- Top Global Actions -->
+    <div class="top-actions">
+        <a href="/admin/export/pdf" class="top-action-btn" data-tooltip="Download Detailed PDF Report">
+            <i class="fa-solid fa-list-ul"></i>
+        </a>
+    </div>
+
+    <!-- Layout Wrapper -->
+    <div style="display: flex; min-height: 100vh; width: 100%;">
+        <aside class="admin-sidebar">
+            <div class="sidebar-logo-container"
+                style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; width: 100%;">
+                <div class="sidebar-logo"
+                    style="font-size: 1.5rem; font-weight: 800; color: var(--sidebar-text); display: flex; align-items: center; gap: 12px; white-space: nowrap;">
+                    <img src="{{ url_for('static', filename='img/logo_x.png') }}" alt="Unitary X"
+                        style="height: 36px; width: auto; max-width: 36px; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0, 82, 204, 0.4));">
+                    <span class="logo-text">Unitary<span style="color:var(--primary)">X</span></span>
+                </div>
+                <button id="sidebar-toggle" class="menu-toggle-btn"
+                    style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted); display: flex;">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-menu">
+                <div class="menu-label">Operations Console</div>
+                <ul class="adm-nav">
+                    <li><a href="/admin" class="adm-nav-link active"><i class="fas fa-th-large"></i>
+                            <span>Dashboard</span></a></li>
+                    <li><a href="#projects" class="adm-nav-link"><i class="fas fa-project-diagram"></i> <span>Project
+                                Inquiries</span></a></li>
+                    <li><a href="#analytics" class="adm-nav-link"><i class="fas fa-chart-pie"></i> <span>Strategic
+                                Analytics</span></a>
+                    </li>
+                </ul>
+
+                <div class="menu-label" style="margin-top:20px;">External Links</div>
+                <ul class="adm-nav">
+                    <li><a href="/" class="adm-nav-link"><i class="fas fa-external-link-alt"></i> <span>Live
+                                Website</span></a></li>
+                    <li><a href="/logout" class="adm-nav-link" style="color:var(--danger)"><i
+                                class="fas fa-power-off"></i>
+                            <span>Exit Session</span></a></li>
+                </ul>
+            </nav>
+
+            <div class="admin-profile">
+                <div class="av">{{ admin.name[0]|upper if admin else 'A' }}</div>
+                <div class="adm-info">
+                    <div class="adm-name">{{ admin.name if admin else 'Super Admin' }}</div>
+                    <div class="adm-role">{{ admin.role|title if admin else 'Master' }} Session</div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="admin-main">
+            <header class="admin-header">
+                <div>
+                    <h1 class="admin-title" style="color: var(--text);">{{ admin.name if admin else 'Admin' }}'s Command
+                        Center
+                    </h1>
+                    <div
+                        style="color: var(--text-dim); font-size: 0.95rem; margin-top: 8px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                        <span class="status-indicator"
+                            style="color: var(--accent); background: rgba(54, 179, 126, 0.1); padding: 4px 12px; border-radius: 20px;"><i
+                                class="fas fa-circle" style="font-size: 8px; animation: pulse 2s infinite;"></i>
+                            Operational</span>
+                        <span style="height: 15px; width: 1px; background: var(--glass-border-bright);"></span>
+                        <i class="far fa-clock"></i> <span id="live-clock">--:--:--</span>
+                    </div>
+                </div>
+            </header>
+
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-messages" style="margin-bottom: 20px;">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}"
+                    style="padding: 15px; border-radius: 12px; background: rgba(0, 82, 204, 0.05); border: 1px solid var(--primary); color: var(--text);">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <!-- 📊 Live Vitality Grid -->
+            <section class="admin-stats">
+                <div class="adm-stat">
+                    <div class="adm-stat-icon-wrap"><i class="fas fa-inbox"></i></div>
+                    <div class="adm-stat-num">{{ stats.total_requests }}</div>
+                    <div class="adm-stat-label">Total Submissions</div>
+                    <div style="font-size: 0.75rem; color:var(--primary); margin-top: 5px;"><i
+                            class="fas fa-arrow-up"></i>
+                        +12.5%</div>
+                </div>
+                <div class="adm-stat">
+                    <div class="adm-stat-icon-wrap"
+                        style="color:var(--secondary); background: rgba(79, 172, 254, 0.15);"><i
+                            class="fas fa-satellite"></i></div>
+                    <div class="adm-stat-num">{{ stats.pending_requests }}</div>
+                    <div class="adm-stat-label">Active Projects</div>
+                    <div style="font-size: 0.75rem; color:var(--text-dim); margin-top: 5px;">Phase: Developing</div>
+                </div>
+                <div class="adm-stat">
+                    <div class="adm-stat-icon-wrap" style="color:var(--accent); background: rgba(0, 242, 254, 0.15);"><i
+                            class="fas fa-check-circle"></i></div>
+                    <div class="adm-stat-num">{{ stats.done_requests }}</div>
+                    <div class="adm-stat-label">Finalized Projects</div>
+                    <div style="font-size: 0.75rem; color:var(--primary); margin-top: 5px;">Integrity Optimized</div>
+                </div>
+
+                <!-- Financial Intelligence -->
+                <div class="adm-stat financial-hub">
+                    <div class="adm-stat-icon-wrap" style="color: #fbbf24; background: rgba(251, 191, 36, 0.15);"><i
+                            class="fas fa-wallet"></i></div>
+                    <div class="adm-stat-num">₹{{ "{:,}".format(stats.projected_revenue) }}</div>
+                    <div class="adm-stat-label">Projected Revenue</div>
+                    <div style="font-size: 0.75rem; color:var(--text-dim); margin-top: 5px;">Based on active valuations
+                    </div>
+                </div>
+            </section>
+
+            <!-- Enhanced Features Row -->
+            <div class="admin-grid">
+                <div class="dash-card">
+                    <h3 class="card-title"><i class="fas fa-stream" style="color:var(--primary); margin-right:8px;"></i>
+                        Mission Chronology</h3>
+                    <div class="activity-log">
+                        {% for r in requests[:5] %}
+                        <div class="log-item">
+                            <div class="log-time">{{ r.created_at.strftime('%H:%M') }}</div>
+                            <div class="log-desc">
+                                <strong>{{ r.name }}</strong> submitted new inquiry for
+                                <span style="color:var(--primary)">{{ r.service }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="dash-card">
+                    <h3 class="card-title"><i class="fas fa-chart-line"
+                            style="color:var(--secondary); margin-right:8px;"></i>
+                        Sector Momentum</h3>
+                    <div style="height: 250px; position: relative;">
+                        <canvas id="sectorChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="dash-card" id="distributionAnalysis">
+                    <h3 class="card-title"><i class="fa-solid fa-chart-pie" style="color: var(--primary);"></i>
+                        Distribution
+                        Analysis</h3>
+                    <div class="chart-container">
+                        <canvas id="serviceChart"></canvas>
+                    </div>
+                </div>
+                <div class="dash-card">
+                    <h3 class="card-title"><i class="fa-solid fa-server" style="color: var(--primary);"></i> Core System
+                        Integrity</h3>
+                    <div class="health-item">
+                        <span>Mainframe Core</span>
+                        <span class="status-indicator"><i class="fa-solid fa-circle"></i> Operational</span>
+                    </div>
+                    <div class="health-item">
+                        <span>Database Cluster</span>
+                        <span class="status-indicator"><i class="fa-solid fa-circle"></i> Connected</span>
+                    </div>
+                    <div class="health-item">
+                        <span>Cloud Sync</span>
+                        <span class="status-indicator"><i class="fa-solid fa-circle"></i> Enabled</span>
+                    </div>
+                    <div class="health-item">
+                        <span>Identity Proxy</span>
+                        <span class="status-indicator"><i class="fa-solid fa-circle"></i> Secured</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-card">
+                <div class="table-header">
+                    <h3 class="card-title"><i class="fa-solid fa-list-ul" style="color: var(--primary);"></i> Project
+                        Inquiry Logs</h3>
+                    <div class="search-wrap">
+                        <i class="fa-solid fa-search"></i>
+                        <input type="text" id="tableSearch" placeholder="Search inquiries..." onkeyup="filterTable()">
+                    </div>
+                </div>
+
+                <div class="admin-table-wrap">
+                    {% if requests %}
+                    <table class="adm-table" id="requestsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Strategic Client</th>
+                                <th>Operational Tier</th>
+                                <th>Projected Value</th>
+                                <th>Status</th>
+                                <th>Timeline</th>
+                                <th>Control</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in requests %}
+                            <tr class="main-row" id="row-{{ r.id }}">
+                                <td style="font-family:'JetBrains Mono'; color:var(--primary);">#{{ r.id|format_id }}
+                                </td>
+                                <td>
+                                    <div style="font-weight:600;">{{ r.name }}</div>
+                                    <div style="font-size:0.75rem; color:var(--text-muted);">{{ r.service }}</div>
+                                </td>
+                                <td>
+                                    <span class="prio-badge prio-{{ r.priority|lower }}">{{ r.priority }}</span>
+                                </td>
+                                <td style="font-family:'JetBrains Mono';">₹{{ "{:,}".format(r.value) }}</td>
+                                <td class="control-cell">
+                                    <form method="POST" action="/admin/update-project" class="control-form">
+                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="req_id" value="{{ r.id }}">
+
+                                        <div class="control-group">
+                                            <label>Status</label>
+                                            <select name="status" class="adm-select">
+                                                <option value="New" {% if r.status=='New' %}selected{% endif %}>New
+                                                </option>
+                                                <option value="In Progress" {% if r.status=='In Progress' %}selected{%
+                                                    endif %}>
+                                                    In Progress</option>
+                                                <option value="Done" {% if r.status=='Done' %}selected{% endif %}>Done
+                                                </option>
+                                            </select>
+                                        </div>
+
+                                        <div class="control-group">
+                                            <label>Priority</label>
+                                            <select name="priority" class="adm-select">
+                                                <option value="High" {% if r.priority=='High' %}selected{% endif %}>High
+                                                </option>
+                                                <option value="Medium" {% if r.priority=='Medium' %}selected{% endif %}>
+                                                    Medium</option>
+                                                <option value="Low" {% if r.priority=='Low' %}selected{% endif %}>Low
+                                                </option>
+                                            </select>
+                                        </div>
+
+                                        <div class="control-group">
+                                            <label>Valuation (₹)</label>
+                                            <input type="number" name="value" value="{{ r.value }}" class="adm-input">
+                                        </div>
+
+                                        <button type="submit" class="btn-update-cmd">Update Mission</button>
+                                    </form>
+                                </td>
+                                <td style="color: var(--text-dim); font-weight: 500;">{{
+                                    r.created_at.strftime('%d.%m.%y')
+                                    }}</td>
+                                <td>
+                                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                        <button class="action-btn btn-msg" onclick="openMessageModal('{{ r.id }}')"
+                                            title="Read Description">
+                                            <i class="fa-solid fa-align-left"></i>
+                                        </button>
+                                        <button class="action-btn btn-info" onclick="toggleDetail('{{ r.id }}')"
+                                            title="View Full Project Info">
+                                            <i class="fa-solid fa-file-invoice"></i>
+                                        </button>
+                                        <form method="POST" action="/admin/delete/{{ r.id }}" class="delete-form">
+                                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="action-btn btn-delete" title="Remove Record">
+                                                <i class="fa-solid fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="detail-row" id="detail-{{ r.id }}">
+                                <td colspan="7">
+                                    <div class="detail-pnl">
+                                        <div class="detail-grid">
+                                            <div class="dtl-card">
+                                                <span class="dtl-title"><i class="fas fa-user"></i> Client
+                                                    Profile</span>
+                                                <p class="dtl-txt"><strong>Name:</strong> {{ r.name }}</p>
+                                                <p class="dtl-txt"><strong>Phone:</strong> <a
+                                                        href="https://wa.me/91{{ r.phone }}" target="_blank"
+                                                        style="color:var(--primary); text-decoration:none;">{{ r.phone
+                                                        }}</a></p>
+                                                <p class="dtl-txt"><strong>Email:</strong> {{ r.email }}</p>
+                                            </div>
+                                            <div class="dtl-card">
+                                                <span class="dtl-title"><i class="fas fa-bullseye"></i> Goal &
+                                                    Scope</span>
+                                                <p class="dtl-txt"><strong>Project ID:</strong> #{{ r.id|format_id }}
+                                                </p>
+                                                <p class="dtl-txt"><strong>Requested Service:</strong> {{ r.service }}
+                                                </p>
+                                                <p class="dtl-txt"><strong>Deadline:</strong> {{ r.deadline or 'ASAP' }}
+                                                </p>
+                                            </div>
+                                            <div class="dtl-card">
+                                                <span class="dtl-title"><i class="fas fa-clock"></i> Timestamps</span>
+                                                <p class="dtl-txt"><strong>Submitted:</strong><br>{{
+                                                    r.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                                            </div>
+                                            <div class="dtl-card full-width">
+                                                <span class="dtl-title"><i class="fas fa-align-left"></i> Full
+                                                    Requirements / Message</span>
+                                                <p class="dtl-txt" id="msg-text-{{ r.id }}"
+                                                    style="white-space: pre-wrap;">{{
+                                                    r.message }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div style="text-align: center; padding: 80px 0;">
+                        <i class="fas fa-inbox"
+                            style="font-size: 4rem; opacity: 0.1; display: block; margin-bottom: 20px;"></i>
+                        <h3 style="color: var(--text-dim);">No Logs Found</h3>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+
+    </div> <!-- End Layout Wrapper -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Digital Clock Pulse
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            document.getElementById('live-clock').innerText = `${dateStr} | ${timeStr}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Staggered Entry Animation
+        document.addEventListener('DOMContentLoaded', () => {
+            const items = document.querySelectorAll('.adm-stat, .dash-card, .table-card');
+            items.forEach((item, index) => {
+                item.style.opacity = '0';
+                item.style.transform = 'translateY(20px)';
+                item.style.transition = `all 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.1}s`;
+                setTimeout(() => {
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                }, 100);
+            });
+        });
+    </script>
+    <script>
+        function toggleDetail(id) {
+            const row = document.getElementById('detail-' + id);
+            if (row) row.classList.toggle('active');
+        }
+
+        function updatePulse() {
+            const now = new Date();
+            const el = document.getElementById('admin-date');
+            if (el) {
+                el.innerText = now.toLocaleDateString('en-GB', {
+                    day: 'numeric', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                }).replace(',', ' |');
+            }
+        }
+        setInterval(updatePulse, 1000);
+        updatePulse();
+
+        function filterTable() {
+            const input = document.getElementById('tableSearch').value.toUpperCase();
+            const table = document.getElementById('requestsTable');
+            const rows = table.querySelectorAll('.main-row');
+            rows.forEach(row => {
+                const text = row.innerText.toUpperCase();
+                row.style.display = text.includes(input) ? '' : 'none';
+
+                // Close details if row is hidden
+                const btn = row.querySelector('.btn-inspect');
+                if (btn) {
+                    const idMatch = btn.getAttribute('onclick').match(/'(.*?)'/);
+                    if (idMatch) {
+                        const dtl = document.getElementById('detail-' + idMatch[1]);
+                        if (dtl && row.style.display === 'none') dtl.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        // Sector Momentum Chart (Line)
+        const ctxSector = document.getElementById('sectorChart').getContext('2d');
+        const gradientLine = ctxSector.createLinearGradient(0, 0, 0, 250);
+        gradientLine.addColorStop(0, 'rgba(79, 172, 254, 0.4)');
+        gradientLine.addColorStop(1, 'rgba(79, 172, 254, 0)');
+
+        new Chart(ctxSector, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Inquiry Momentum',
+                    data: [12, 19, 15, 25, 22, 30],
+                    borderColor: 'rgba(79, 172, 254, 1)',
+                    backgroundColor: gradientLine,
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: 'rgba(79, 172, 254, 1)',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false, color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: 'rgba(255, 255, 255, 0.5)' }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255, 255, 255, 0.05)', borderDash: [5, 5] },
+                        ticks: { color: 'rgba(255, 255, 255, 0.5)' },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Charts
+        fetch('/admin/chart-data')
+            .then(res => res.json())
+            .then(data => {
+                const ctx = document.getElementById('serviceChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            data: data.data,
+                            backgroundColor: ['#4f46e5', '#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#f43f5e'],
+                            borderWidth: 10,
+                            borderColor: '#ffffff',
+                            hoverOffset: 15
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    padding: 25,
+                                    font: { family: 'Outfit', weight: '700', size: 13 },
+                                    color: '#64748b',
+                                    usePointStyle: true
+                                }
+                            },
+                        },
+                        cutout: '74%'
+                    }
+                });
+            });
+
+        // Live Notifications Polling
+        let lastCheckTime = Date.now();
+        const TOAST_DURATION = 8000;
+
+        function checkNewRequests() {
+            fetch(`/admin/api/latest-updates?last_check=${lastCheckTime}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.new_count > 0 && data.latest.length > 0) {
+                        data.latest.forEach((req, idx) => {
+                            setTimeout(() => {
+                                showNotification(req.name, req.service, req.id, true);
+                            }, idx * 1000); // Stagger multiple notifications
+                        });
+                        // Update lastCheckTime to avoid duplicate notifications
+                        lastCheckTime = Date.now();
+                    }
+                })
+                .catch(err => console.error("Notification poll error:", err));
+        }
+
+        function showNotification(nameOrTitle, serviceOrDesc, id, isNew = true) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'admin-toast';
+            if (isNew) {
+                toast.innerHTML = `
+                    <div class="toast-icon"><i class="fas fa-bell"></i></div>
+                    <div class="toast-content">
+                        <div class="toast-title">New Request Alert</div>
+                        <div class="toast-desc"><strong>${nameOrTitle}</strong> requested <span>${serviceOrDesc}</span></div>
+                        <div class="toast-actions">
+                            <button onclick="window.location.reload()" class="btn-toast-reload">Reload Dashboard</button>
+                        </div>
+                    </div>
+                    <button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+                `;
+            } else {
+                toast.innerHTML = `
+                    <div class="toast-icon" style="background: rgba(54, 179, 126, 0.1); color: var(--accent);"><i class="fas fa-check-circle"></i></div>
+                    <div class="toast-content">
+                        <div class="toast-title">Success</div>
+                        <div class="toast-desc">${nameOrTitle}</div>
+                    </div>
+                    <button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+                `;
+            }
+            container.appendChild(toast);
+
+            // Auto-remove after duration
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.style.animation = 'slideOutRight 0.3s ease-in forwards';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, TOAST_DURATION);
+        }
+
+        // Poll every 15 seconds
+        setInterval(checkNewRequests, 15000);
+
+        // Handle Project Deletion via AJAX
+        document.querySelectorAll('.delete-form').forEach(form => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                if (!confirm('Remove this inquiry permanently?')) return;
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalContent = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                submitBtn.disabled = true;
+
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRFToken': formData.get('_csrf_token')
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showNotification(data.message, '', data.id, false);
+
+                        // Remove row from table with animation
+                        const row = form.closest('.main-row');
+                        const detailRow = document.getElementById('detail-' + data.id);
+
+                        if (row) {
+                            row.style.transition = 'all 0.5s ease';
+                            row.style.opacity = '0';
+                            row.style.transform = 'translateX(50px)';
+                            setTimeout(() => row.remove(), 500);
+                        }
+                        if (detailRow) {
+                            detailRow.remove();
+                        }
+                    } else {
+                        alert("Error deleting project.");
+                        submitBtn.innerHTML = originalContent;
+                        submitBtn.disabled = false;
+                    }
+                } catch (error) {
+                    console.error("Error submitting delete:", error);
+                    alert("A network error occurred. Please try again.");
+                    submitBtn.innerHTML = originalContent;
+                    submitBtn.disabled = false;
+                }
+            });
+        });
+
+        // Handle Project Updates via AJAX
+        document.querySelectorAll('.control-form').forEach(form => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerText;
+                submitBtn.innerText = 'Updating...';
+                submitBtn.disabled = true;
+
+                try {
+                    const formData = new FormData(form);
+                    const plainFormData = Object.fromEntries(formData.entries());
+                    const response = await fetch('/admin/update-project', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRFToken': formData.get('_csrf_token')
+                        },
+                        body: JSON.stringify(plainFormData)
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showNotification(data.message, '', data.id, false);
+
+                        if (data.whatsapp_url) {
+                            window.open(data.whatsapp_url, '_blank');
+                        }
+
+                        // Reload list to show changes after short delay
+                        setTimeout(() => window.location.reload(), 1500);
+                    } else {
+                        alert("Error updating project.");
+                        submitBtn.innerText = originalText;
+                        submitBtn.disabled = false;
+                    }
+                } catch (error) {
+                    console.error("Error submitting update:", error);
+                    alert("A network error occurred. Please try again.");
+                    submitBtn.innerText = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+        });
+
+        // Sidebar Toggle
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const adminSidebar = document.querySelector('.admin-sidebar');
+        if (sidebarToggle && adminSidebar) {
+            sidebarToggle.addEventListener('click', () => {
+                adminSidebar.classList.toggle('collapsed');
+            });
+        }
+
+        // Message Modal Logic
+        const msgModal = document.getElementById('msgModal');
+        const msgContent = document.getElementById('msgContent');
+
+        function openMessageModal(reqId) {
+            const rawText = document.getElementById(`msg-text-${reqId}`).innerText;
+            msgContent.innerText = rawText;
+            msgModal.classList.add('active');
+        }
+
+        function closeMessageModal() {
+            msgModal.classList.remove('active');
+        }
+
+        // Close when clicking outside of the modal
+        window.addEventListener('click', (e) => {
+            if (e.target === msgModal) {
+                closeMessageModal();
+            }
+        });
+    </script>
+
+    <!-- Toast UI Container -->
+    <div id="toast-container"
+        style="position: fixed; bottom: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;">
+    </div>
+
+    <!-- Message Description Modal -->
+    <div id="msgModal" class="msg-modal">
+        <div class="msg-modal-content">
+            <div class="msg-modal-header">
+                <h3><i class="fa-solid fa-align-left"></i> Client Description</h3>
+                <button class="msg-close-btn" onclick="closeMessageModal()"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="msg-modal-body" id="msgContent"></div>
+        </div>
+    </div>
+
+
+</body>
+
+</html>

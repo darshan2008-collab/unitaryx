@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login — Unitary X</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='login_custom.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="{{ url_for('static', filename='translations.js') }}" defer></script>
+    <style>
+        /* FORCE GALAXY THEME OFF-CACHE */
+        body {
+            background: #050b18 !important;
+            color: #ffffff !important;
+            text-shadow: none !important;
+        }
+
+        .left-title {
+            text-shadow: none !important;
+        }
+
+        .left-title span {
+            color: #3b82f6 !important;
+            text-shadow: none !important;
+        }
+
+        .left-desc,
+        .feat-item span,
+        .brand-name {
+            text-shadow: none !important;
+        }
+
+        .login-left {
+            background: transparent !important;
+            border-right: none !important;
+        }
+
+        .login-left::before {
+            display: none !important;
+        }
+
+        .login-right {
+            background: transparent !important;
+        }
+
+        .form-panel {
+            background: rgba(5, 11, 24, 0.4) !important;
+            /* Depth for readability */
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6) !important;
+        }
+
+        .form-group input {
+            background: rgba(15, 23, 42, 0.5) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            color: #ffffff !important;
+        }
+
+        /* OVERRIDE BROWSER AUTOFILL WHITE BACKGROUND */
+        .form-group input:-webkit-autofill,
+        .form-group input:-webkit-autofill:hover, 
+        .form-group input:-webkit-autofill:focus, 
+        .form-group input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #0f172a inset !important;
+            -webkit-text-fill-color: #ffffff !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        .left-title,
+        .brand-name,
+        .form-header h2,
+        .form-group label,
+        .tab-btn.active,
+        .inner-tab.active {
+            color: #ffffff !important;
+        }
+
+        .left-desc,
+        .feat-item,
+        .check-label,
+        .left-features span,
+        .form-header p,
+        .tab-btn:not(.active),
+        .inner-tab:not(.active) {
+            color: #cbd5e1 !important;
+        }
+
+        .brand-name span {
+            color: #3b82f6 !important;
+        }
+
+        .tab-switcher {
+            background: rgba(15, 23, 42, 0.5) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .left-tech-row .tech-dot {
+            background: rgba(15, 23, 42, 0.8) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+            color: #fff !important;
+        }
+
+        .back-home {
+            background: rgba(15, 23, 42, 0.6) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+            color: #fff !important;
+        }
+
+        .feat-icon {
+            background: rgba(15, 23, 42, 0.8) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* FIX ALERT VISIBILITY ON DARK GALAXY BACKGROUND */
+        .alert-error {
+            background: rgba(220, 38, 38, 0.7) !important;
+            border: 2px solid #ef4444 !important;
+            color: #ffffff !important;
+            backdrop-filter: blur(12px) !important;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
+            box-shadow: 0 8px 30px rgba(220, 38, 38, 0.4) !important;
+            padding: 16px 24px !important;
+            font-size: 1.05rem !important;
+            border-radius: 12px !important;
+            margin-bottom: 24px !important;
+            z-index: 9999 !important;
+            position: relative !important;
+        }
+
+        /* Starfield overlay */
+        .bg-grid {
+            display: none !important;
+        }
+
+        /* Fullscreen background video for login page only */
+        .full-bg-video {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: -3;
+            /* keep below other decorative layers */
+            pointer-events: none;
+            filter: brightness(1.2) contrast(1.05);
+            /* Increased brightness as requested */
+            
+            /* FORCE GPU ACCELERATION FOR 60FPS VIDEO */
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            perspective: 1000px;
+            will-change: transform, opacity;
+        }
+
+        /* SHAKE ANIMATION FOR ERRORS */
+        @keyframes shakeContent {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            10%,
+            30%,
+            50%,
+            70%,
+            90% {
+                transform: translateX(-8px);
+            }
+
+            20%,
+            40%,
+            60%,
+            80% {
+                transform: translateX(8px);
+            }
+        }
+
+        .shake-me {
+            animation: shakeContent 0.5s cubic-bezier(.36, .07, .19, .97) both;
+            transform: translate3d(0, 0, 0);
+            backface-visibility: hidden;
+            perspective: 1000px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Fullscreen background video (login page only) -->
+    <video class="full-bg-video" autoplay muted loop playsinline preload="auto"
+        poster="{{ url_for('static', filename='img/hero-poster.jpg') }}" aria-hidden="true">
+        <source src="{{ url_for('static', filename='img/login-video.mp4') }}" type="video/mp4">
+        <!-- Fallback: a hosted video if local file isn't present -->
+        <source src="https://cdn.pixabay.com/video/2021/08/04/83896-584742456_large.mp4" type="video/mp4">
+    </video>
+
+    <!-- Animated background orbs -->
+    <div class="bg-orb orb-a"></div>
+    <div class="bg-orb orb-b"></div>
+    <div class="bg-orb orb-c"></div>
+    <div class="bg-grid"></div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container" id="flash-container">
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">
+            <i
+                class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'danger' %}fa-times-circle{% elif category == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}"></i>
+            {{ message }}
+            <button class="flash-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="login-wrapper custom-split {% if error or messages %}shake-me{% endif %}">
+        <div class="split-left" aria-hidden="true"></div>
+
+        <div class="split-right">
+            {% if error %}
+            <div class="alert-error" id="form-alert">
+                <i class="fas fa-exclamation-circle"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            <div class="form-box">
+                <h1 class="form-title">Log in</h1>
+                <p class="form-sub">Welcome back!</p>
+                <p class="form-small">Don't have an account? <a href="#">Register here</a></p>
+
+                <form method="POST" action="/login" id="user-login-form">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="login_type" value="user" />
+                    <label class="field">
+                        <input type="email" name="email" placeholder="Email" required autocomplete="email">
+                    </label>
+                    <label class="field">
+                        <input type="password" name="password" placeholder="Password" required>
+                    </label>
+                    <label class="remember"><input type="checkbox" name="remember"> Remember me</label>
+                    <button type="submit" class="btn-primary">Log In</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── Tab Switching ──────────────────────────────────────────
+        function switchTab(tab) {
+            const panels = { user: document.getElementById('panel-user'), admin: document.getElementById('panel-admin') };
+            const btns = { user: document.getElementById('tab-user'), admin: document.getElementById('tab-admin') };
+            Object.keys(panels).forEach(k => {
+                panels[k].style.display = k === tab ? 'block' : 'none';
+                btns[k].classList.toggle('active', k === tab);
+            });
+            // clear error
+            const err = document.getElementById('form-alert');
+            if (err) err.style.display = 'none';
+        }
+
+        // ── Inner Tab (Login / Register) ───────────────────────────
+        function switchInner(which) {
+            document.getElementById('inner-login').style.display = which === 'login' ? 'block' : 'none';
+            document.getElementById('inner-register').style.display = which === 'register' ? 'block' : 'none';
+            document.getElementById('it-login').classList.toggle('active', which === 'login');
+            document.getElementById('it-register').classList.toggle('active', which === 'register');
+            const err = document.getElementById('form-alert');
+            if (err) err.style.display = 'none';
+        }
+
+        // ── Toggle Password Visibility ─────────────────────────────
+        function togglePass(id, btn) {
+            const inp = document.getElementById(id);
+            const isText = inp.type === 'text';
+            inp.type = isText ? 'password' : 'text';
+            btn.innerHTML = isText ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+        }
+
+        // ── Password Strength ──────────────────────────────────────
+        const passInput = document.getElementById('reg-pass');
+        if (passInput) {
+            passInput.addEventListener('input', () => {
+                const v = passInput.value;
+                const bar = document.getElementById('strength-bar');
+                const lbl = document.getElementById('strength-label');
+                let score = 0;
+                if (v.length >= 6) score++;
+                if (v.length >= 10) score++;
+                if (/[A-Z]/.test(v)) score++;
+                if (/[0-9]/.test(v)) score++;
+                if (/[^A-Za-z0-9]/.test(v)) score++;
+                const map = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
+                const cls = ['', 'weak', 'fair', 'good', 'strong', 'very-strong'];
+                bar.style.width = (score / 5 * 100) + '%';
+                bar.className = 'strength-bar ' + (cls[score] || '');
+                lbl.textContent = map[score] || '';
+                lbl.className = 'strength-label ' + (cls[score] || '');
+            });
+        }
+
+        // ── Confirm Password Match ─────────────────────────────────
+        const confirmInput = document.getElementById('reg-confirm');
+        if (confirmInput) {
+            confirmInput.addEventListener('input', () => {
+                const hint = document.getElementById('match-hint');
+                const pass = document.getElementById('reg-pass').value;
+                if (!confirmInput.value) { hint.textContent = ''; return; }
+                if (confirmInput.value === pass) {
+                    hint.textContent = 'Passwords match!';
+                    hint.className = 'match-hint match-ok';
+                } else {
+                    hint.textContent = 'Passwords do not match.';
+                    hint.className = 'match-hint match-err';
+                }
+            });
+        }
+
+        // ── Loading state on submit ────────────────────────────────
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function (e) {
+                const btn = this.querySelector('.submit-btn');
+                if (!btn) return;
+                btn.disabled = true;
+                btn.querySelector('span').textContent = 'Please wait…';
+                btn.querySelector('i').className = 'fas fa-spinner fa-spin';
+            });
+        });
+
+        // ── Auto-dismiss flash ─────────────────────────────────────
+        setTimeout(() => {
+            const fc = document.getElementById('flash-container');
+            if (fc) fc.style.opacity = '0';
+            setTimeout(() => { if (fc) fc.remove(); }, 500);
+        }, 4000);
+
+        // ── Google Sign-in Callback ────────────────────────────────
+        function handleCredentialResponse(response) {
+            fetch('/google-login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ credential: response.credential })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = data.redirect;
+                    } else {
+                        document.getElementById('form-alert') || (() => {
+                            const alert = document.createElement('div');
+                            alert.className = 'alert-error';
+                            alert.id = 'form-alert';
+                            alert.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error}`;
+                            document.getElementById('tab-switcher').insertAdjacentElement('afterend', alert);
+                            return alert;
+                        })();
+                    }
+                })
+                .catch(e => {
+                    console.error("Google Auth error:", e);
+                });
+        }
+    </script>
+    <style>
+        /* Zoom-out animation applied to the whole login wrapper before redirect */
+        .login-wrapper.zoom-out {
+            animation: loginZoom 420ms ease-in forwards;
+            transform-origin: center center;
+        }
+
+        @keyframes loginZoom {
+            from {
+                transform: scale(1) translateZ(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: scale(1.08) translateZ(0);
+                opacity: 0;
+            }
+        }
+    </style>
+
+    <script>
+        // AJAX submit for user login to allow post-login animation
+        (function () {
+            const form = document.getElementById('user-login-form');
+            if (!form) return;
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const btn = form.querySelector('.submit-btn');
+                if (btn) {
+                    btn.disabled = true;
+                    const span = btn.querySelector('span');
+                    if (span) span.textContent = 'Signing in…';
+                    const icon = btn.querySelector('i');
+                    if (icon) icon.className = 'fas fa-spinner fa-spin';
+                }
+
+                const data = new FormData(form);
+
+                fetch(form.action || '/login', {
+                    method: 'POST',
+                    body: data,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then(res => res.json())
+                    .then(result => {
+                        if (result && result.success && result.redirect) {
+                            // play zoom animation then redirect
+                            const wrapper = document.querySelector('.login-wrapper') || document.body;
+                            wrapper.classList.add('zoom-out');
+                            setTimeout(() => { window.location.href = result.redirect; }, 420);
+                        } else {
+                            // show error inline
+                            let alert = document.getElementById('form-alert');
+                            if (!alert) {
+                                alert = document.createElement('div');
+                                alert.className = 'alert-error';
+                                alert.id = 'form-alert';
+                                const insertAfter = document.getElementById('tab-switcher') || form;
+                                insertAfter.insertAdjacentElement('afterend', alert);
+                            }
+                            alert.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${result && result.error ? result.error : 'Invalid email or password.'}`;
+                            if (btn) {
+                                btn.disabled = false;
+                                const span = btn.querySelector('span'); if (span) span.textContent = 'Sign In';
+                                const icon = btn.querySelector('i'); if (icon) icon.className = 'fas fa-arrow-right';
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Login request failed:', err);
+                        // Fallback: submit normally
+                        form.submit();
+                    });
+            });
+        })();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,372 @@
+/* ============================================================
+   UNITARY X — realistic_command_center.css
+   High-Fidelity "Obsidian-X" Authentication Interface
+   ============================================================ */
+
+:root {
+    --x-cyan: #00f2ff;
+    --x-cyan-dim: rgba(0, 242, 255, 0.4);
+    --x-red: #ff3e3e;
+    --x-green: #00ff9d;
+    --x-bg: #010409;
+    --x-glass: rgba(13, 17, 23, 0.85);
+    --x-border: rgba(255, 255, 255, 0.08);
+    --font-mono: 'Space Mono', monospace;
+    --font-heading: 'Outfit', sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    cursor: none; /* Custom cursor required */
+}
+
+html, body {
+    height: 100%;
+    width: 100%;
+    background-color: var(--x-bg);
+    color: #e6edf3;
+    font-family: var(--font-heading);
+    overflow: hidden !important;
+}
+
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    perspective: 2000px;
+}
+
+/* ── HIGH-FIDELITY BACKGROUND ─────────────────────────── */
+
+.x-bg-noise {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.05;
+    pointer-events: none;
+}
+
+#x-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+}
+
+.x-scanline {
+    position: fixed;
+    width: 100%;
+    height: 151px;
+    z-index: 5;
+    background: linear-gradient(to bottom, transparent, rgba(0, 242, 255, 0.03), transparent);
+    top: -151px;
+    animation: scanAnim 10s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes scanAnim {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(110vh); }
+}
+
+/* ── COMMAND PANEL ─────────────────────────────────────── */
+
+.x-auth-envelope {
+    width: 100%;
+    max-width: 520px;
+    padding: 30px;
+    position: relative;
+    z-index: 100;
+}
+
+.x-command-panel {
+    background: var(--x-glass);
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
+    border: 1px solid var(--x-border);
+    border-radius: 40px;
+    padding: 60px 50px;
+    box-shadow: 
+        0 40px 100px rgba(0, 0, 0, 0.9),
+        0 0 50px rgba(0, 0, 0, 0.5),
+        inset 0 0 2px rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+    transform: translateZ(50px);
+    transition: transform 0.1s ease-out;
+}
+
+/* Internal Refraction Glow */
+.x-command-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0, 242, 255, 0.08) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+.x-corner-tag {
+    position: absolute;
+    top: 25px;
+    right: 35px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--x-cyan);
+    letter-spacing: 3px;
+    font-weight: 700;
+}
+
+/* ── TYPOGRAPHY ────────────────────────────────────────── */
+
+.x-header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.x-header h1 {
+    font-size: 3rem;
+    font-weight: 900;
+    background: linear-gradient(180deg, #fff 40%, rgba(255, 255, 255, 0.5) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -2px;
+}
+
+.x-header p {
+    font-family: var(--font-mono);
+    color: var(--x-cyan);
+    font-size: 0.75rem;
+    margin-top: 5px;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+}
+
+/* ── INPUT SYSTEM ───────────────────────────────────────── */
+
+.x-field-group {
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.x-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 22px 25px;
+    color: #fff;
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    outline: none;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.x-label {
+    position: absolute;
+    left: 25px;
+    top: 22px;
+    color: #4b5563;
+    pointer-events: none;
+    transition: 0.4s;
+    font-size: 0.95rem;
+}
+
+.x-input:focus, .x-input:not(:placeholder-shown) {
+    border-color: var(--x-cyan);
+    background: rgba(0, 242, 255, 0.03);
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.05);
+}
+
+.x-input:focus ~ .x-label, .x-input:not(:placeholder-shown) ~ .x-label {
+    top: -12px;
+    left: 18px;
+    font-size: 0.7rem;
+    color: var(--x-cyan);
+    background: #0d1117;
+    padding: 0 10px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+}
+
+/* Active Border Animation */
+.x-field-group .x-border-edge {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 1px;
+    background: var(--x-cyan);
+    box-shadow: 0 0 10px var(--x-cyan);
+    transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.x-input:focus ~ .x-border-edge {
+    width: 100%;
+    left: 0;
+}
+
+/* ── ACTION BUTTON ──────────────────────────────────────── */
+
+.x-auth-btn {
+    width: 100%;
+    height: 70px;
+    background: var(--x-cyan);
+    color: #000;
+    border: none;
+    border-radius: 20px;
+    font-family: var(--font-heading);
+    font-weight: 950;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    position: relative;
+    overflow: hidden;
+    transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.x-auth-btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 242, 255, 0.4);
+}
+
+.x-auth-btn:active {
+    transform: translateY(-2px);
+}
+
+.x-btn-label {
+    position: relative;
+    z-index: 5;
+}
+
+.x-btn-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: 0.6s;
+}
+
+.x-auth-btn:hover .x-btn-glow {
+    width: 300px;
+    height: 300px;
+    opacity: 1;
+}
+
+/* ── SOCIAL ENGINE ─────────────────────────────────────── */
+
+.x-social-grid {
+    margin-top: 40px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.x-social-link {
+    width: 65px;
+    height: 65px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8b949e;
+    font-size: 1.4rem;
+    transition: 0.3s;
+}
+
+.x-social-link:hover {
+    border-color: var(--x-cyan);
+    color: var(--x-cyan);
+    background: rgba(0, 242, 255, 0.05);
+}
+
+/* ── SYSTEM STATUS ──────────────────────────────────────── */
+
+.x-system-status {
+    margin-top: 40px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    padding: 12px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+}
+
+.x-status-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    color: #484f58;
+}
+
+.x-status-val {
+    color: var(--x-cyan);
+}
+
+/* ── CUSTOM CURSOR ──────────────────────────────────────── */
+
+.x-cursor-main {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background: var(--x-cyan);
+    border-radius: 50%;
+    z-index: 100000;
+    pointer-events: none;
+    mix-blend-mode: color-dodge;
+}
+
+.x-cursor-outer {
+    position: fixed;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--x-cyan);
+    border-radius: 50%;
+    z-index: 100000;
+    pointer-events: none;
+    transition: width 0.3s, height 0.3s;
+}
+
+.x-cursor-outer::after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    width: 1px;
+    height: 10px;
+    background: var(--x-cyan);
+    transform: translateX(-50%);
+}
+
+/* ── HUD ALERTS ────────────────────────────────────────── */
+
+.x-alert {
+    position: absolute;
+    bottom: -80px;
+    left: 0;
+    width: 100%;
+    background: rgba(255, 62, 62, 0.1);
+    border: 1px solid var(--x-red);
+    color: var(--x-red);
+    padding: 15px;
+    border-radius: 15px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.x-alert.active {
+    opacity: 1;
+    transform: translateY(0);
+}

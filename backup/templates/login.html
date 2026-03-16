@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login — Unitary X</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+
+<body>
+    <!-- Fullscreen background video (login page only) -->
+    <video class="full-bg-video" autoplay muted loop playsinline preload="auto" poster="{{ url_for('static', filename='img/hero-poster.jpg') }}" aria-hidden="true">
+        <source src="{{ url_for('static', filename='img/login-video.mp4') }}" type="video/mp4">
+        <source src="https://cdn.pixabay.com/video/2021/08/04/83896-584742456_large.mp4" type="video/mp4">
+    </video>
+
+    <!-- Animated background orbs -->
+    <div class="bg-orb orb-a"></div>
+    <div class="bg-orb orb-b"></div>
+    <div class="bg-orb orb-c"></div>
+    <div class="bg-grid"></div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container" id="flash-container">
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">
+            <i
+                class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'danger' %}fa-times-circle{% elif category == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}"></i>
+            {{ message }}
+            <button class="flash-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="login-wrapper">
+
+        <!-- Left Panel -->
+        <div class="login-left">
+            <a href="/" class="back-home"><i class="fas fa-arrow-left"></i> Back to Site</a>
+
+            <div class="brand">
+                <div class="brand-icon">
+                    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Unitary X Logo"
+                        style="width:32px;height:32px;object-fit:contain;" />
+                </div>
+                <span class="brand-name">Unitary<span>X</span></span>
+            </div>
+
+            <h1 class="left-title">Your Premium<br /><span>Tech Partner</span></h1>
+            <p class="left-desc">Get professional software & hardware projects done for college and school students.</p>
+
+            <div class="left-features">
+                <div class="feat-item" style="--delay: 0.6s">
+                    <div class="feat-icon"><i class="fas fa-shield-alt"></i></div><span>100% Confidential</span>
+                </div>
+                <div class="feat-item" style="--delay: 0.7s">
+                    <div class="feat-icon"><i class="fas fa-headset"></i></div><span>24/7 WhatsApp Support</span>
+                </div>
+            </div>
+
+            <div class="left-tech-row" style="--delay: 0.8s">
+                <span class="tech-dot blue"><i class="fab fa-python"></i></span>
+                <span class="tech-dot purple"><i class="fab fa-react"></i></span>
+                <span class="tech-dot cyan"><i class="fas fa-microchip"></i></span>
+                <span class="tech-dot green"><i class="fab fa-node-js"></i></span>
+                <span class="tech-dot orange"><i class="fas fa-brain"></i></span>
+            </div>
+
+            <!-- Floating Decoration -->
+            <div class="floating-shape shape-1"></div>
+            <div class="floating-shape shape-2"></div>
+        </div>
+
+        <!-- Right Panel — Forms -->
+        <div class="login-right">
+
+            <!-- Tab switcher -->
+            <div class="tab-switcher" id="tab-switcher">
+                <button class="tab-btn {% if tab == 'user' or tab == 'register' %}active{% endif %}" id="tab-user"
+                    onclick="switchTab('user')">
+                    <i class="fas fa-user"></i> User Login
+                </button>
+                <button class="tab-btn {% if tab == 'admin' %}active{% endif %}" id="tab-admin"
+                    onclick="switchTab('admin')">
+                    <i class="fas fa-shield-alt"></i> Admin Login
+                </button>
+            </div>
+
+            <!-- Error Alert -->
+            {% if error %}
+            <div class="alert-error" id="form-alert">
+                <i class="fas fa-exclamation-circle"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            <!-- ── USER / REGISTER PANEL ── -->
+            <div class="form-panel" id="panel-user"
+                style="display:{% if tab == 'user' or tab == 'register' %}block{% else %}none{% endif %}">
+
+                <!-- Inner tab: Login vs Register -->
+                <div class="inner-tabs">
+                    <button class="inner-tab {% if tab != 'register' %}active{% endif %}" id="it-login"
+                        onclick="switchInner('login')">Sign In</button>
+                    <button class="inner-tab {% if tab == 'register' %}active{% endif %}" id="it-register"
+                        onclick="switchInner('register')">Sign Up</button>
+                </div>
+
+                <!-- LOGIN FORM -->
+                <div id="inner-login" style="display:{% if tab == 'register' %}none{% else %}block{% endif %}">
+                    <div class="form-header">
+                        <h2>Welcome Back <span class="wave">👋</span></h2>
+                    </div>
+
+                    <form method="POST" action="/login" id="user-login-form">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="login_type" value="user" />
+                        <div class="form-group">
+                            <label><i class="fas fa-envelope"></i> Email Address</label>
+                            <input type="email" name="email" id="ul-email" placeholder="you@student.com" required
+                                autocomplete="email" />
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-lock"></i> Password</label>
+                            <div class="input-pass-wrap">
+                                <input type="password" name="password" id="ul-pass" placeholder="Enter your password"
+                                    required />
+                                <button type="button" class="toggle-pass" onclick="togglePass('ul-pass',this)"
+                                    aria-label="Show password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-row-check">
+                            <label class="check-label">
+                                <input type="checkbox" name="remember" id="ul-remember" />
+                                <span class="checkmark"></span>
+                                Remember me
+                            </label>
+                            <a href="#" class="forgot-link">Forgot password?</a>
+                        </div>
+                        <button type="submit" class="submit-btn" id="user-login-btn">
+                            <span>Sign In</span> <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </form>
+
+                    <div style="text-align: center; color: #94a3b8; font-size: 0.85rem; margin: 20px 0;">
+                        <span>&mdash; or continue with &mdash;</span>
+                    </div>
+
+                    <div id="g_id_onload" data-client_id="{{ config['GOOGLE_CLIENT_ID'] }}" data-context="signin"
+                        data-ux_mode="popup" data-callback="handleCredentialResponse" data-auto_prompt="true">
+                    </div>
+                    <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="filled_white"
+                        data-text="continue_with" data-size="large" data-logo_alignment="left" data-width="400">
+                    </div>
+                    <p class="switch-hint">Don't have an account?
+                        <a href="#" onclick="switchInner('register')">Create one free</a>
+                    </p>
+                </div>
+
+                <!-- REGISTER FORM -->
+                <div id="inner-register" style="display:{% if tab == 'register' %}block{% else %}none{% endif %}">
+                    <div class="form-header">
+                        <h2>Create Account</h2>
+                    </div>
+
+                    <form method="POST" action="/register" id="register-form">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <div class="form-group">
+                            <label><i class="fas fa-user"></i> Full Name</label>
+                            <input type="text" name="name" id="reg-name" placeholder="Rahul Kumar" required
+                                minlength="2" />
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-envelope"></i> Email Address</label>
+                            <input type="email" name="email" id="reg-email" placeholder="you@student.com" required />
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-lock"></i> Password</label>
+                            <div class="input-pass-wrap">
+                                <input type="password" name="password" id="reg-pass" placeholder="Min 6 characters"
+                                    required minlength="6" />
+                                <button type="button" class="toggle-pass" onclick="togglePass('reg-pass',this)"
+                                    aria-label="Show">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <!-- Password strength bar -->
+                            <div class="pass-strength" id="pass-strength">
+                                <div class="strength-bar" id="strength-bar"></div>
+                            </div>
+                            <span class="strength-label" id="strength-label"></span>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-check-circle"></i> Confirm Password</label>
+                            <div class="input-pass-wrap">
+                                <input type="password" name="confirm" id="reg-confirm" placeholder="Re-enter password"
+                                    required />
+                                <button type="button" class="toggle-pass" onclick="togglePass('reg-confirm',this)"
+                                    aria-label="Show">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <span class="match-hint" id="match-hint"></span>
+                        </div>
+                        <button type="submit" class="submit-btn" id="reg-btn">
+                            <span>Create Account</span> <i class="fas fa-user-plus"></i>
+                        </button>
+                    </form>
+
+                    <div style="text-align: center; color: #94a3b8; font-size: 0.85rem; margin: 20px 0;">
+                        <span>&mdash; or continue with &mdash;</span>
+                    </div>
+
+                    <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="filled_white"
+                        data-text="continue_with" data-size="large" data-logo_alignment="left" data-width="400">
+                    </div>
+                    <p class="switch-hint">Already have an account?
+                        <a href="#" onclick="switchInner('login')">Sign in</a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- ── ADMIN PANEL ── -->
+            <div class="form-panel" id="panel-admin"
+                style="display:{% if tab == 'admin' %}block{% else %}none{% endif %}">
+
+                <div class="form-header admin-header">
+                    <div class="admin-badge"><i class="fas fa-shield-alt"></i> Admin Access</div>
+                    <h2>Admin Login</h2>
+                </div>
+
+                <form method="POST" action="/login" id="admin-login-form">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="login_type" value="admin" />
+                    <div class="form-group">
+                        <label><i class="fas fa-envelope"></i> Admin Email</label>
+                        <input type="email" name="email" id="al-email" placeholder="admin@unitaryx.com" required
+                            autocomplete="off" />
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-key"></i> Admin Password</label>
+                        <div class="input-pass-wrap">
+                            <input type="password" name="password" id="al-pass" placeholder="Admin password" required
+                                autocomplete="new-password" />
+                            <button type="button" class="toggle-pass" onclick="togglePass('al-pass',this)"
+                                aria-label="Show">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-row-check">
+                        <label class="check-label">
+                            <input type="checkbox" name="remember" id="al-remember" />
+                            <span class="checkmark"></span>
+                            Keep me signed in
+                        </label>
+                    </div>
+                    <button type="submit" class="submit-btn admin-submit-btn" id="admin-login-btn">
+                        <span>Access Admin Panel</span> <i class="fas fa-arrow-right"></i>
+                    </button>
+                </form>
+
+
+
+                <p class="switch-hint" style="margin-top:16px;">
+                    Not an admin? <a href="#" onclick="switchTab('user')">User Login</a>
+                </p>
+            </div>
+
+            <!-- Right Side Decorations -->
+            <div class="floating-shape shape-1" style="opacity: 0.05;"></div>
+            <div class="floating-shape shape-2" style="opacity: 0.05;"></div>
+        </div><!-- /login-right -->
+    </div><!-- /login-wrapper -->
+
+    <script>
+        // ── Tab Switching ──────────────────────────────────────────
+        function switchTab(tab) {
+            const panels = { user: document.getElementById('panel-user'), admin: document.getElementById('panel-admin') };
+            const btns = { user: document.getElementById('tab-user'), admin: document.getElementById('tab-admin') };
+            Object.keys(panels).forEach(k => {
+                panels[k].style.display = k === tab ? 'block' : 'none';
+                btns[k].classList.toggle('active', k === tab);
+            });
+            // clear error
+            const err = document.getElementById('form-alert');
+            if (err) err.style.display = 'none';
+        }
+
+        // ── Inner Tab (Login / Register) ───────────────────────────
+        function switchInner(which) {
+            document.getElementById('inner-login').style.display = which === 'login' ? 'block' : 'none';
+            document.getElementById('inner-register').style.display = which === 'register' ? 'block' : 'none';
+            document.getElementById('it-login').classList.toggle('active', which === 'login');
+            document.getElementById('it-register').classList.toggle('active', which === 'register');
+            const err = document.getElementById('form-alert');
+            if (err) err.style.display = 'none';
+        }
+
+        // ── Toggle Password Visibility ─────────────────────────────
+        function togglePass(id, btn) {
+            const inp = document.getElementById(id);
+            const isText = inp.type === 'text';
+            inp.type = isText ? 'password' : 'text';
+            btn.innerHTML = isText ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+        }
+
+        // ── Password Strength ──────────────────────────────────────
+        const passInput = document.getElementById('reg-pass');
+        if (passInput) {
+            passInput.addEventListener('input', () => {
+                const v = passInput.value;
+                const bar = document.getElementById('strength-bar');
+                const lbl = document.getElementById('strength-label');
+                let score = 0;
+                if (v.length >= 6) score++;
+                if (v.length >= 10) score++;
+                if (/[A-Z]/.test(v)) score++;
+                if (/[0-9]/.test(v)) score++;
+                if (/[^A-Za-z0-9]/.test(v)) score++;
+                const map = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
+                const cls = ['', 'weak', 'fair', 'good', 'strong', 'very-strong'];
+                bar.style.width = (score / 5 * 100) + '%';
+                bar.className = 'strength-bar ' + (cls[score] || '');
+                lbl.textContent = map[score] || '';
+                lbl.className = 'strength-label ' + (cls[score] || '');
+            });
+        }
+
+        // ── Confirm Password Match ─────────────────────────────────
+        const confirmInput = document.getElementById('reg-confirm');
+        if (confirmInput) {
+            confirmInput.addEventListener('input', () => {
+                const hint = document.getElementById('match-hint');
+                const pass = document.getElementById('reg-pass').value;
+                if (!confirmInput.value) { hint.textContent = ''; return; }
+                if (confirmInput.value === pass) {
+                    hint.textContent = 'Passwords match!';
+                    hint.className = 'match-hint match-ok';
+                } else {
+                    hint.textContent = 'Passwords do not match.';
+                    hint.className = 'match-hint match-err';
+                }
+            });
+        }
+
+        // ── Loading state on submit ────────────────────────────────
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function (e) {
+                const btn = this.querySelector('.submit-btn');
+                if (!btn) return;
+                btn.disabled = true;
+                btn.querySelector('span').textContent = 'Please wait…';
+                btn.querySelector('i').className = 'fas fa-spinner fa-spin';
+            });
+        });
+
+        // ── Auto-dismiss flash ─────────────────────────────────────
+        setTimeout(() => {
+            const fc = document.getElementById('flash-container');
+            if (fc) fc.style.opacity = '0';
+            setTimeout(() => { if (fc) fc.remove(); }, 500);
+        }, 4000);
+
+        // ── Google Sign-in Callback ────────────────────────────────
+        function handleCredentialResponse(response) {
+            fetch('/google-login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ credential: response.credential })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = data.redirect;
+                    } else {
+                        document.getElementById('form-alert') || (() => {
+                            const alert = document.createElement('div');
+                            alert.className = 'alert-error';
+                            alert.id = 'form-alert';
+                            alert.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error}`;
+                            document.getElementById('tab-switcher').insertAdjacentElement('afterend', alert);
+                            return alert;
+                        })();
+                    }
+                })
+                .catch(e => {
+                    console.error("Google Auth error:", e);
+                });
+        }
+    </script>
+</body>
+
+</html>

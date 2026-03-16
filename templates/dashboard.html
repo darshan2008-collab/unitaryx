@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Dashboard — Unitary X</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
+</head>
+
+<body class="dash-body">
+
+    <!-- Sidebar -->
+    <aside class="dash-sidebar">
+        <div class="sidebar-logo">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Unitary X"
+                style="width:36px;height:36px;object-fit:contain;border-radius:10px;" />
+            <span>Unitary<strong>X</strong></span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard" class="sidebar-link active"><i class="fas fa-th-large"></i> Dashboard</a>
+            <a href="/#contact" class="sidebar-link"><i class="fas fa-plus-circle"></i> New Request</a>
+            <a href="/" class="sidebar-link"><i class="fas fa-globe"></i> View Site</a>
+        </nav>
+        <a href="/logout" class="sidebar-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
+
+    <!-- Main -->
+    <main class="dash-main">
+
+        <!-- Top Bar -->
+        <header class="dash-topbar">
+            <div class="dash-greeting">
+                <div class="greeting-avatar">{{ user.name[0].upper() }}</div>
+                <div>
+                    <div class="greeting-name">Welcome, {{ user.name.split()[0] }}! 👋</div>
+                    <div class="greeting-sub">{{ user.email }}</div>
+                </div>
+            </div>
+            <a href="/#contact" class="btn-new-req"><i class="fas fa-plus"></i> New Request</a>
+        </header>
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="dash-flash flash-{{ category }}">
+            <i class="fas fa-info-circle"></i> {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Stat Cards -->
+        <div class="dash-stats">
+            <div class="dstat">
+                <div class="dstat-icon blue"><i class="fas fa-folder"></i></div>
+                <div>
+                    <div class="dstat-num">{{ my_requests|length }}</div>
+                    <div class="dstat-lbl">Total Requests</div>
+                </div>
+            </div>
+            <div class="dstat">
+                <div class="dstat-icon cyan"><i class="fas fa-bell"></i></div>
+                <div>
+                    <div class="dstat-num">{{ my_requests|selectattr('status','eq','New')|list|length }}</div>
+                    <div class="dstat-lbl">New</div>
+                </div>
+            </div>
+            <div class="dstat">
+                <div class="dstat-icon orange"><i class="fas fa-spinner"></i></div>
+                <div>
+                    <div class="dstat-num">{{ my_requests|selectattr('status','eq','In Progress')|list|length }}</div>
+                    <div class="dstat-lbl">In Progress</div>
+                </div>
+            </div>
+            <div class="dstat">
+                <div class="dstat-icon green"><i class="fas fa-check-circle"></i></div>
+                <div>
+                    <div class="dstat-num">{{ my_requests|selectattr('status','eq','Done')|list|length }}</div>
+                    <div class="dstat-lbl">Completed</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Requests -->
+        <div class="dash-section">
+            <div class="dash-section-header">
+                <h2>My Project Requests</h2>
+                <a href="/#contact" class="btn-small">+ New Request</a>
+            </div>
+
+            {% if my_requests %}
+            <div class="req-grid">
+                {% for r in my_requests %}
+                <div class="req-card">
+                    <div class="req-card-top">
+                        <div class="req-service-badge svc-{{ r.service }}">{{ r.service|capitalize }}</div>
+                        <div class="req-status status-{{ r.status.lower().replace(' ','-') }}">
+                            {% if r.id in active_updates %}
+                            <span class="update-indicator"><i class="fas fa-bolt"></i> Updated</span>
+                            {% endif %}
+                            {% if r.status == 'New' %}
+                            <i class="fas fa-circle"></i> New
+                            {% elif r.status == 'In Progress' %}
+                            <i class="fas fa-spinner fa-spin"></i> In Progress
+                            {% else %}
+                            <i class="fas fa-check-circle"></i> Done
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="req-card-main">
+                        <h3 class="req-card-title">{{ r.message[:40] }}{% if r.message|length > 40 %}…{% endif %}</h3>
+
+                        <div class="mission-details">
+                            <div class="mission-item">
+                                <span class="m-label">Operational Tier</span>
+                                <span class="prio-badge prio-{{ r.priority|lower }}">{{ r.priority }}</span>
+                            </div>
+                            <div class="mission-item">
+                                <span class="m-label">Project Valuation</span>
+                                <span class="value-tag">₹{{ "{:,}".format(r.value or 0) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="req-card-meta">
+                        <span><i class="fas fa-calendar-alt"></i> {{ r.created_at.strftime('%d %b %Y') }}</span>
+                        {% if r.deadline %}<span><i class="fas fa-clock"></i> {{ r.deadline }}</span>{% endif %}
+                    </div>
+                    <div class="req-card-footer">
+                        <span class="req-id">#{{ '%04d' % r.id }}</span>
+                        {% if r.status == 'Done' %}
+                        <span class="req-done-tag"><i class="fas fa-star"></i> Delivered!</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="req-empty">
+                <i class="fas fa-inbox"></i>
+                <p>No project requests yet.</p>
+                <a href="/#contact" class="btn-empty">Submit Your First Request</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="dash-section">
+            <div class="dash-section-header">
+                <h2>Quick Actions</h2>
+            </div>
+            <div class="quick-grid">
+                <a href="/#services" class="quick-card">
+                    <i class="fas fa-code"></i>
+                    <span>Browse Services</span>
+                </a>
+                <a href="/#pricing" class="quick-card">
+                    <i class="fas fa-tags"></i>
+                    <span>View Pricing</span>
+                </a>
+                <a href="/#projects" class="quick-card">
+                    <i class="fas fa-folder-open"></i>
+                    <span>See Portfolio</span>
+                </a>
+                <a href="https://wa.me/919876543210" class="quick-card" target="_blank">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>WhatsApp Us</span>
+                </a>
+            </div>
+        </div>
+
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,99 @@
+/* ============================================================
+   UNITARY X — cinematic_transitions.css
+   Special effects for AI-system auth and dashboard entry
+   ============================================================ */
+
+/* ── AUTH PROCESSING STATE ── */
+.ai-btn-primary.loading {
+    pointer-events: none;
+    background: rgba(168, 85, 247, 0.2);
+    box-shadow: 0 0 40px rgba(168, 85, 247, 0.4);
+}
+
+.ai-btn-primary.loading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    background: #fff;
+    width: 0;
+    animation: progressBar 1.5s ease-in-out forwards;
+}
+
+@keyframes progressBar {
+    0% { width: 0; }
+    100% { width: 100%; }
+}
+
+/* ── SUCCESS SURGE ── */
+.auth-success-surge {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle at center, #fff 0%, transparent 70%);
+    opacity: 0;
+    z-index: 9999;
+    pointer-events: none;
+    mix-blend-mode: screen;
+}
+
+.auth-success-surge.active {
+    animation: successFlash 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes successFlash {
+    0% { transform: scale(0.2); opacity: 0; }
+    30% { opacity: 0.8; }
+    100% { transform: scale(2); opacity: 0; }
+}
+
+/* ── SYSTEM REDIRECT MORPH ── */
+.portal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: #050b18;
+    transform: scaleY(0);
+    transform-origin: center;
+    transition: transform 0.8s cubic-bezier(0.85, 0, 0.15, 1);
+    pointer-events: none;
+}
+
+.portal-overlay.active {
+    transform: scaleY(1);
+    pointer-events: all;
+}
+
+/* ── REVEAL SYSTEM ── */
+.ai-reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ai-reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ── SHAKE ANIMATION (Security Breach / Failure) ── */
+@keyframes shakeContent {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+.shake-me {
+    animation: shakeContent 0.5s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+/* ── FLOATING LOGO ── */
+@keyframes logoFloat {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(-10px) rotate(2deg); }
+}
+
+.ai-logo {
+    animation: logoFloat 6s infinite ease-in-out;
+}

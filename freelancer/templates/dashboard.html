@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Dashboard — Unitary X</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='transition.css') }}" />
+    <style>
+        /* ── Cinematic Dash Intro ── */
+        body { margin: 0; overflow-x: hidden; }
+        
+        #cine-intro {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: radial-gradient(circle at center, rgba(5, 11, 24, 0.4) 0%, rgba(5, 11, 24, 0.85) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            perspective: 2000px;
+            pointer-events: none;
+            transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s ease;
+        }
+
+        #cine-intro.fade-out {
+            opacity: 0;
+            transform: scale(1.1) translateZ(100px);
+            filter: blur(8px);
+        }
+
+        .cine-line-wrap {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            white-space: pre;
+            font-size: clamp(3rem, 6vw, 6rem);
+            font-weight: 800;
+            font-family: 'Space Grotesk', sans-serif;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+            text-shadow: 0 4px 30px rgba(0,0,0,0.8), 0 0 10px rgba(255,255,255,0.1);
+        }
+
+        .cine-line-wrap:nth-child(2) .cine-char {
+            color: #3b82f6; /* Solid color fixes the webkit-background-clip invisibility bug */
+            text-shadow: 0 0 15px rgba(59, 130, 246, 0.8), 0 4px 30px rgba(0,0,0,0.8);
+        }
+
+        .cine-char {
+            display: inline-block;
+            will-change: transform, opacity, filter;
+        }
+        
+        .dash-hidden {
+            opacity: 0 !important;
+        }
+    </style>
+</head>
+
+<body class="dash-body">
+    <!-- Cinematic Dashboard Intro -->
+    <div id="cine-intro">
+        <div id="cine-container"></div>
+    </div>
+
+    <!-- Custom User Video Background -->
+    <div class="dash-video-bg" aria-hidden="true">
+        <video id="dash-vid" autoplay muted loop playsinline aria-hidden="true">
+            <source src="{{ url_for('static', filename='img/user_bg.mp4') }}" type="video/mp4">
+        </video>
+        <div class="dash-video-overlay" aria-hidden="true"></div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="dash-sidebar reveal-init">
+        <div class="sidebar-logo">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Unitary X"
+                style="width:36px;height:36px;object-fit:contain;border-radius:10px;" />
+            <span>Unitary<strong>X</strong></span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard" class="sidebar-link active"><i class="fas fa-th-large"></i> Dashboard</a>
+            <a href="/#contact" class="sidebar-link"><i class="fas fa-plus-circle"></i> New Request</a>
+            <a href="/" class="sidebar-link"><i class="fas fa-globe"></i> View Site</a>
+        </nav>
+        <a href="/logout" class="sidebar-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
+
+    <!-- Main -->
+    <main class="dash-main">
+
+        <!-- Top Bar -->
+        <header class="dash-topbar reveal-init">
+            <div class="dash-greeting">
+                <div class="greeting-avatar">{{ user.name[0].upper() }}</div>
+                <div>
+                    <div class="greeting-name">Welcome, {{ user.name.split()[0] }}! 👋</div>
+                    <div class="greeting-sub">{{ user.email }}</div>
+                </div>
+            </div>
+            <a href="/#contact" class="btn-new-req"><i class="fas fa-plus"></i> New Request</a>
+        </header>
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="dash-flash flash-{{ category }}">
+            <i class="fas fa-info-circle"></i> {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- Stat Cards -->
+        <div class="dash-stats reveal reveal-stagger">
+            <div class="dstat">
+                <div class="dstat-icon blue"><i class="fas fa-folder"></i></div>
+                <div>
+                    <div class="dstat-num">{{ my_requests|length }}</div>
+                    <div class="dstat-lbl">Total Requests</div>
+                </div>
+            </div>
+            <div class="dstat">
+                <div class="dstat-icon cyan"><i class="fas fa-bell"></i></div>
+                <div>
+                    <div class="dstat-num">{{ my_requests|selectattr('status','eq','New')|list|length }}</div>
+                    <div class="dstat-lbl">New</div>
+                </div>
+            </div>
+            <div class="dstat">
+                <div class="dstat-icon orange"><i class="fas fa-spinner"></i></div>
+                <div>
+                    <div class="dstat-num">{{ my_requests|selectattr('status','eq','In Progress')|list|length }}</div>
+                    <div class="dstat-lbl">In Progress</div>
+                </div>
+            </div>
+            <div class="dstat">
+                <div class="dstat-icon green"><i class="fas fa-check-circle"></i></div>
+                <div>
+                    <div class="dstat-num">{{ my_requests|selectattr('status','eq','Done')|list|length }}</div>
+                    <div class="dstat-lbl">Completed</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Requests -->
+        <div class="dash-section reveal reveal-stagger">
+            <div class="dash-section-header">
+                <h2>My Project Requests</h2>
+                <a href="/#contact" class="btn-small">+ New Request</a>
+            </div>
+
+            {% if my_requests %}
+            <div class="req-grid">
+                {% for r in my_requests %}
+                <div class="req-card">
+                    <div class="req-card-top">
+                        <div class="req-service-badge svc-{{ r.service }}">{{ r.service|capitalize }}</div>
+                        <div class="req-status status-{{ r.status.lower().replace(' ','-') }}">
+                            {% if r.id in active_updates %}
+                            <span class="update-indicator"><i class="fas fa-bolt"></i> Updated</span>
+                            {% endif %}
+                            {% if r.status == 'New' %}
+                            <i class="fas fa-circle"></i> New
+                            {% elif r.status == 'In Progress' %}
+                            <i class="fas fa-spinner fa-spin"></i> In Progress
+                            {% else %}
+                            <i class="fas fa-check-circle"></i> Done
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="req-card-main">
+                        <h3 class="req-card-title">{{ r.message[:40] }}{% if r.message|length > 40 %}…{% endif %}</h3>
+
+                        <div class="mission-details">
+                            <div class="mission-item">
+                                <span class="m-label">Operational Tier</span>
+                                <span class="prio-badge prio-{{ r.priority|lower }}">{{ r.priority }}</span>
+                            </div>
+                            <div class="mission-item">
+                                <span class="m-label">Project Valuation</span>
+                                <span class="value-tag">₹{{ "{:,}".format(r.value or 0) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="req-card-meta">
+                        <span><i class="fas fa-calendar-alt"></i> {{ r.created_at.strftime('%d %b %Y') }}</span>
+                        {% if r.deadline %}<span><i class="fas fa-clock"></i> {{ r.deadline }}</span>{% endif %}
+                    </div>
+                    <div class="req-card-footer">
+                        <span class="req-id">#{{ '%04d' % r.id }}</span>
+                        {% if r.status == 'Done' %}
+                        <span class="req-done-tag"><i class="fas fa-star"></i> Delivered!</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="req-empty">
+                <i class="fas fa-inbox"></i>
+                <p>No project requests yet.</p>
+                <a href="/#contact" class="btn-empty">Submit Your First Request</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="dash-section reveal">
+            <div class="dash-section-header">
+                <h2>Quick Actions</h2>
+            </div>
+            <div class="quick-grid">
+                <a href="/#services" class="quick-card">
+                    <i class="fas fa-code"></i>
+                    <span>Browse Services</span>
+                </a>
+                <a href="/#pricing" class="quick-card">
+                    <i class="fas fa-tags"></i>
+                    <span>View Pricing</span>
+                </a>
+                <a href="/#projects" class="quick-card">
+                    <i class="fas fa-folder-open"></i>
+                    <span>See Portfolio</span>
+                </a>
+                <a href="https://wa.me/919876543210" class="quick-card" target="_blank">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>WhatsApp Us</span>
+                </a>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // ── Cinematic Text Reassembly Sequence ───────────────────────
+        const lines = ["Premium Tech", "Solutions for", "Everyone"];
+        const container = document.getElementById('cine-container');
+        const charRefs = [];
+
+        // 1. Build the DOM elements & assign random starting physics
+        lines.forEach((line, lineIdx) => {
+            const lineWrap = document.createElement('div');
+            lineWrap.className = 'cine-line-wrap';
+
+            const words = line.split(' ');
+            words.forEach((word, wordIdx) => {
+                const wordWrap = document.createElement('div');
+                wordWrap.style.display = 'flex';
+                
+                for (let i = 0; i < word.length; i++) {
+                    const char = document.createElement('span');
+                    char.className = 'cine-char';
+                    char.textContent = word[i];
+                    
+                    // Cinematic Scatters & Velocities
+                    const x = (Math.random() - 0.5) * window.innerWidth * 1.5;
+                    const y = (Math.random() - 0.5) * window.innerHeight * 1.5;
+                    const z = (Math.random() - 0.5) * 3500; // Deep depth
+                    const rx = (Math.random() - 0.5) * 720;
+                    const ry = (Math.random() - 0.5) * 720;
+                    const rz = (Math.random() - 0.5) * 720;
+
+                    // Smoother slow atmospheric drift
+                    const vx = (Math.random() - 0.5) * 1.2;
+                    const vy = (Math.random() - 0.5) * 1.2;
+                    const vz = (Math.random() - 0.5) * 1.2;
+                    const vrx = (Math.random() - 0.5) * 0.8;
+                    const vry = (Math.random() - 0.5) * 0.8;
+                    const vrz = (Math.random() - 0.5) * 0.8;
+
+                    char.dataset.x = x; char.dataset.y = y; char.dataset.z = z;
+                    char.dataset.rx = rx; char.dataset.ry = ry; char.dataset.rz = rz;
+                    char.dataset.vx = vx; char.dataset.vy = vy; char.dataset.vz = vz;
+                    char.dataset.vrx = vrx; char.dataset.vry = vry; char.dataset.vrz = vrz;
+                    
+                    char.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`;
+                    char.style.opacity = '1';
+
+                    wordWrap.appendChild(char);
+                    charRefs.push(char);
+                }
+                
+                lineWrap.appendChild(wordWrap);
+                // Add natural space gap between words
+                if (wordIdx < words.length - 1) {
+                    const space = document.createElement('span');
+                    space.style.width = '1.5rem';
+                    lineWrap.appendChild(space);
+                }
+            });
+            container.appendChild(lineWrap);
+        });
+
+        // 2. Float physics loop
+        let isFloating = true;
+        function floatLoop() {
+            if (!isFloating) return;
+            charRefs.forEach(char => {
+                const x = parseFloat(char.dataset.x) + parseFloat(char.dataset.vx);
+                const y = parseFloat(char.dataset.y) + parseFloat(char.dataset.vy);
+                const z = parseFloat(char.dataset.z) + parseFloat(char.dataset.vz);
+                const rx = parseFloat(char.dataset.rx) + parseFloat(char.dataset.vrx);
+                const ry = parseFloat(char.dataset.ry) + parseFloat(char.dataset.vry);
+                const rz = parseFloat(char.dataset.rz) + parseFloat(char.dataset.vrz);
+
+                char.dataset.x = x; char.dataset.y = y; char.dataset.z = z;
+                char.dataset.rx = rx; char.dataset.ry = ry; char.dataset.rz = rz;
+
+                char.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`;
+            });
+            requestAnimationFrame(floatLoop);
+        }
+        requestAnimationFrame(floatLoop);
+
+        // 3. Trigger Snapping Transition
+        window.addEventListener('load', () => {
+            // Keep the real dashboard UI hidden for a moment
+            document.querySelector('.dash-sidebar')?.classList.add('dash-hidden');
+            document.querySelector('.dash-topbar')?.classList.add('dash-hidden');
+
+            setTimeout(() => {
+                isFloating = false; // Stop the physics loop
+                
+                // Engage the CSS spring-like snappiness
+                charRefs.forEach((char, idx) => {
+                    const stg = idx * 0.025; // 25ms stagger per letter
+                    char.style.transition = `transform 1.8s cubic-bezier(0.16, 1, 0.3, 1) ${stg}s`;
+                    
+                    void char.offsetWidth; // Force layout
+                    
+                    char.style.transform = 'translate3d(0, 0, 0) rotateX(0) rotateY(0) rotateZ(0)';
+                });
+
+                // 4. Fade cinematic frame out and reveal real dashboard
+                setTimeout(() => {
+                    document.getElementById('cine-intro').classList.add('fade-out');
+                    
+                    // Unhide and trigger dashboard reveals
+                    const side = document.querySelector('.dash-sidebar');
+                    const top = document.querySelector('.dash-topbar');
+                    if(side) { side.classList.remove('dash-hidden'); side.classList.add('reveal-active'); }
+                    if(top) { top.classList.remove('dash-hidden'); top.classList.add('reveal-active'); }
+                    
+                    document.querySelectorAll('.reveal-stagger').forEach((el, i) => {
+                        setTimeout(() => el.classList.add('active'), 200 + (i * 150));
+                    });
+                     // Safely clean up intro from DOM
+                    setTimeout(() => document.getElementById('cine-intro').remove(), 1500);
+                }, charRefs.length * 25 + 2400); 
+
+            }, 400); // Wait briefly before starting the magnetic pull
+        });
+
+        // ── Standard Scroll Reveal Logic ────────────────────────────
+        document.addEventListener("DOMContentLoaded", function () {
+            const observerOptions = { threshold: 0.12, rootMargin: "0px 0px -50px 0px" };
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Unitary X — Premium Tech Freelancer | Software &amp; Hardware Projects</title>
+    <meta name="description"
+        content="Unitary X — Your trusted freelancer for college and school student projects in web development, software engineering, hardware &amp; IoT, and more." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='cinematic.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='futuristic.css') }}" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+
+<body>
+
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- ── NAVBAR ── -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#home" class="nav-logo">
+                <span class="logo-icon"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="Unitary X"
+                        loading="lazy" style="width:28px;height:28px;object-fit:contain;" /></span>
+                <span class="logo-text">Unitary<span class="logo-x">X</span></span>
+            </a>
+            <ul class="nav-links" id="nav-links">
+                <li><a href="#home" class="nav-link active">Home</a></li>
+                <li><a href="#services" class="nav-link">Services</a></li>
+                <li><a href="#projects" class="nav-link">Projects</a></li>
+                <li><a href="#process" class="nav-link">Process</a></li>
+                <li><a href="#contact" class="nav-link">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                
+                {% if user %}
+                {% if user.role == 'admin' %}
+                <div class="user-greeting">
+                    <span class="hi-text">Hi, <strong>{{ user.name.split()[0] }}</strong> (Admin)</span>
+                    <a href="/admin" class="nav-icon-link" title="Admin Dashboard"><i class="fas fa-chart-line"></i></a>
+                </div>
+                {% else %}
+                <div class="user-greeting">
+                    <span class="hi-text">Hi, <strong>{{ user.name.split()[0] }}</strong></span>
+                    <a href="/dashboard" class="nav-icon-link" title="My Dashboard"><i
+                            class="fas fa-user-circle"></i></a>
+                </div>
+                {% endif %}
+                <a href="/logout" class="nav-icon-link" title="Logout"><i class="fas fa-sign-out-alt"></i></a>
+                {% else %}
+                <a href="javascript:void(0)" class="nav-icon-link" id="admin-trigger" title="Admin Panel"><i
+                        class="fas fa-user-shield"></i></a>
+                <a href="/login" class="nav-icon-link" aria-label="User Login" title="Login / Register"><i
+                        class="fas fa-user-circle"></i></a>
+                {% endif %}
+                <a href="#contact" class="btn-hire" id="nav-hire-btn">Hire Me <i class="fas fa-arrow-right"></i></a>
+                <button class="hamburger" id="hamburger" aria-label="Open menu">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ── HERO ── -->
+    <section class="hero" id="home">
+        <!-- Custom User Hero Video Background -->
+        <div class="hero-video-wrap" aria-hidden="true">
+            <video autoplay muted loop playsinline preload="auto" id="hero-vid" poster="{{ url_for('static', filename='img/hero-poster.jpg') }}" aria-hidden="true">
+                <source src="{{ url_for('static', filename='video/3251808-uhd_3840_2160_25fps.mp4') }}" type="video/mp4">
+            </video>
+            <div class="hero-video-overlay" aria-hidden="true"></div>
+        </div>
+
+        <div class="hero-container">
+            <h1 class="hero-title" id="typewriter-title">
+                <span class="title-line" id="type-line-1">Premium Tech</span>
+                <span class="title-line gradient-text" id="type-line-2">Solutions for</span>
+                <span class="title-line" id="type-line-3">Everyone</span>
+            </h1>
+            <p class="hero-subtitle">Crafting High-Performance Software, Smart IoT Systems, and Intelligent AI Solutions
+                tailored for your vision.</p>
+
+            <div class="hero-cta">
+                <a href="#projects" class="btn-primary"><span>Explore Projects</span><i class="fas fa-rocket"></i></a>
+                <a href="#contact" class="btn-secondary"><span>Get a Quote</span><i class="fas fa-paper-plane"></i></a>
+            </div>
+
+            <div class="tech-stack-row">
+                <span class="tech-label">Technologies:</span>
+                <div class="tech-pills">
+                    <span class="tech-pill"><i class="fab fa-python"></i> Python</span>
+                    <span class="tech-pill"><i class="fab fa-js"></i> JavaScript</span>
+                    <span class="tech-pill"><i class="fab fa-react"></i> React</span>
+                    <span class="tech-pill"><i class="fas fa-microchip"></i> Arduino</span>
+                    <span class="tech-pill"><i class="fas fa-server"></i> Flask</span>
+                    <span class="tech-pill"><i class="fab fa-node-js"></i> Node.js</span>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="hero-scroll-hint">
+            <div class="scroll-mouse">
+                <div class="scroll-wheel"></div>
+            </div>
+            <span>Scroll to explore</span>
+        </div>
+    </section>
+
+    <!-- ── MARQUEE ── -->
+    <div class="marquee-strip">
+        <div class="marquee-track">
+            {% set items = ['Web Development','Mobile Apps','Hardware Projects','IoT Systems','AI & ML','Database
+            Design','Arduino Projects','Raspberry Pi','PCB Design','React Apps'] %}
+            {% for item in items %}<span>{{ item }}</span><span class="sep">✦</span>{% endfor %}
+            {% for item in items %}<span>{{ item }}</span><span class="sep">✦</span>{% endfor %}
+        </div>
+    </div>
+
+    <!-- ── SERVICES ── -->
+    <section class="services reveal" id="services">
+        <div class="services-bg">
+            <div class="glass-orb orb-1"></div>
+            <div class="glass-orb orb-2"></div>
+            <div class="glass-orb orb-3"></div>
+        </div>
+        <div class="section-container">
+            <div class="section-header">
+                <div class="section-tag"><i class="fas fa-layer-group"></i> What I Offer</div>
+                <h2 class="section-title">Premium <span class="gradient-text">Services</span></h2>
+                <p class="section-desc">From concept to deployment — software, hardware, web, and more for your student
+                    projects.</p>
+            </div>
+            <div class="services-grid">
+                {% set services = [
+                {"icon":"fas fa-globe", "color":"icon-blue", "title":"Web Development", "desc":"Full-stack web
+                applications using React, Node.js, Flask, Django. Responsive, modern, and blazing-fast.",
+                "features":["Frontend & Backend","Database Integration","REST API Development","Authentication
+                Systems"], "glow":"glow-blue", "featured":false},
+                {"icon":"fas fa-code", "color":"icon-purple", "title":"Software Projects", "desc":"Desktop apps, CLI
+                tools, automation scripts, data analysis — anything your college demands.", "features":["Python / Java /
+                C++","Data Structures & Algorithms","Machine Learning / AI","DBMS Projects"],
+                "glow":"glow-purple", "featured":true},
+                {"icon":"fas fa-microchip","color":"icon-cyan", "title":"Hardware & IoT", "desc":"Arduino, sensor
+                integration, and embedded systems.", "features":["Arduino Programming","Sensor Integration","Circuit
+                Interfacing","Embedded Systems"], "glow":"glow-cyan",
+                "featured":false},
+                {"icon":"fas fa-mobile-alt","color":"icon-green", "title":"Mobile Apps", "desc":"Android and iOS apps
+                using Flutter or React Native with beautiful UI.", "features":["Flutter / React Native","Firebase
+                Integration","UI/UX Design","APK Delivery"], "glow":"glow-green",
+                "featured":false},
+                {"icon":"fas fa-brain", "color":"icon-orange", "title":"AI & Machine Learning", "desc":"Intelligent
+                systems, image recognition, NLP models, data analytics for final year projects.",
+                "features":["TensorFlow / PyTorch","Computer Vision","NLP & Chatbots","Data Analysis"],
+                "glow":"glow-orange", "featured":false},
+                {"icon":"fas fa-file-alt", "color":"icon-pink", "title":"Reports & Documentation","desc":"IEEE reports,
+                project documentation, PPTs, technical write-ups, and full project guides.", "features":["IEEE Format
+                Reports","UML Diagrams","PowerPoint Presentations","Project Documentation"],
+                "glow":"glow-pink", "featured":false}
+                ] %}
+                {% for s in services %}
+                <div class="service-card {% if s.featured %}featured-card{% endif %}">
+                    {% if s.featured %}<div class="featured-badge"><i class="fas fa-fire"></i> Most Popular</div>{%
+                    endif %}
+                    <div class="service-icon-wrap {{ s.color }}"><i class="{{ s.icon }}"></i></div>
+                    <h3 class="service-title">{{ s.title }}</h3>
+                    <p class="service-desc">{{ s.desc }}</p>
+                    <ul class="service-list">
+                        {% for f in s.features %}<li><i class="fas fa-check"></i> {{ f }}</li>{% endfor %}
+                    </ul>
+                    <div class="service-footer">
+                        <a href="#contact" class="service-cta">Get Quote <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="card-glow {{ s.glow }}"></div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- ── PROJECTS ── -->
+    <section class="projects reveal" id="projects">
+        <div class="projects-bg">
+            <div class="proj-orb orb-1"></div>
+            <div class="proj-orb orb-2"></div>
+            <div class="proj-orb orb-3"></div>
+        </div>
+        <div class="section-container">
+            <div class="section-header">
+                <div class="section-tag"><i class="fas fa-folder-open"></i> Our Work</div>
+                <h2 class="section-title">Featured <span class="gradient-text">Projects</span></h2>
+                <p class="section-desc">A showcase of premium student projects delivered — from intelligent apps to
+                    smart hardware systems.</p>
+            </div>
+
+            <div class="projects-filter" id="projects-filter">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="software">Software</button>
+                <button class="filter-btn" data-filter="hardware">Hardware</button>
+                <button class="filter-btn" data-filter="web">Web</button>
+                <button class="filter-btn" data-filter="ai">AI / ML</button>
+            </div>
+
+            <div class="projects-grid" id="projects-grid">
+                {% for p in projects %}
+                <div class="project-card" data-category="{{ p.category }}">
+                    <div class="proj-thumb">
+                        <div class="proj-thumb-bg {{ p.bg_class }}">
+                            <i class="{{ p.icon }} proj-icon"></i>
+                        </div>
+                        <div class="proj-overlay">
+                            <a href="#contact" class="proj-view-btn">View Details <i
+                                    class="fas fa-external-link-alt"></i></a>
+                        </div>
+                    </div>
+                    <div class="proj-info">
+                        <div class="proj-tags">
+                            {% for tag in p.tags.split(',') if p.tags %}
+                            <span class="proj-tag">{{ tag.strip() }}</span>
+                            {% endfor %}
+                        </div>
+                        <h3 class="proj-title">{{ p.title }}</h3>
+                        <p class="proj-desc">{{ p.description }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- ── PROCESS ── -->
+    <section class="process reveal" id="process">
+        <div class="section-container">
+            <div class="section-header">
+                <div class="section-tag"><i class="fas fa-route"></i> How It Works</div>
+                <h2 class="section-title">Simple <span class="gradient-text">Process</span></h2>
+                <p class="section-desc">Getting your project done is simple, transparent, and stress-free.</p>
+            </div>
+            <div class="process-timeline">
+                {% set steps = [
+                {"num":"01","icon":"fas fa-comments","title":"Share Your Requirements","desc":"Tell me about your
+                project — subject, deadline, tech stack, and any specific requirements."},
+                {"num":"02","icon":"fas fa-file-invoice","title":"Get a Custom Quote","desc":"Receive a transparent
+                price quote within hours. No hidden fees, no surprises."},
+                {"num":"03","icon":"fas fa-code","title":"Project Development","desc":"I build your project with clean,
+                well-commented code and regular progress updates."},
+                {"num":"04","icon":"fas fa-check-double","title":"Review & Deliver","desc":"Review the completed
+                project, request revisions if needed. Delivery includes source code, docs & support."}
+                ] %}
+                {% for s in steps %}
+                <div class="process-step">
+                    <div class="step-number">{{ s.num }}</div>
+                    <div class="step-content">
+                        <div class="step-icon"><i class="{{ s.icon }}"></i></div>
+                        <h3 class="step-title">{{ s.title }}</h3>
+                        <p class="step-desc">{{ s.desc }}</p>
+                    </div>
+                    {% if not loop.last %}<div class="step-connector"></div>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+
+    <!-- ── WHY CHOOSE ── -->
+    <section class="why-choose reveal">
+        <div class="section-container">
+            <div class="section-header">
+                <div class="section-tag"><i class="fas fa-shield-alt"></i> Why Us</div>
+                <h2 class="section-title">Why Choose <span class="gradient-text">Unitary X</span></h2>
+            </div>
+            <div class="why-grid">
+                {% set whys = [
+                ("fas fa-clock","On-Time Delivery","Deadlines are sacred. Your project is always delivered before your
+                submission date — guaranteed."),
+                ("fas fa-lock","100% Confidential","Your project details are kept strictly private. We never share,
+                sell, or reuse your work."),
+                ("fas fa-headset","24/7 Support","Got a doubt during viva? Need last-minute changes? I'm always just a
+                WhatsApp message away."),
+                ("fas fa-code-branch","Clean Code","Well-structured, commented, and plagiarism-free code you can explain
+                confidently to your professors."),
+                ("fas fa-redo","Free Revisions","Not satisfied? I'll revise until you're 100% happy. Your satisfaction
+                is my top priority."),
+                ("fas fa-graduation-cap","Expert Guidance","Professional mentorship and guidance throughout your project
+                journey. Learn from experts, get professional quality.")
+                ] %}
+                {% for icon, title, desc in whys %}
+                <div class="why-card">
+                    <div class="why-icon"><i class="{{ icon }}"></i></div>
+                    <h3>{{ title }}</h3>
+                    <p>{{ desc }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- ── CONTACT ── -->
+    <section class="contact reveal" id="contact">
+        <div class="section-container">
+            <div class="section-header">
+                <div class="section-tag"><i class="fas fa-envelope"></i> Get In Touch</div>
+                <h2 class="section-title">Start Your <span class="gradient-text">Project</span></h2>
+                <p class="section-desc">Fill out the form and get a free quote within hours.</p>
+            </div>
+            <div class="contact-wrapper">
+                <div class="contact-info">
+                    <h3 class="contact-info-title">Let's Talk</h3>
+                    <p class="contact-info-text">Have questions? Need a custom project? Reach out through any channel
+                        below.</p>
+                    <div class="contact-items">
+                        <div class="contact-item">
+                            <div class="ci-icon bg-green"><i class="fab fa-whatsapp"></i></div>
+                            <div class="wa-links">
+                                <span class="ci-label">WhatsApp Support</span>
+                                <div class="wa-numbers">
+                                    <a href="https://wa.me/919363734565" target="_blank" class="ci-value">+91 93637
+                                        34565</a>
+                                    <a href="https://wa.me/918610568487" target="_blank" class="ci-value">+91 86105
+                                        68487</a>
+                                    <a href="https://wa.me/919363931903" target="_blank" class="ci-value">+91 93639
+                                        31903</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="ci-icon bg-blue"><i class="fas fa-envelope"></i></div>
+                            <div><span class="ci-label">Email</span><span class="ci-value">unitaryx@gmail.com</span>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                                <div class="ci-icon bg-pink"><i class="fab fa-instagram"></i></div>
+                                <div><span class="ci-label">Instagram</span><span class="ci-value">@unitaryx__official</span>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="ci-icon bg-cyan"><i class="fab fa-telegram"></i></div>
+                            <div><span class="ci-label">Telegram</span><span class="ci-value">@unitaryx</span></div>
+                        </div>
+                    </div>
+                    <div class="availability-badge">
+                        <span class="avail-dot"></span>Currently accepting new projects
+                    </div>
+                </div>
+
+                <div class="contact-form-container {% if not user %}locked{% endif %}">
+                    {% if not user %}
+                    <div class="login-overlay">
+                        <div class="login-overlay-content">
+                            <i class="fas fa-lock"></i>
+                            <h3>Login Required</h3>
+                            <p>Please log in to your student account to submit project inquiries and track your
+                                progress.
+                            </p>
+                            <a href="/login" class="btn-login-cta">Login to Continue <i
+                                    class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <form class="contact-form" id="contact-form" novalidate>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="cf-name">Your Name</label>
+                                <input type="text" id="cf-name" name="name" placeholder="Rahul Kumar" required />
+                                <span class="field-error" id="err-name"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="cf-email">Email Address</label>
+                                <input type="email" id="cf-email" name="email" placeholder="rahul@student.com"
+                                    required />
+                                <span class="field-error" id="err-email"></span>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="cf-phone">WhatsApp Number</label>
+                                <input type="tel" id="cf-phone" name="phone" placeholder="+91 98765 43210" />
+                            </div>
+                            <div class="form-group">
+                                <label for="cf-service">Service Needed</label>
+                                <select id="cf-service" name="service">
+                                    <option value="">Select a service</option>
+                                    <option value="web">Web Development</option>
+                                    <option value="software">Software Project</option>
+                                    <option value="hardware">Hardware / IoT</option>
+                                    <option value="mobile">Mobile App</option>
+                                    <option value="ai">AI / ML Project</option>
+                                    <option value="docs">Documentation</option>
+                                </select>
+                                <span class="field-error" id="err-service"></span>
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="cf-deadline">Project Deadline</label>
+                            <input type="date" id="cf-deadline" name="deadline" />
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="cf-message">Project Description</label>
+                            <textarea id="cf-message" name="message" rows="5"
+                                placeholder="Describe your project — topic, features needed, tech stack preferences, college/university name..."
+                                required></textarea>
+                            <span class="field-error" id="err-message"></span>
+                        </div>
+                        <button type="submit" class="form-submit" id="form-submit-btn">
+                            {% if user %}
+                            <span>Send Project Request</span><i class="fas fa-paper-plane"></i>
+                            {% else %}
+                            <span>Login to Send Request</span><i class="fas fa-sign-in-alt"></i>
+                            {% endif %}
+                        </button>
+                        <div class="form-success" id="form-success" style="display:none">
+                            <i class="fas fa-check-circle"></i>
+                            <span id="success-msg">Request sent! I'll contact you within 2 hours.</span>
+                        </div>
+                        <div class="form-error-msg" id="form-error-msg" style="display:none">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span id="error-msg"></span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <button class="scroll-top" id="scroll-top" aria-label="Scroll to top">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+
+    <!-- ── ADMIN PASSWORD MODAL ── -->
+    <div class="admin-modal-overlay" id="admin-modal">
+        <div class="admin-modal-card">
+            <button class="modal-close-btn" id="admin-modal-close"><i class="fas fa-times"></i></button>
+            <div class="modal-icon-wrap">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h3 class="modal-title">Admin Access</h3>
+            <p class="modal-subtitle">Restricted area. Please verify your identity.</p>
+
+            <form id="admin-gate-form">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-form-group">
+                    <div class="modal-input-wrap">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="admin-email-input" placeholder="Admin Email" required
+                            autocomplete="email">
+                    </div>
+                </div>
+                <div class="modal-form-group">
+                    <div class="modal-input-wrap">
+                        <i class="fas fa-key"></i>
+                        <input type="password" id="admin-pass-input" placeholder="Admin Password" required
+                            autocomplete="current-password">
+                        <button type="button" class="password-toggle" id="toggle-admin-pass">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="admin-modal-error" class="modal-error-text"></div>
+                <button type="submit" class="modal-submit-btn" id="admin-modal-submit">
+                    <span>Unlock Dashboard</span><i class="fas fa-unlock"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='cinematic.js') }}"></script>
+    <script src="{{ url_for('static', filename='futuristic.js') }}"></script>
+    <script>
+        (() => {
+            const lines = [
+                { el: document.getElementById('type-line-1'), text: 'Premium Tech' },
+                { el: document.getElementById('type-line-2'), text: 'Solutions for' },
+                { el: document.getElementById('type-line-3'), text: 'Everyone' }
+            ];
+
+            let currentLine = 0;
+            let currentChar = 0;
+            let typingTimeout;
+
+            function initTyping() {
+                if (sessionStorage.getItem('typewriterDone')) {
+                    lines.forEach(l => { if (l.el) l.el.innerHTML = l.text; });
+                    return;
+                }
+                clearTimeout(typingTimeout);
+                currentLine = 0;
+                currentChar = 0;
+
+                // Initialize all empty
+                lines.forEach(l => {
+                    if (l.el) {
+                        l.el.innerHTML = '';
+                        l.el.style.opacity = '1';
+                        l.el.style.animation = 'none'; // Ensure no CSS fade conflicts
+                        l.el.classList.remove('typing-cursor');
+                    }
+                });
+
+                typingTimeout = setTimeout(typeWriter, 400);
+            }
+
+            function typeWriter() {
+                if (currentLine < lines.length) {
+                    const lineInfo = lines[currentLine];
+                    const element = lineInfo.el;
+                    const text = lineInfo.text;
+
+                    if (!element) {
+                        currentLine++;
+                        typeWriter();
+                        return;
+                    }
+
+                    // Add typing cursor
+                    if (currentChar === 0 && currentLine > 0) {
+                        lines[currentLine - 1].el.classList.remove('typing-cursor');
+                    }
+                    element.classList.add('typing-cursor');
+
+                    if (currentChar < text.length) {
+                        element.innerHTML += text.charAt(currentChar);
+                        currentChar++;
+                        typingTimeout = setTimeout(typeWriter, 60); // Speed of typing
+                    } else {
+                        // Finished line
+                        currentLine++;
+                        currentChar = 0;
+                        typingTimeout = setTimeout(typeWriter, 300); // Pause before next line
+                    }
+                } else {
+                    // Finished all
+                    if (lines[lines.length - 1].el) {
+                        typingTimeout = setTimeout(() => {
+                            lines[lines.length - 1].el.classList.remove('typing-cursor');
+                            sessionStorage.setItem('typewriterDone', 'true');
+                        }, 1000); // Remove cursor after 1s
+                    }
+                }
+            }
+
+            // Start Typing Effect on load and when navigating back via browser history (BFCache)
+            window.addEventListener('pageshow', () => {
+                initTyping();
+            });
+        })();
+    </script>
+</body>
+
+</html>

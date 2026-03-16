@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AUTH_TERMINAL // UNITARY X</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <!-- Adding cache bust to force updates -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}?v={{ range(1000, 9999) | random }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='transition.css') }}?v={{ range(1000, 9999) | random }}" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+    <!-- HUD CURSOR SYSTEM -->
+    <div class="x-cursor-main" id="x-cursor-m"></div>
+    <div class="x-cursor-outer" id="x-cursor-o"></div>
+
+    <!-- VISUAL ENGINE -->
+    <div class="x-bg-noise"></div>
+    <div class="x-scanline"></div>
+    <canvas id="x-canvas"></canvas>
+
+    <!-- MAIN COMMAND PANEL -->
+    <main class="x-auth-envelope">
+        <div class="x-command-panel" id="x-panel">
+            <span class="x-corner-tag">NODE_SECURE_AUTH</span>
+            
+            <header class="x-header">
+                <h1>UNITARY X</h1>
+                <p>Establishing Secure Connection...</p>
+            </header>
+
+            <form id="x-form" method="POST" action="/login" class="x-form-core">
+                <input type="hidden" name="login_type" value="user">
+                
+                <div class="x-field-group">
+                    <input type="email" name="email" id="x-email" required placeholder=" " class="x-input">
+                    <label for="x-email" class="x-label">CREDENTIAL_ID</label>
+                    <div class="x-border-edge"></div>
+                </div>
+
+                <div class="x-field-group">
+                    <input type="password" name="password" id="x-pass" required placeholder=" " class="x-input">
+                    <label for="x-pass" class="x-label">ACCESS_TOKEN</label>
+                    <div class="x-border-edge"></div>
+                </div>
+
+                <button type="submit" class="x-auth-btn" id="x-btn">
+                    <span class="x-btn-label">INITIATE_AUTH</span>
+                    <div class="x-btn-glow"></div>
+                </button>
+
+                <div id="x-alert" class="x-alert">
+                    <i class="fas fa-microchip"></i> <span id="x-alert-msg">FAILURE: ID_NOT_RECOGNIZED</span>
+                </div>
+            </form>
+
+            <div class="x-social-grid">
+                <div class="x-social-link" title="Auth via Neuralink"><i class="fab fa-google"></i></div>
+                <div class="x-social-link" title="Auth via Bio-Key"><i class="fab fa-github"></i></div>
+                <div class="x-social-link" title="Auth via Quantum-ID"><i class="fab fa-apple"></i></div>
+            </div>
+
+            <!-- SYSTEM DIAGNOSTICS OPTION -->
+            <div class="x-system-status">
+                <div class="x-status-row">
+                    <span>KERNEL_LOAD:</span>
+                    <span class="x-status-val" id="diag-load">42.8%</span>
+                </div>
+                <div class="x-status-row">
+                    <span>SECURE_ENCLAVE:</span>
+                    <span class="x-status-val">ACTIVE</span>
+                </div>
+                <div class="x-status-row">
+                    <span>LATENCY_SYNC:</span>
+                    <span class="x-status-val" id="diag-ms">0.04ms</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- SCRIPT INJECTION WITH CACHE BUST -->
+    <script src="{{ url_for('static', filename='script.js') }}?v={{ range(1000, 9999) | random }}"></script>
+</body>
+</html>
