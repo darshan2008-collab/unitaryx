@@ -9,7 +9,9 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from functools import wraps
-import os, re, urllib.parse
+import os, re, urllib.parse, random, smtplib, ssl, csv
+from io import StringIO
+from email.message import EmailMessage
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
@@ -20,11 +22,28 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 
-load_dotenv()  # Load variables from .env
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"), override=True)
 
-app = Flask(__name__)
+APP_DIR = os.path.abspath(os.path.dirname(__file__))
+app = Flask(
+    __name__,
+    template_folder=os.path.join(APP_DIR, "templates"),
+    static_folder=os.path.join(APP_DIR, "static"),
+)
 app.secret_key = os.getenv("SECRET_KEY", "fallback_weak_key_for_dev_only")
-app.config['GOOGLE_CLIENT_ID'] = os.getenv("GOOGLE_CLIENT_ID", "your_google_client_id_here.apps.googleusercontent.com")
+PASSWORD_HASH_METHOD = (os.getenv("PASSWORD_HASH_METHOD") or "pbkdf2:sha256:260000").strip()
+
+_default_google_client_id = "1062977400292-gnrhgek38h1jiu30v91r5vkq73avr6ut.apps.googleusercontent.com"
+_env_google_client_id = (os.getenv("GOOGLE_CLIENT_ID") or "").strip()
+if not _env_google_client_id or "your_google_client_id_here" in _env_google_client_id:
+    app.config['GOOGLE_CLIENT_ID'] = _default_google_client_id
+else:
+    app.config['GOOGLE_CLIENT_ID'] = _env_google_client_id
+
+OAUTH_ADMIN_EMAILS = {
+    "harikavi1301@gmail.com",
+    "darshankannan2008@gmail.com",
+}
 
 # ─── Security Configuration ──────────────────────────────────────────────────
 
@@ -53,13 +72,17 @@ csp = {
         'https://use.fontawesome.com',
         'https://cdn.jsdelivr.net',
     ],
-    'img-src': ['\'self\'', 'data:', '*'],
+    'img-src': ['\'self\'', 'data:', '*', 'https://www.google.com', 'https://translate.googleapis.com'],
     'media-src': ['\'self\'', 'https://cdn.pixabay.com', 'data:', '*'],
     'script-src': [
         '\'self\'',
-        '\'unsafe-inline\'', # Needed for some existing scripts in templates
+        '\'unsafe-inline\'',
+        '\'unsafe-eval\'',
         'https://cdnjs.cloudflare.com',
         'https://cdn.jsdelivr.net',
+        'https://translate.google.com',
+        'https://translate.googleapis.com',
+        'https://accounts.google.com'
     ],
     'style-src': [
         '\'self\'',
@@ -68,6 +91,19 @@ csp = {
         'https://fonts.googleapis.com',
         'https://use.fontawesome.com',
         'https://cdn.jsdelivr.net',
+        'https://translate.googleapis.com'
+    ],
+    'connect-src': [
+        '\'self\'',
+        'https://translate.googleapis.com',
+        'https://accounts.google.com',
+        'https://oauth2.googleapis.com',
+        'https://www.googleapis.com'
+    ],
+    'frame-src': [
+        '\'self\'',
+        'https://translate.google.com',
+        'https://accounts.google.com'
     ],
 }
 
@@ -92,10 +128,23 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
+
+@app.after_request
+def add_no_cache_headers(response):
+    # Prevent stale cached auth pages from serving outdated reset-password JS.
+    if response.mimetype == "text/html" or request.path in {"/login", "/send-otp", "/verify-otp", "/reset-password"}:
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 # ─── Database ─────────────────────────────────────────────────────────────────
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL", f"sqlite:///{os.path.join(basedir, 'unitaryx_v2.db')}")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "connect_args": {"timeout": 5}
+}
 db = SQLAlchemy(app)
 
 
@@ -114,10 +163,23 @@ class User(db.Model):
     is_active    = db.Column(db.Boolean, default=True)
 
     def set_password(self, raw):
-        self.password = generate_password_hash(raw)
+        self.password = generate_password_hash(raw, method=PASSWORD_HASH_METHOD)
 
     def check_password(self, raw):
         return check_password_hash(self.password, raw)
+
+
+class PasswordResetOTP(db.Model):
+    """Stores OTP codes for password reset flow."""
+    __tablename__ = 'password_reset_otps'
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(150), nullable=False, index=True)
+    otp = db.Column(db.String(6), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    attempts_left = db.Column(db.Integer, nullable=False, default=5)
+    is_verified = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 
 class ProjectRequest(db.Model):
@@ -234,7 +296,85 @@ def validate_email(email):
 
 def current_user():
     uid = session.get('user_id')
-    return User.query.get(uid) if uid else None
+    return db.session.get(User, uid) if uid else None
+
+
+OTP_TTL_MINUTES = 10
+OTP_MAX_ATTEMPTS = 5
+
+
+def _safe_commit():
+    try:
+        db.session.commit()
+        return True
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Database commit failed in OTP flow")
+        return False
+
+
+def _cleanup_expired_otps():
+    now = datetime.utcnow()
+    PasswordResetOTP.query.filter(PasswordResetOTP.expires_at <= now).delete(synchronize_session=False)
+    _safe_commit()
+
+
+def _generate_otp_code():
+    return f"{random.randint(0, 999999):06d}"
+
+
+def _save_otp_for_email(email, otp_code):
+    PasswordResetOTP.query.filter_by(email=email).delete(synchronize_session=False)
+    row = PasswordResetOTP(
+        email=email,
+        otp=otp_code,
+        expires_at=datetime.utcnow() + timedelta(minutes=OTP_TTL_MINUTES),
+        attempts_left=OTP_MAX_ATTEMPTS,
+        is_verified=False,
+    )
+    db.session.add(row)
+    _safe_commit()
+
+
+def _get_active_otp(email):
+    now = datetime.utcnow()
+    return PasswordResetOTP.query.filter(
+        PasswordResetOTP.email == email,
+        PasswordResetOTP.expires_at > now,
+    ).order_by(PasswordResetOTP.created_at.desc()).first()
+
+
+def _send_password_reset_otp(email, otp_code):
+    smtp_host = (os.getenv("SMTP_HOST") or "smtp.gmail.com").strip()
+    smtp_port = int((os.getenv("SMTP_PORT") or "587").strip())
+    smtp_user = (os.getenv("SMTP_USER") or "").strip()
+    smtp_pass = (os.getenv("SMTP_PASS") or "").strip()
+    smtp_from = (os.getenv("SMTP_FROM") or smtp_user).strip()
+    smtp_use_tls = (os.getenv("SMTP_USE_TLS") or "true").strip().lower() in {"1", "true", "yes", "on"}
+
+    if not smtp_user or not smtp_pass:
+        raise RuntimeError("SMTP_USER/SMTP_PASS are not configured")
+
+    msg = EmailMessage()
+    msg["Subject"] = "Unitary X Password Reset OTP"
+    msg["From"] = smtp_from
+    msg["To"] = email
+    msg.set_content(
+        "Your One-Time Password (OTP) for password reset is: "
+        f"{otp_code}\n\n"
+        f"This OTP expires in {OTP_TTL_MINUTES} minutes.\n"
+        "If you did not request this, please ignore this email."
+    )
+
+    if smtp_use_tls:
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+            server.starttls(context=ssl.create_default_context())
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+    else:
+        with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=15, context=ssl.create_default_context()) as server:
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
 
 
 # ─── Seed Data ────────────────────────────────────────────────────────────────
@@ -323,6 +463,11 @@ def index():
                            user=current_user())
 
 
+@app.route('/favicon.ico')
+def favicon():
+    return redirect(url_for('static', filename='img/logo.png'))
+
+
 # ─── Auth Routes ──────────────────────────────────────────────────────────────
 
 @app.route("/login", methods=["GET", "POST"])
@@ -349,7 +494,7 @@ def login():
         user = User.query.filter_by(email=email).first()
 
         if not user or not user.check_password(password):
-            error = "Invalid email or password."
+            error = "Email or password is incorrect."
             if is_ajax: return jsonify({"success": False, "error": error})
             tab   = login_type
         elif not user.is_active:
@@ -428,6 +573,135 @@ def register():
     return render_template("login.html", tab='register', error=error)
 
 
+@app.route("/send-otp", methods=["POST"])
+@app.route("/forgot-password/send-otp", methods=["POST"])
+@csrf.exempt
+@limiter.limit("10 per hour", methods=["POST"])
+def forgot_password_send_otp():
+    data = request.get_json(silent=True) or request.form
+    email = str(data.get("email", "")).strip().lower()
+    debug_mode = app.debug or (os.getenv("DEBUG", "False").strip().lower() == "true")
+
+    if not validate_email(email):
+        return jsonify({"success": False, "error": "Please enter a valid email address."}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        # Avoid account enumeration by returning the same success message.
+        payload = {
+            "success": True,
+            "message": "If this email is registered, an OTP has been sent."
+        }
+        if debug_mode:
+            payload["debug"] = "DEV: Email not found in users table. OTP was not sent."
+        return jsonify(payload)
+
+    _cleanup_expired_otps()
+    otp_code = _generate_otp_code()
+    _save_otp_for_email(email, otp_code)
+
+    try:
+        _send_password_reset_otp(email, otp_code)
+    except smtplib.SMTPAuthenticationError:
+        app.logger.exception("SMTP authentication failed while sending OTP")
+        PasswordResetOTP.query.filter_by(email=email).delete(synchronize_session=False)
+        db.session.commit()
+        return jsonify({"success": False, "error": "Mail login failed. Set SMTP_PASS to a valid Gmail App Password."}), 500
+    except Exception:
+        app.logger.exception("Failed to send OTP email")
+        PasswordResetOTP.query.filter_by(email=email).delete(synchronize_session=False)
+        db.session.commit()
+        return jsonify({"success": False, "error": "Unable to send OTP email right now."}), 500
+
+    payload = {"success": True, "message": "OTP sent to your email."}
+    if debug_mode:
+        payload["debug"] = "DEV: Email exists. OTP generated and email dispatched via SMTP."
+    return jsonify(payload)
+
+
+@app.route("/reset-password", methods=["POST"])
+@app.route("/forgot-password/reset", methods=["POST"])
+@csrf.exempt
+@limiter.limit("20 per hour", methods=["POST"])
+def forgot_password_reset():
+    data = request.get_json(silent=True) or request.form
+    email = str(data.get("email", "")).strip().lower()
+    otp_code = str(data.get("otp", "")).strip()
+    new_password = str(data.get("new_password") or data.get("newPassword") or "").strip()
+
+    if not validate_email(email):
+        return jsonify({"success": False, "error": "Please enter a valid email address."}), 400
+    if len(new_password) < 6:
+        return jsonify({"success": False, "error": "Password must be at least 6 characters."}), 400
+
+    _cleanup_expired_otps()
+    payload = _get_active_otp(email)
+    if not payload:
+        return jsonify({"success": False, "error": "OTP expired or not found."}), 400
+
+    if payload.otp != otp_code:
+        payload.attempts_left = max(int(payload.attempts_left or OTP_MAX_ATTEMPTS) - 1, 0)
+        if payload.attempts_left <= 0:
+            db.session.delete(payload)
+            if not _safe_commit():
+                return jsonify({"success": False, "error": "Server busy. Please try again."}), 503
+            return jsonify({"success": False, "error": "Too many invalid attempts. Request a new OTP."}), 400
+        if not _safe_commit():
+            return jsonify({"success": False, "error": "Server busy. Please try again."}), 503
+        return jsonify({"success": False, "error": "Invalid OTP."}), 400
+
+    if not payload.is_verified:
+        return jsonify({"success": False, "error": "Verify OTP before resetting password."}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        db.session.delete(payload)
+        if not _safe_commit():
+            return jsonify({"success": False, "error": "Server busy. Please try again."}), 503
+        return jsonify({"success": False, "error": "Account not found."}), 404
+
+    user.set_password(new_password)
+    db.session.delete(payload)
+    if not _safe_commit():
+        return jsonify({"success": False, "error": "Server busy. Please try again."}), 503
+
+    return jsonify({"success": True, "message": "Password reset successful. Please sign in."})
+
+
+@app.route("/verify-otp", methods=["POST"])
+@csrf.exempt
+@limiter.limit("30 per hour", methods=["POST"])
+def verify_otp():
+    data = request.get_json(silent=True) or request.form
+    email = str(data.get("email", "")).strip().lower()
+    otp_code = str(data.get("otp", "")).strip()
+
+    if not validate_email(email):
+        return jsonify({"success": False, "error": "Please enter a valid email address."}), 400
+
+    _cleanup_expired_otps()
+    payload = _get_active_otp(email)
+    if not payload:
+        return jsonify({"success": False, "error": "OTP expired or not found."}), 400
+
+    if payload.otp != otp_code:
+        payload.attempts_left = max(int(payload.attempts_left or OTP_MAX_ATTEMPTS) - 1, 0)
+        if payload.attempts_left <= 0:
+            db.session.delete(payload)
+            if not _safe_commit():
+                return jsonify({"success": False, "error": "Server busy. Please try again."}), 503
+            return jsonify({"success": False, "error": "Too many invalid attempts. Request a new OTP."}), 400
+        if not _safe_commit():
+            return jsonify({"success": False, "error": "Server busy. Please try again."}), 503
+        return jsonify({"success": False, "error": "Invalid OTP."}), 400
+
+    payload.is_verified = True
+    if not _safe_commit():
+        return jsonify({"success": False, "error": "Server busy. Please try again."}), 503
+
+    return jsonify({"success": True, "message": "OTP verified."})
+
+
 @app.route("/google-login", methods=["POST"])
 @csrf.exempt
 def google_login():
@@ -437,34 +711,48 @@ def google_login():
         
     try:
         idinfo = id_token.verify_oauth2_token(token, google_requests.Request(), app.config['GOOGLE_CLIENT_ID'])
-        email = idinfo['email']
+        email = (idinfo['email'] or '').strip().lower()
         name = idinfo.get('name', email.split("@")[0])
+        is_oauth_admin = email in OAUTH_ADMIN_EMAILS
         
         user = User.query.filter_by(email=email).first()
         if not user:
-            user = User(name=name, email=email, role='user')
+            user = User(name=name, email=email, role='admin' if is_oauth_admin else 'user')
             user.set_password(os.urandom(24).hex())
             db.session.add(user)
+            db.session.commit()
+        else:
+            normalized_role = (user.role or 'user').strip().lower()
+            if normalized_role not in {'user', 'admin'}:
+                normalized_role = 'user'
+
+            if user.role != normalized_role:
+                user.role = normalized_role
+
+            if is_oauth_admin and user.role != 'admin':
+                user.role = 'admin'
+
             db.session.commit()
             
         session.permanent = True
         session['user_id'] = user.id
         session['user_name'] = user.name
-        session['role'] = user.role
+        session['role'] = 'admin' if user.role == 'admin' else 'user'
         flash(f"Signed in via Google! Welcome, {user.name}!", "success")
         
-        target = url_for('admin_panel') if user.role == 'admin' else url_for('user_dashboard')
+        target = url_for('admin_panel') if session['role'] == 'admin' else url_for('user_dashboard')
         return jsonify({"success": True, "redirect": target})
         
     except Exception as e:
+        app.logger.exception("Google login verification failed")
+        if app.debug:
+            return jsonify({"success": False, "error": f"Google token verification failed: {str(e)}"}), 400
         return jsonify({"success": False, "error": "Invalid token"}), 400
 
 
 @app.route("/logout")
 def logout():
-    name = session.get('user_name', 'User')
     session.clear()
-    flash(f"Goodbye, {name}! You have been logged out.", "info")
     return redirect(url_for('login'))
 
 
@@ -474,41 +762,40 @@ def logout():
 @login_required
 def user_dashboard():
     user = current_user()
-    my_requests = ProjectRequest.query.filter_by(
-        email=user.email
+    normalized_email = (user.email or "").strip().lower()
+    my_requests = ProjectRequest.query.filter(
+        db.or_(
+            ProjectRequest.user_id == user.id,
+            db.func.lower(ProjectRequest.email) == normalized_email,
+        )
     ).order_by(ProjectRequest.created_at.desc()).all()
-    
-    # Identify updates, flash them, and clear flags in DB
-    # We keep the objects in 'my_requests' for the template render
-    updated_any = False
+
+    active_updates = [r.id for r in my_requests if r.is_new_update]
+
+    if active_updates:
+        preview = [r for r in my_requests if r.id in active_updates][:3]
+        for req in preview:
+            flash(f"Mission Update: Project #{req.id:04d} has been updated to '{req.status}'!", "success")
+        if len(active_updates) > len(preview):
+            flash(f"{len(active_updates) - len(preview)} more project update(s) available.", "success")
+
     for req in my_requests:
         if req.is_new_update:
-            flash(f"Mission Update: Project #{req.id:04d} has been updated to '{req.status}'!", "success")
-            req.is_new_update = False
-            updated_any = True
-    
-    if updated_any:
-        db.session.commit()
-        # Re-fetch to ensure the template gets the most accurate state if needed, 
-        # but actually we want the 'is_new_update' to be true for THIS render 
-        # so the user sees the 'Updated' badge on the card.
-        # Let's re-fetch them but keep a list of IDs that were updated.
-        updated_ids = [r.id for r in my_requests if r.id in [req.id for req in ProjectRequest.query.filter_by(email=user.email, is_new_update=True).all()]]
-        # Wait, easier: just set them back to True for the local objects for this one render
-        # Actually, let's just NOT commit until after render? No, that's messy.
-        # Simple fix: just keep a list of IDs for the template.
-    
-    # Let's do a cleaner way:
-    active_updates = [r.id for r in my_requests if r.is_new_update]
-    for r_id in active_updates:
-        req = ProjectRequest.query.get(r_id)
-        if req:
             req.is_new_update = False
     db.session.commit()
 
-    return render_template("dashboard.html", user=user,
-                           my_requests=my_requests,
-                           active_updates=active_updates)
+    total_value = sum((r.value or 0) for r in my_requests)
+    done_count = sum(1 for r in my_requests if r.status == "Done")
+    completion_pct = int((done_count / len(my_requests)) * 100) if my_requests else 0
+
+    return render_template(
+        "dashboard.html",
+        user=user,
+        my_requests=my_requests,
+        active_updates=active_updates,
+        total_value=total_value,
+        completion_pct=completion_pct,
+    )
 
 
 # ─── API — Contact Form ───────────────────────────────────────────────────────
@@ -577,15 +864,25 @@ def admin_panel():
     pending_req = sum(1 for r in requests_list if r.status != 'Done')
     done_req = sum(1 for r in requests_list if r.status == 'Done')
     
-    # Simple income calculation (can be improved with actual prices)
-    # Let's assume a default value for 'Done' projects for the dashboard aesthetic
-    total_valuation = done_req * 15000 
+    total_value = sum((r.value or 0) for r in requests_list)
+    avg_value = int(total_value / total_req) if total_req else 0
+    completion_rate = round((done_req / total_req) * 100, 1) if total_req else 0.0
+    high_priority_count = sum(1 for r in requests_list if (r.priority or "").lower() == "high")
+    today_utc = datetime.utcnow().date()
+    todays_inquiries = sum(1 for r in requests_list if r.created_at and r.created_at.date() == today_utc)
 
     stats = {
         'total_requests': ProjectRequest.query.count(),
         'pending_requests': ProjectRequest.query.filter(ProjectRequest.status != 'Done').count(),
         'done_requests': ProjectRequest.query.filter_by(status='Done').count(),
         'projected_revenue': db.session.query(db.func.sum(ProjectRequest.value)).scalar() or 0
+    }
+
+    admin_metrics = {
+        'completion_rate': completion_rate,
+        'high_priority_count': high_priority_count,
+        'avg_value': avg_value,
+        'todays_inquiries': todays_inquiries,
     }
     
     # Distribution Analysis (Service counts)
@@ -595,8 +892,115 @@ def admin_panel():
     return render_template("admin.html", 
                            requests=requests_list, 
                            stats=stats,
+                           admin_metrics=admin_metrics,
                            dist_data=dist_data,
                            admin=current_user())
+
+
+@app.route("/admin/bulk-update", methods=["POST"])
+@csrf.exempt
+@admin_required
+def admin_bulk_update():
+    data = request.get_json(silent=True) or request.form
+    ids = data.get("ids", [])
+    action = str(data.get("action", "")).strip().lower()
+
+    if isinstance(ids, str):
+        ids = [x.strip() for x in ids.split(",") if x.strip()]
+
+    try:
+        parsed_ids = [int(x) for x in ids]
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "message": "Invalid request ids."}), 400
+
+    if not parsed_ids:
+        return jsonify({"success": False, "message": "Select at least one inquiry."}), 400
+
+    rows = ProjectRequest.query.filter(ProjectRequest.id.in_(parsed_ids)).all()
+    if not rows:
+        return jsonify({"success": False, "message": "No matching inquiries found."}), 404
+
+    try:
+        if action == "mark_done":
+            for row in rows:
+                row.status = "Done"
+                row.is_new_update = True
+        elif action == "mark_progress":
+            for row in rows:
+                row.status = "In Progress"
+                row.is_new_update = True
+        elif action == "priority_high":
+            for row in rows:
+                row.priority = "High"
+                row.is_new_update = True
+        elif action == "priority_medium":
+            for row in rows:
+                row.priority = "Medium"
+                row.is_new_update = True
+        elif action == "priority_low":
+            for row in rows:
+                row.priority = "Low"
+                row.is_new_update = True
+        elif action == "delete":
+            for row in rows:
+                db.session.delete(row)
+        else:
+            return jsonify({"success": False, "message": "Unsupported bulk action."}), 400
+
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Bulk admin action failed")
+        return jsonify({"success": False, "message": "Bulk action failed. Try again."}), 500
+
+    return jsonify({
+        "success": True,
+        "count": len(rows),
+        "message": f"Bulk action '{action}' applied to {len(rows)} inquiries."
+    })
+
+
+@app.route("/admin/create-user", methods=["POST"])
+@csrf.exempt
+@admin_required
+def admin_create_user():
+    creator = current_user()
+
+    name = str(request.form.get("name", "")).strip()
+    email = str(request.form.get("email", "")).strip().lower()
+    password = str(request.form.get("password", "")).strip()
+    role = str(request.form.get("role", "user")).strip().lower()
+
+    if role not in {"user", "admin"}:
+        flash("Invalid role selected.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    # Only explicit super-admin emails can grant admin role to others.
+    creator_email = (creator.email if creator else "").strip().lower()
+    if role == "admin" and creator_email not in OAUTH_ADMIN_EMAILS:
+        flash("Only authorized super admins can create admin accounts.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    if len(name) < 2:
+        flash("Name must be at least 2 characters.", "danger")
+        return redirect(url_for("admin_panel"))
+    if not validate_email(email):
+        flash("Please enter a valid email address.", "danger")
+        return redirect(url_for("admin_panel"))
+    if len(password) < 6:
+        flash("Password must be at least 6 characters.", "danger")
+        return redirect(url_for("admin_panel"))
+    if User.query.filter_by(email=email).first():
+        flash("A user with this email already exists.", "warning")
+        return redirect(url_for("admin_panel"))
+
+    user = User(name=name, email=email, role=role)
+    user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+
+    flash(f"Created {role} account for {name} ({email}).", "success")
+    return redirect(url_for("admin_panel"))
 
 
 @app.route("/admin/update-project", methods=["POST"])
@@ -738,6 +1142,38 @@ def export_pdf():
         as_attachment=True,
         download_name='unitaryx_leads.pdf'
     )
+    return response
+
+
+@app.route("/admin/export/csv")
+@admin_required
+def export_csv():
+    requests_list = ProjectRequest.query.order_by(ProjectRequest.created_at.desc()).all()
+
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "ID", "Name", "Email", "Phone", "Service", "Deadline", "Status",
+        "Priority", "Value", "Created At"
+    ])
+
+    for r in requests_list:
+        writer.writerow([
+            f"#{r.id:04d}",
+            r.name,
+            r.email,
+            r.phone or "",
+            r.service,
+            r.deadline or "",
+            r.status,
+            r.priority,
+            r.value or 0,
+            r.created_at.strftime("%Y-%m-%d %H:%M:%S") if r.created_at else "",
+        ])
+
+    response = make_response(output.getvalue())
+    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+    response.headers["Content-Disposition"] = "attachment; filename=unitaryx_leads.csv"
     return response
 
 @app.route("/admin/chart-data")

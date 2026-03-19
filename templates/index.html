@@ -39,7 +39,7 @@
                 <li><a href="#contact" class="nav-link">Contact</a></li>
             </ul>
             <div class="nav-actions">
-                
+
                 {% if user %}
                 {% if user.role == 'admin' %}
                 <div class="user-greeting">
@@ -72,20 +72,24 @@
     <section class="hero" id="home">
         <!-- Custom User Hero Video Background -->
         <div class="hero-video-wrap" aria-hidden="true">
-            <video autoplay muted loop playsinline preload="auto" id="hero-vid" poster="{{ url_for('static', filename='img/hero-poster.jpg') }}" aria-hidden="true">
-                <source src="{{ url_for('static', filename='video/3251808-uhd_3840_2160_25fps.mp4') }}" type="video/mp4">
+            <video autoplay muted loop playsinline preload="auto" id="hero-vid"
+                poster="{{ url_for('static', filename='img/hero-poster.jpg') }}" aria-hidden="true">
+                <source src="{{ url_for('static', filename='video/3251808-uhd_3840_2160_25fps.mp4') }}"
+                    type="video/mp4">
             </video>
             <div class="hero-video-overlay" aria-hidden="true"></div>
         </div>
 
         <div class="hero-container">
             <h1 class="hero-title" id="typewriter-title">
-                <span class="title-line" id="type-line-1">Premium Tech</span>
-                <span class="title-line gradient-text" id="type-line-2">Solutions for</span>
-                <span class="title-line" id="type-line-3">Everyone</span>
+                <span class="title-line" id="type-line-1">Unitary X</span>
+                <span class="title-line gradient-text" id="type-line-2">Freelancer Service</span>
+                <span class="title-line" id="type-line-3">Software &amp; Hardware</span>
             </h1>
-            <p class="hero-subtitle">Crafting High-Performance Software, Smart IoT Systems, and Intelligent AI Solutions
-                tailored for your vision.</p>
+            <p class="hero-subtitle">Mild, modern, and reliable project support for software, hardware, IoT, and web
+                builds.</p>
+            <p class="hero-about">Unitary X Freelancer Service helps students and startups build practical software
+                systems and real hardware prototypes with end-to-end guidance.</p>
 
             <div class="hero-cta">
                 <a href="#projects" class="btn-primary"><span>Explore Projects</span><i class="fas fa-rocket"></i></a>
@@ -135,8 +139,8 @@
             <div class="section-header">
                 <div class="section-tag"><i class="fas fa-layer-group"></i> What I Offer</div>
                 <h2 class="section-title">Premium <span class="gradient-text">Services</span></h2>
-                <p class="section-desc">From concept to deployment — software, hardware, web, and more for your student
-                    projects.</p>
+                <p class="section-desc">Unitary X Freelancer Service for software and hardware projects, from concept to
+                    deployment.</p>
             </div>
             <div class="services-grid">
                 {% set services = [
@@ -337,8 +341,9 @@
                             </div>
                         </div>
                         <div class="contact-item">
-                                <div class="ci-icon bg-pink"><i class="fab fa-instagram"></i></div>
-                                <div><span class="ci-label">Instagram</span><span class="ci-value">@unitaryx__official</span>
+                            <div class="ci-icon bg-pink"><i class="fab fa-instagram"></i></div>
+                            <div><span class="ci-label">Instagram</span><span
+                                    class="ci-value">@unitaryx__official</span>
                             </div>
                         </div>
                         <div class="contact-item">

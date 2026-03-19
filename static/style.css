@@ -57,7 +57,7 @@ html {
 
 body {
     font-family: 'Outfit', sans-serif;
-    background: var(--bg);
+    background: linear-gradient(180deg, #f4f7fb 0%, #eaf0f7 100%);
     color: var(--text);
     overflow-x: hidden;
 }
@@ -82,7 +82,7 @@ img {
     z-index: 0;
     /* Stay behind the content, above base bg */
     pointer-events: none;
-    opacity: 1;
+    opacity: 0.18;
 }
 
 
@@ -353,12 +353,21 @@ img {
 
 .hero-subtitle {
     animation: blurFadeIn 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
-    margin: 20px auto 40px;
+    margin: 20px auto 16px;
     font-size: 1.25rem;
     color: #ffffff;
     max-width: 700px;
     line-height: 1.6;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.hero-about {
+    margin: 0 auto 34px;
+    max-width: 760px;
+    font-size: 1.02rem;
+    line-height: 1.7;
+    color: rgba(241, 245, 249, 0.94);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .hero-cta {
@@ -596,8 +605,8 @@ img {
     align-items: center;
     justify-content: center;
     z-index: 1;
-    background-color: #050b18;
-    /* Dark premium background fallback */
+    background-color: #101b2d;
+    /* Soft and calm fallback in case video cannot load */
 }
 
 .hero-video-wrap {
@@ -616,17 +625,17 @@ img {
     will-change: transform;
     backface-visibility: hidden;
     transform: translateZ(0);
-    /* Brighter, slightly more saturated for clearer hero footage */
-    filter: brightness(1.35) saturate(1.1) contrast(1.03);
+    /* Reduce harsh contrast for a milder hero background */
+    filter: brightness(0.76) saturate(0.62) contrast(0.92);
 }
 
 .hero-video-overlay {
     position: absolute;
     inset: 0;
-    /* Lighter overlay so the video reads brighter — keeps text legible */
-    background: linear-gradient(to bottom, rgba(5, 11, 24, 0.06), rgba(5, 11, 24, 0.12));
+    /* Balanced overlay for a calm look while keeping white text readable */
+    background: linear-gradient(to bottom, rgba(15, 23, 42, 0.36), rgba(15, 23, 42, 0.54));
     z-index: 1;
-    backdrop-filter: blur(1px);
+    backdrop-filter: blur(2px);
 }
 
 

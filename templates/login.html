@@ -2,457 +2,740 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login — Unitary X</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
-        rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='login_custom.css') }}">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sign In - Unitary X</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Outfit:wght@500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="{{ url_for('static', filename='translations.js') }}" defer></script>
-    <style>
-        /* FORCE GALAXY THEME OFF-CACHE */
-        body {
-            background: #050b18 !important;
-            color: #ffffff !important;
-            text-shadow: none !important;
-        }
-
-        .left-title {
-            text-shadow: none !important;
-        }
-
-        .left-title span {
-            color: #3b82f6 !important;
-            text-shadow: none !important;
-        }
-
-        .left-desc,
-        .feat-item span,
-        .brand-name {
-            text-shadow: none !important;
-        }
-
-        .login-left {
-            background: transparent !important;
-            border-right: none !important;
-        }
-
-        .login-left::before {
-            display: none !important;
-        }
-
-        .login-right {
-            background: transparent !important;
-        }
-
-        .form-panel {
-            background: rgba(5, 11, 24, 0.4) !important;
-            /* Depth for readability */
-            border: 1px solid rgba(255, 255, 255, 0.15) !important;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6) !important;
-        }
-
-        .form-group input {
-            background: rgba(15, 23, 42, 0.5) !important;
-            border: 1px solid rgba(255, 255, 255, 0.15) !important;
-            color: #ffffff !important;
-        }
-
-        /* OVERRIDE BROWSER AUTOFILL WHITE BACKGROUND */
-        .form-group input:-webkit-autofill,
-        .form-group input:-webkit-autofill:hover, 
-        .form-group input:-webkit-autofill:focus, 
-        .form-group input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 30px #0f172a inset !important;
-            -webkit-text-fill-color: #ffffff !important;
-            transition: background-color 5000s ease-in-out 0s;
-        }
-
-        .left-title,
-        .brand-name,
-        .form-header h2,
-        .form-group label,
-        .tab-btn.active,
-        .inner-tab.active {
-            color: #ffffff !important;
-        }
-
-        .left-desc,
-        .feat-item,
-        .check-label,
-        .left-features span,
-        .form-header p,
-        .tab-btn:not(.active),
-        .inner-tab:not(.active) {
-            color: #cbd5e1 !important;
-        }
-
-        .brand-name span {
-            color: #3b82f6 !important;
-        }
-
-        .tab-switcher {
-            background: rgba(15, 23, 42, 0.5) !important;
-            border-color: rgba(255, 255, 255, 0.1) !important;
-        }
-
-        .left-tech-row .tech-dot {
-            background: rgba(15, 23, 42, 0.8) !important;
-            border-color: rgba(255, 255, 255, 0.1) !important;
-            color: #fff !important;
-        }
-
-        .back-home {
-            background: rgba(15, 23, 42, 0.6) !important;
-            border-color: rgba(255, 255, 255, 0.1) !important;
-            color: #fff !important;
-        }
-
-        .feat-icon {
-            background: rgba(15, 23, 42, 0.8) !important;
-            border-color: rgba(255, 255, 255, 0.1) !important;
-        }
-
-        /* FIX ALERT VISIBILITY ON DARK GALAXY BACKGROUND */
-        .alert-error {
-            background: rgba(220, 38, 38, 0.7) !important;
-            border: 2px solid #ef4444 !important;
-            color: #ffffff !important;
-            backdrop-filter: blur(12px) !important;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
-            box-shadow: 0 8px 30px rgba(220, 38, 38, 0.4) !important;
-            padding: 16px 24px !important;
-            font-size: 1.05rem !important;
-            border-radius: 12px !important;
-            margin-bottom: 24px !important;
-            z-index: 9999 !important;
-            position: relative !important;
-        }
-
-        /* Starfield overlay */
-        .bg-grid {
-            display: none !important;
-        }
-
-        /* Fullscreen background video for login page only */
-        .full-bg-video {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: -3;
-            /* keep below other decorative layers */
-            pointer-events: none;
-            filter: brightness(1.2) contrast(1.05);
-            /* Increased brightness as requested */
-            
-            /* FORCE GPU ACCELERATION FOR 60FPS VIDEO */
-            transform: translateZ(0);
-            backface-visibility: hidden;
-            perspective: 1000px;
-            will-change: transform, opacity;
-        }
-
-        /* SHAKE ANIMATION FOR ERRORS */
-        @keyframes shakeContent {
-
-            0%,
-            100% {
-                transform: translateX(0);
-            }
-
-            10%,
-            30%,
-            50%,
-            70%,
-            90% {
-                transform: translateX(-8px);
-            }
-
-            20%,
-            40%,
-            60%,
-            80% {
-                transform: translateX(8px);
-            }
-        }
-
-        .shake-me {
-            animation: shakeContent 0.5s cubic-bezier(.36, .07, .19, .97) both;
-            transform: translate3d(0, 0, 0);
-            backface-visibility: hidden;
-            perspective: 1000px;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='login_custom.css') }}?v=20260319a">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 
-<body>
+<body class="lux-body">
+    <canvas id="login-particles" aria-hidden="true"></canvas>
+    <a href="/" class="back-site-link" aria-label="Back to site">
+        <i class="fas fa-arrow-left"></i>
+        <span>Back to site</span>
+    </a>
 
-    <!-- Fullscreen background video (login page only) -->
-    <video class="full-bg-video" autoplay muted loop playsinline preload="auto"
-        poster="{{ url_for('static', filename='img/hero-poster.jpg') }}" aria-hidden="true">
-        <source src="{{ url_for('static', filename='img/login-video.mp4') }}" type="video/mp4">
-        <!-- Fallback: a hosted video if local file isn't present -->
-        <source src="https://cdn.pixabay.com/video/2021/08/04/83896-584742456_large.mp4" type="video/mp4">
-    </video>
+    <main class="center-stage">
+        <section class="card-panel" role="region" aria-label="Authentication panel">
+            <div class="webname-banner">UNITARY X</div>
+            <nav class="auth-tabs" role="tablist" aria-label="Authentication tabs">
+                <button id="tab-user" class="auth-tab active" type="button" onclick="switchTab('user')">Sign In</button>
+                <button id="tab-register" class="auth-tab" type="button"
+                    onclick="switchTab('register')">Register</button>
+            </nav>
 
-    <!-- Animated background orbs -->
-    <div class="bg-orb orb-a"></div>
-    <div class="bg-orb orb-b"></div>
-    <div class="bg-orb orb-c"></div>
-    <div class="bg-grid"></div>
+            <div class="auth-body">
+                {% if error %}
+                <div id="form-alert" class="alert-error"><i class="fas fa-circle-exclamation"></i> {{ error }}</div>
+                {% else %}
+                <div id="form-alert" class="alert-error" style="display:none"></div>
+                {% endif %}
 
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <div class="flash-container" id="flash-container">
-        {% for category, message in messages %}
-        <div class="flash flash-{{ category }}">
-            <i
-                class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'danger' %}fa-times-circle{% elif category == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}"></i>
-            {{ message }}
-            <button class="flash-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
+                <section id="panel-user" class="panel panel-active">
+                    <h1 class="panel-title">Welcome back</h1>
+                    <p class="panel-sub">Sign in to continue to your dashboard</p>
+                    <form id="user-login-form" class="auth-form" method="POST" action="/login" novalidate>
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="login_type" value="user">
 
-    <div class="login-wrapper custom-split {% if error or messages %}shake-me{% endif %}">
-        <div class="split-left" aria-hidden="true"></div>
+                        <label class="field">
+                            <input type="email" name="email" placeholder="Email address" required autocomplete="email">
+                        </label>
+                        <label class="field pass-field">
+                            <input id="login-pass" type="password" name="password" placeholder="Password" required
+                                autocomplete="current-password">
+                            <button type="button" class="pass-toggle" data-target="login-pass"
+                                aria-label="Show password" aria-pressed="false">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </label>
 
-        <div class="split-right">
-            {% if error %}
-            <div class="alert-error" id="form-alert">
-                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                        <div class="form-row">
+                            <label class="remember"><input type="checkbox" name="remember"> Remember me</label>
+                            <a href="#" class="forgot">Forgot?</a>
+                        </div>
+
+                        <div class="action-row">
+                            <button class="btn-primary submit-btn" type="submit">
+                                <i class="fas fa-right-to-bracket"></i>
+                                <span>Sign In</span>
+                            </button>
+                        </div>
+
+                        <div id="g_id_onload" data-client_id="{{ config['GOOGLE_CLIENT_ID'] }}" data-context="signin"
+                            data-ux_mode="popup" data-callback="handleCredentialResponse" data-auto_prompt="false">
+                        </div>
+
+                        <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="filled_white"
+                            data-text="continue_with" data-size="large" data-logo_alignment="left"></div>
+                    </form>
+                </section>
+
+                <section id="panel-register" class="panel" style="display:none">
+                    <h1 class="panel-title">Create your account</h1>
+                    <p class="panel-sub">Join Unitary X in less than a minute</p>
+                    <form id="register-form" class="auth-form" method="POST" action="/register">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+                        <label class="field">
+                            <input type="text" name="name" placeholder="Full name" required>
+                        </label>
+                        <label class="field">
+                            <input type="email" name="email" placeholder="Email address" required autocomplete="email">
+                        </label>
+                        <label class="field pass-field">
+                            <input id="reg-pass" type="password" name="password" placeholder="Create password" required>
+                            <button type="button" class="pass-toggle" data-target="reg-pass" aria-label="Show password"
+                                aria-pressed="false">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </label>
+                        <label class="field pass-field">
+                            <input id="reg-confirm" type="password" name="confirm" placeholder="Confirm password"
+                                required>
+                            <button type="button" class="pass-toggle" data-target="reg-confirm"
+                                aria-label="Show password" aria-pressed="false">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </label>
+
+                        <div class="strength-wrap">
+                            <div class="strength-track">
+                                <div id="strength-bar" class="strength-bar"></div>
+                            </div>
+                            <div id="strength-label" class="strength-label"></div>
+                        </div>
+
+                        <div class="action-row">
+                            <button class="btn-primary submit-btn" type="submit">
+                                <i class="fas fa-user-plus"></i>
+                                <span>Create Account</span>
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
             </div>
-            {% endif %}
 
-            <div class="form-box">
-                <h1 class="form-title">Log in</h1>
-                <p class="form-sub">Welcome back!</p>
-                <p class="form-small">Don't have an account? <a href="#">Register here</a></p>
+            <footer class="card-foot">By signing in you agree to our terms and privacy policy.</footer>
+        </section>
+    </main>
 
-                <form method="POST" action="/login" id="user-login-form">
-                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="login_type" value="user" />
+    <div id="forgot-modal" class="forgot-modal" aria-hidden="true">
+        <div class="forgot-modal-card" role="dialog" aria-modal="true" aria-labelledby="forgot-title">
+            <button type="button" id="forgot-close" class="forgot-close" aria-label="Close reset password dialog"
+                onclick="toggleForgotModal(false); return false;">
+                <i class="fas fa-xmark"></i>
+            </button>
+            <h2 id="forgot-title">Reset Password</h2>
+            <p class="forgot-sub">Complete each step to reset your password securely.</p>
+            <div id="forgot-step-hint" class="forgot-step-hint">Step 1 of 3: Send OTP</div>
+
+            <div id="forgot-alert" class="forgot-alert" style="display:none"></div>
+
+            <form id="forgot-form" class="forgot-form" novalidate>
+                <div id="forgot-step-1">
                     <label class="field">
-                        <input type="email" name="email" placeholder="Email" required autocomplete="email">
+                        <input id="forgot-email" type="email" placeholder="Registered email" required
+                            autocomplete="email">
                     </label>
+
+                    <div class="forgot-actions">
+                        <button type="button" id="forgot-send-otp" class="btn-primary forgot-send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>Send OTP</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="forgot-step-2" class="forgot-step-block" style="display:none">
                     <label class="field">
-                        <input type="password" name="password" placeholder="Password" required>
+                        <input id="forgot-otp" type="text" placeholder="Enter OTP" maxlength="6" required>
                     </label>
-                    <label class="remember"><input type="checkbox" name="remember"> Remember me</label>
-                    <button type="submit" class="btn-primary">Log In</button>
-                </form>
-            </div>
+
+                    <div class="forgot-actions">
+                        <button type="button" id="forgot-verify-otp" class="btn-primary forgot-verify-btn">
+                            <i class="fas fa-shield-check"></i>
+                            <span>Verify OTP</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="forgot-step-3" class="forgot-step-block" style="display:none">
+                    <label class="field pass-field">
+                        <input id="forgot-new-pass" type="password" placeholder="New password" minlength="6" required>
+                        <button type="button" class="pass-toggle" data-target="forgot-new-pass"
+                            aria-label="Show password" aria-pressed="false">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </label>
+
+                    <label class="field pass-field">
+                        <input id="forgot-confirm-pass" type="password" placeholder="Confirm new password" minlength="6"
+                            required>
+                        <button type="button" class="pass-toggle" data-target="forgot-confirm-pass"
+                            aria-label="Show password" aria-pressed="false">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </label>
+
+                    <div class="forgot-actions">
+                        <button type="submit" id="forgot-reset-btn" class="btn-primary">
+                            <i class="fas fa-key"></i>
+                            <span>Reset Password</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
+    <script src="{{ url_for('static', filename='login_anim.js') }}?v=20260319a" defer></script>
     <script>
-        // ── Tab Switching ──────────────────────────────────────────
+        let forgotResetController = null;
+
         function switchTab(tab) {
-            const panels = { user: document.getElementById('panel-user'), admin: document.getElementById('panel-admin') };
-            const btns = { user: document.getElementById('tab-user'), admin: document.getElementById('tab-admin') };
-            Object.keys(panels).forEach(k => {
-                panels[k].style.display = k === tab ? 'block' : 'none';
-                btns[k].classList.toggle('active', k === tab);
-            });
-            // clear error
-            const err = document.getElementById('form-alert');
-            if (err) err.style.display = 'none';
-        }
-
-        // ── Inner Tab (Login / Register) ───────────────────────────
-        function switchInner(which) {
-            document.getElementById('inner-login').style.display = which === 'login' ? 'block' : 'none';
-            document.getElementById('inner-register').style.display = which === 'register' ? 'block' : 'none';
-            document.getElementById('it-login').classList.toggle('active', which === 'login');
-            document.getElementById('it-register').classList.toggle('active', which === 'register');
-            const err = document.getElementById('form-alert');
-            if (err) err.style.display = 'none';
-        }
-
-        // ── Toggle Password Visibility ─────────────────────────────
-        function togglePass(id, btn) {
-            const inp = document.getElementById(id);
-            const isText = inp.type === 'text';
-            inp.type = isText ? 'password' : 'text';
-            btn.innerHTML = isText ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
-        }
-
-        // ── Password Strength ──────────────────────────────────────
-        const passInput = document.getElementById('reg-pass');
-        if (passInput) {
-            passInput.addEventListener('input', () => {
-                const v = passInput.value;
-                const bar = document.getElementById('strength-bar');
-                const lbl = document.getElementById('strength-label');
-                let score = 0;
-                if (v.length >= 6) score++;
-                if (v.length >= 10) score++;
-                if (/[A-Z]/.test(v)) score++;
-                if (/[0-9]/.test(v)) score++;
-                if (/[^A-Za-z0-9]/.test(v)) score++;
-                const map = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
-                const cls = ['', 'weak', 'fair', 'good', 'strong', 'very-strong'];
-                bar.style.width = (score / 5 * 100) + '%';
-                bar.className = 'strength-bar ' + (cls[score] || '');
-                lbl.textContent = map[score] || '';
-                lbl.className = 'strength-label ' + (cls[score] || '');
-            });
-        }
-
-        // ── Confirm Password Match ─────────────────────────────────
-        const confirmInput = document.getElementById('reg-confirm');
-        if (confirmInput) {
-            confirmInput.addEventListener('input', () => {
-                const hint = document.getElementById('match-hint');
-                const pass = document.getElementById('reg-pass').value;
-                if (!confirmInput.value) { hint.textContent = ''; return; }
-                if (confirmInput.value === pass) {
-                    hint.textContent = 'Passwords match!';
-                    hint.className = 'match-hint match-ok';
-                } else {
-                    hint.textContent = 'Passwords do not match.';
-                    hint.className = 'match-hint match-err';
+            const tabs = ["user", "register"];
+            tabs.forEach(function (name) {
+                const btn = document.getElementById("tab-" + name);
+                const panel = document.getElementById("panel-" + name);
+                const active = name === tab;
+                if (btn) btn.classList.toggle("active", active);
+                if (panel) {
+                    panel.style.display = active ? "block" : "none";
+                    panel.classList.toggle("panel-active", active);
                 }
             });
+            const err = document.getElementById("form-alert");
+            if (err && err.style.display !== "none") err.style.display = "none";
         }
 
-        // ── Loading state on submit ────────────────────────────────
-        document.querySelectorAll('form').forEach(form => {
-            form.addEventListener('submit', function (e) {
-                const btn = this.querySelector('.submit-btn');
-                if (!btn) return;
-                btn.disabled = true;
-                btn.querySelector('span').textContent = 'Please wait…';
-                btn.querySelector('i').className = 'fas fa-spinner fa-spin';
+        function showTopError(message) {
+            const err = document.getElementById("form-alert");
+            if (!err) return;
+            err.innerHTML = '<i class="fas fa-circle-exclamation"></i> ' + message;
+            err.style.display = "block";
+            err.style.background = "rgba(127, 29, 29, 0.35)";
+            err.style.borderColor = "rgba(248, 113, 113, 0.5)";
+            err.style.color = "#fee2e2";
+            err.classList.remove("vibrate");
+            void err.offsetWidth;
+            err.classList.add("vibrate");
+        }
+
+        function showTopSuccess(message) {
+            const err = document.getElementById("form-alert");
+            if (!err) return;
+            err.innerHTML = '<i class="fas fa-circle-check"></i> ' + message;
+            err.style.display = "block";
+            err.classList.remove("vibrate");
+            err.style.background = "rgba(21, 128, 61, 0.35)";
+            err.style.borderColor = "rgba(74, 222, 128, 0.55)";
+            err.style.color = "#dcfce7";
+        }
+
+        function setForgotAlert(message, type) {
+            const alertEl = document.getElementById("forgot-alert");
+            if (!alertEl) return;
+            alertEl.innerHTML = (type === "success"
+                ? '<i class="fas fa-circle-check"></i> '
+                : '<i class="fas fa-circle-exclamation"></i> ') + message;
+            alertEl.classList.remove("is-success", "is-error");
+            alertEl.classList.add(type === "success" ? "is-success" : "is-error");
+            alertEl.style.display = "block";
+        }
+
+        function resetForgotFlow() {
+            const alertEl = document.getElementById("forgot-alert");
+            const step1 = document.getElementById("forgot-step-1");
+            const step2 = document.getElementById("forgot-step-2");
+            const step3 = document.getElementById("forgot-step-3");
+            const stepHint = document.getElementById("forgot-step-hint");
+            const form = document.getElementById("forgot-form");
+            if (alertEl) alertEl.style.display = "none";
+            if (step1) step1.style.display = "block";
+            if (step2) step2.style.display = "none";
+            if (step3) step3.style.display = "none";
+            if (stepHint) stepHint.textContent = "Step 1 of 3: Send OTP";
+            if (form) form.dataset.otpVerified = "0";
+            if (form) form.dataset.verifiedEmail = "";
+            if (form) form.dataset.verifiedOtp = "";
+            if (form) form.reset();
+        }
+
+        function toggleForgotModal(show) {
+            const modal = document.getElementById("forgot-modal");
+            const form = document.getElementById("forgot-form");
+            const resetBtn = document.getElementById("forgot-reset-btn");
+            const resetLabel = resetBtn ? resetBtn.querySelector("span") : null;
+            if (!modal) return;
+
+            if (!show) {
+                if (forgotResetController) {
+                    try {
+                        forgotResetController.abort();
+                    } catch (e) { }
+                    forgotResetController = null;
+                }
+                if (form) form.dataset.resetting = "0";
+                if (resetBtn) resetBtn.disabled = false;
+                if (resetLabel) resetLabel.textContent = "Reset Password";
+            }
+
+            modal.classList.toggle("show", !!show);
+            modal.setAttribute("aria-hidden", show ? "false" : "true");
+            if (show) {
+                resetForgotFlow();
+                const emailInput = document.querySelector('#user-login-form input[name="email"]');
+                const forgotEmail = document.getElementById("forgot-email");
+                if (forgotEmail && emailInput && emailInput.value.trim()) {
+                    forgotEmail.value = emailInput.value.trim();
+                }
+                if (forgotEmail) forgotEmail.focus();
+            } else {
+                resetForgotFlow();
+            }
+        }
+
+        async function fetchJsonWithTimeout(url, options, timeoutMs) {
+            const controller = new AbortController();
+            if (url === '/reset-password') {
+                forgotResetController = controller;
+            }
+            const timeoutId = window.setTimeout(function () {
+                controller.abort();
+            }, timeoutMs || 10000);
+
+            try {
+                const response = await fetch(url, Object.assign({}, options, { signal: controller.signal }));
+                const raw = await response.text();
+                let payload = null;
+                try {
+                    payload = raw ? JSON.parse(raw) : null;
+                } catch (parseErr) {
+                    payload = null;
+                }
+                return { response: response, payload: payload, raw: raw };
+            } finally {
+                if (url === '/reset-password' && forgotResetController === controller) {
+                    forgotResetController = null;
+                }
+                window.clearTimeout(timeoutId);
+            }
+        }
+
+        async function sendOtpFromModal() {
+            const emailEl = document.getElementById("forgot-email");
+            const sendBtn = document.getElementById("forgot-send-otp");
+            const sendLabel = sendBtn ? sendBtn.querySelector("span") : null;
+            const email = emailEl ? emailEl.value.trim() : "";
+            if (!email) {
+                setForgotAlert("Please enter your registered email.", "error");
+                return;
+            }
+            if (sendBtn) sendBtn.disabled = true;
+            if (sendLabel) sendLabel.textContent = "Sending...";
+            try {
+                const result = await fetchJsonWithTimeout('/send-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ email: email })
+                }, 12000);
+                const sendRes = result.response;
+                const sendJson = result.payload;
+                if (!sendRes.ok || !sendJson.success) {
+                    if (sendRes.status === 429) {
+                        setForgotAlert('Too many attempts. Please wait and try again.', "error");
+                    } else {
+                        setForgotAlert((sendJson && sendJson.error) ? sendJson.error : 'Failed to send OTP.', "error");
+                    }
+                    return;
+                }
+                setForgotAlert((sendJson && sendJson.message) ? sendJson.message : 'OTP sent to your email.', "success");
+                const step2 = document.getElementById("forgot-step-2");
+                const step1 = document.getElementById("forgot-step-1");
+                const stepHint = document.getElementById("forgot-step-hint");
+                const otpInput = document.getElementById("forgot-otp");
+                if (step1) step1.style.display = "none";
+                if (step2) step2.style.display = "block";
+                if (stepHint) stepHint.textContent = "Step 2 of 3: Verify OTP";
+                if (otpInput) otpInput.focus();
+            } catch (err) {
+                if (err && err.name === "AbortError") {
+                    setForgotAlert('Request timed out. Please try again.', "error");
+                } else {
+                    setForgotAlert('Network error while sending OTP.', "error");
+                }
+            } finally {
+                if (sendBtn) sendBtn.disabled = false;
+                if (sendLabel) sendLabel.textContent = "Send OTP";
+            }
+        }
+
+        async function verifyOtpFromModal() {
+            const email = (document.getElementById("forgot-email") || {}).value || "";
+            const otp = (document.getElementById("forgot-otp") || {}).value || "";
+            const verifyBtn = document.getElementById("forgot-verify-otp");
+            const verifyLabel = verifyBtn ? verifyBtn.querySelector("span") : null;
+            const form = document.getElementById("forgot-form");
+            if (!email.trim() || !otp.trim()) {
+                setForgotAlert("Enter email and OTP to continue.", "error");
+                return;
+            }
+            if (verifyBtn) verifyBtn.disabled = true;
+            if (verifyLabel) verifyLabel.textContent = "Verifying...";
+            try {
+                const result = await fetchJsonWithTimeout('/verify-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ email: email.trim(), otp: otp.trim() })
+                }, 12000);
+                const verifyRes = result.response;
+                const verifyJson = result.payload;
+                if (!verifyRes.ok || !verifyJson.success) {
+                    if (verifyRes.status === 429) {
+                        setForgotAlert('Too many attempts. Please wait and try again.', "error");
+                    } else {
+                        setForgotAlert((verifyJson && verifyJson.error) ? verifyJson.error : 'OTP verification failed.', "error");
+                    }
+                    return;
+                }
+                if (form) form.dataset.otpVerified = "1";
+                if (form) form.dataset.verifiedEmail = email.trim();
+                if (form) form.dataset.verifiedOtp = otp.trim();
+                const step3 = document.getElementById("forgot-step-3");
+                const step2 = document.getElementById("forgot-step-2");
+                const stepHint = document.getElementById("forgot-step-hint");
+                const newPass = document.getElementById("forgot-new-pass");
+                if (step2) step2.style.display = "none";
+                if (step3) step3.style.display = "block";
+                if (stepHint) stepHint.textContent = "Step 3 of 3: Reset Password";
+                setForgotAlert("OTP verified. You can now reset your password.", "success");
+                if (newPass) newPass.focus();
+            } catch (err) {
+                if (err && err.name === "AbortError") {
+                    setForgotAlert('Request timed out. Please try again.', "error");
+                } else {
+                    setForgotAlert('Network error during OTP verification.', "error");
+                }
+            } finally {
+                if (verifyBtn) verifyBtn.disabled = false;
+                if (verifyLabel) verifyLabel.textContent = "Verify OTP";
+            }
+        }
+
+        async function submitForgotReset(e) {
+            e.preventDefault();
+            const form = document.getElementById("forgot-form");
+            const email = (form && form.dataset.verifiedEmail) ? form.dataset.verifiedEmail : "";
+            const otp = (form && form.dataset.verifiedOtp) ? form.dataset.verifiedOtp : "";
+            const newPassword = (document.getElementById("forgot-new-pass") || {}).value || "";
+            const confirmPassword = (document.getElementById("forgot-confirm-pass") || {}).value || "";
+            const resetBtn = document.getElementById("forgot-reset-btn");
+            const resetLabel = resetBtn ? resetBtn.querySelector("span") : null;
+
+            if (!form || form.dataset.otpVerified !== "1") {
+                setForgotAlert("Verify OTP before resetting password.", "error");
+                return;
+            }
+
+            if (!email.trim() || !otp.trim() || !newPassword.trim() || !confirmPassword.trim()) {
+                setForgotAlert("Please fill all fields.", "error");
+                return;
+            }
+            if (newPassword.length < 6) {
+                setForgotAlert("Password must be at least 6 characters.", "error");
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                setForgotAlert("Passwords do not match.", "error");
+                return;
+            }
+
+            if (form.dataset.resetting === "1") {
+                return;
+            }
+            form.dataset.resetting = "1";
+            if (resetBtn) resetBtn.disabled = true;
+            if (resetLabel) resetLabel.textContent = "Resetting...";
+            const uiFailSafeId = window.setTimeout(function () {
+                if (form && form.dataset.resetting === "1") {
+                    form.dataset.resetting = "0";
+                    if (resetBtn) resetBtn.disabled = false;
+                    if (resetLabel) resetLabel.textContent = "Reset Password";
+                    setForgotAlert('Request is taking too long. Please try again.', "error");
+                    toggleForgotModal(false);
+                    window.setTimeout(function () {
+                        window.location.assign('/login');
+                    }, 200);
+                }
+            }, 14000);
+            try {
+                const result = await fetchJsonWithTimeout('/reset-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        email: email.trim(),
+                        otp: otp.trim(),
+                        newPassword: newPassword
+                    })
+                }, 12000);
+                const resetRes = result.response;
+                const resetJson = result.payload;
+                if (!resetRes.ok || !resetJson.success) {
+                    if (resetRes.status === 429) {
+                        setForgotAlert('Too many attempts. Please wait and try again.', "error");
+                    } else {
+                        setForgotAlert((resetJson && resetJson.error) ? resetJson.error : 'Failed to reset password.', "error");
+                    }
+                    return;
+                }
+
+                const successMsg = (resetJson && resetJson.message) ? resetJson.message : 'Password reset successful.';
+                setForgotAlert(successMsg, "success");
+                showTopSuccess(successMsg);
+                window.setTimeout(function () {
+                    window.location.assign('/login');
+                }, 120);
+            } catch (err) {
+                if (err && err.name === "AbortError") {
+                    setForgotAlert('Request timed out. Please try again.', "error");
+                } else {
+                    setForgotAlert('Network error. Please try again.', "error");
+                }
+            } finally {
+                window.clearTimeout(uiFailSafeId);
+                if (form) form.dataset.resetting = "0";
+                if (resetBtn) resetBtn.disabled = false;
+                if (resetLabel) resetLabel.textContent = "Reset Password";
+            }
+        }
+
+        function attachAjaxLogin(formId, defaultButtonText) {
+            const form = document.getElementById(formId);
+            if (!form) return;
+            form.addEventListener("submit", function (e) {
+                if (form.dataset.submitting === "1") {
+                    e.preventDefault();
+                    return;
+                }
+                if (!form.checkValidity()) return;
+                e.preventDefault();
+                form.dataset.submitting = "1";
+
+                const btn = form.querySelector(".submit-btn");
+                const icon = btn ? btn.querySelector("i") : null;
+                const text = btn ? btn.querySelector("span") : null;
+                const resetBtn = function () {
+                    if (btn) btn.disabled = false;
+                    if (btn) btn.classList.remove("is-success");
+                    if (icon) icon.className = "fas fa-right-to-bracket";
+                    if (text) text.textContent = defaultButtonText;
+                    form.dataset.submitting = "0";
+                };
+                if (btn) btn.disabled = true;
+
+                const controller = new AbortController();
+                const timeoutId = window.setTimeout(function () {
+                    controller.abort();
+                }, 7000);
+                const uiFailSafeId = window.setTimeout(function () {
+                    showTopError("Email or password is incorrect.");
+                    resetBtn();
+                }, 7500);
+
+                fetch(form.action, {
+                    method: "POST",
+                    body: new FormData(form),
+                    headers: { "X-Requested-With": "XMLHttpRequest" },
+                    signal: controller.signal
+                })
+                    .then(function (r) {
+                        window.clearTimeout(timeoutId);
+                        window.clearTimeout(uiFailSafeId);
+                        const contentType = (r.headers.get("content-type") || "").toLowerCase();
+                        if (!contentType.includes("application/json")) {
+                            throw new Error("Invalid server response");
+                        }
+                        return r.json();
+                    })
+                    .then(function (res) {
+                        if (res && res.success && res.redirect) {
+                            if (btn) {
+                                btn.classList.add("is-success");
+                            }
+                            try {
+                                if (window.loginFX && typeof window.loginFX.onSuccess === "function") {
+                                    window.loginFX.onSuccess();
+                                }
+                            } catch (e) { }
+                            const card = document.querySelector(".card-panel");
+                            if (card) card.classList.add("stage-out");
+                            setTimeout(function () {
+                                window.location.href = res.redirect;
+                            }, 520);
+                            return;
+                        }
+                        showTopError((res && res.error) ? res.error : "Email or password is incorrect.");
+                        try {
+                            if (window.loginFX && typeof window.loginFX.onError === "function") {
+                                window.loginFX.onError();
+                            }
+                        } catch (e) { }
+                        resetBtn();
+                    })
+                    .catch(function () {
+                        window.clearTimeout(timeoutId);
+                        window.clearTimeout(uiFailSafeId);
+                        showTopError("Email or password is incorrect.");
+                        resetBtn();
+                    })
+                    .finally(function () {
+                        window.clearTimeout(timeoutId);
+                        window.clearTimeout(uiFailSafeId);
+                    });
             });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            attachAjaxLogin("user-login-form", "Sign In");
+
+            const forgotLink = document.querySelector(".forgot");
+            if (forgotLink) {
+                forgotLink.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    toggleForgotModal(true);
+                });
+            }
+
+            const forgotClose = document.getElementById("forgot-close");
+            if (forgotClose) {
+                forgotClose.addEventListener("click", function () {
+                    toggleForgotModal(false);
+                });
+            }
+
+            document.addEventListener("click", function (e) {
+                const closeBtn = e.target && e.target.closest ? e.target.closest("#forgot-close") : null;
+                if (!closeBtn) return;
+                e.preventDefault();
+                e.stopPropagation();
+                toggleForgotModal(false);
+            });
+
+            const forgotModal = document.getElementById("forgot-modal");
+            if (forgotModal) {
+                forgotModal.addEventListener("click", function (e) {
+                    if (e.target === forgotModal) toggleForgotModal(false);
+                });
+            }
+
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape") toggleForgotModal(false);
+            });
+
+            const sendOtpBtn = document.getElementById("forgot-send-otp");
+            if (sendOtpBtn) {
+                sendOtpBtn.addEventListener("click", sendOtpFromModal);
+            }
+
+            const verifyOtpBtn = document.getElementById("forgot-verify-otp");
+            if (verifyOtpBtn) {
+                verifyOtpBtn.addEventListener("click", verifyOtpFromModal);
+            }
+
+            const forgotForm = document.getElementById("forgot-form");
+            if (forgotForm) {
+                forgotForm.addEventListener("submit", submitForgotReset);
+            }
+
+            const initialErr = document.getElementById("form-alert");
+            if (initialErr && initialErr.style.display !== "none" && initialErr.textContent.trim()) {
+                initialErr.classList.remove("vibrate");
+                void initialErr.offsetWidth;
+                initialErr.classList.add("vibrate");
+            }
+
+            document.querySelectorAll(".pass-toggle").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    const targetId = btn.getAttribute("data-target");
+                    const input = targetId ? document.getElementById(targetId) : null;
+                    if (!input) return;
+
+                    const show = input.type === "password";
+                    input.type = show ? "text" : "password";
+                    btn.setAttribute("aria-pressed", String(show));
+                    btn.setAttribute("aria-label", show ? "Hide password" : "Show password");
+                    const icon = btn.querySelector("i");
+                    if (icon) icon.className = show ? "fas fa-eye-slash" : "fas fa-eye";
+                });
+            });
+
+            const passInput = document.getElementById("reg-pass");
+            const confirmInput = document.getElementById("reg-confirm");
+            const bar = document.getElementById("strength-bar");
+            const lbl = document.getElementById("strength-label");
+
+            if (passInput && bar && lbl) {
+                passInput.addEventListener("input", function () {
+                    const v = passInput.value || "";
+                    let score = 0;
+                    if (v.length >= 6) score += 1;
+                    if (v.length >= 10) score += 1;
+                    if (/[A-Z]/.test(v)) score += 1;
+                    if (/[0-9]/.test(v)) score += 1;
+                    if (/[^A-Za-z0-9]/.test(v)) score += 1;
+                    const levels = ["", "Weak", "Fair", "Good", "Strong", "Excellent"];
+                    bar.style.width = String((score / 5) * 100) + "%";
+                    lbl.textContent = levels[score] || "";
+                });
+            }
+
+            if (confirmInput) {
+                confirmInput.addEventListener("input", function () {
+                    const ok = confirmInput.value && passInput && confirmInput.value === passInput.value;
+                    confirmInput.style.borderColor = ok ? "rgba(34,197,94,.7)" : "rgba(255,255,255,.08)";
+                });
+            }
         });
 
-        // ── Auto-dismiss flash ─────────────────────────────────────
-        setTimeout(() => {
-            const fc = document.getElementById('flash-container');
-            if (fc) fc.style.opacity = '0';
-            setTimeout(() => { if (fc) fc.remove(); }, 500);
-        }, 4000);
-
-        // ── Google Sign-in Callback ────────────────────────────────
         function handleCredentialResponse(response) {
             fetch('/google-login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token() }}'
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: JSON.stringify({ credential: response.credential })
             })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        window.location.href = data.redirect;
-                    } else {
-                        document.getElementById('form-alert') || (() => {
-                            const alert = document.createElement('div');
-                            alert.className = 'alert-error';
-                            alert.id = 'form-alert';
-                            alert.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error}`;
-                            document.getElementById('tab-switcher').insertAdjacentElement('afterend', alert);
-                            return alert;
-                        })();
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (res && res.success && res.redirect) {
+                        window.location.href = res.redirect;
+                        return;
                     }
+                    showTopError((res && res.error) ? res.error : 'Google sign-in failed.');
                 })
-                .catch(e => {
-                    console.error("Google Auth error:", e);
+                .catch(function () {
+                    showTopError('Google sign-in failed. Please try again.');
                 });
         }
-    </script>
-    <style>
-        /* Zoom-out animation applied to the whole login wrapper before redirect */
-        .login-wrapper.zoom-out {
-            animation: loginZoom 420ms ease-in forwards;
-            transform-origin: center center;
-        }
-
-        @keyframes loginZoom {
-            from {
-                transform: scale(1) translateZ(0);
-                opacity: 1;
-            }
-
-            to {
-                transform: scale(1.08) translateZ(0);
-                opacity: 0;
-            }
-        }
-    </style>
-
-    <script>
-        // AJAX submit for user login to allow post-login animation
-        (function () {
-            const form = document.getElementById('user-login-form');
-            if (!form) return;
-
-            form.addEventListener('submit', function (e) {
-                e.preventDefault();
-                const btn = form.querySelector('.submit-btn');
-                if (btn) {
-                    btn.disabled = true;
-                    const span = btn.querySelector('span');
-                    if (span) span.textContent = 'Signing in…';
-                    const icon = btn.querySelector('i');
-                    if (icon) icon.className = 'fas fa-spinner fa-spin';
-                }
-
-                const data = new FormData(form);
-
-                fetch(form.action || '/login', {
-                    method: 'POST',
-                    body: data,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                    .then(res => res.json())
-                    .then(result => {
-                        if (result && result.success && result.redirect) {
-                            // play zoom animation then redirect
-                            const wrapper = document.querySelector('.login-wrapper') || document.body;
-                            wrapper.classList.add('zoom-out');
-                            setTimeout(() => { window.location.href = result.redirect; }, 420);
-                        } else {
-                            // show error inline
-                            let alert = document.getElementById('form-alert');
-                            if (!alert) {
-                                alert = document.createElement('div');
-                                alert.className = 'alert-error';
-                                alert.id = 'form-alert';
-                                const insertAfter = document.getElementById('tab-switcher') || form;
-                                insertAfter.insertAdjacentElement('afterend', alert);
-                            }
-                            alert.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${result && result.error ? result.error : 'Invalid email or password.'}`;
-                            if (btn) {
-                                btn.disabled = false;
-                                const span = btn.querySelector('span'); if (span) span.textContent = 'Sign In';
-                                const icon = btn.querySelector('i'); if (icon) icon.className = 'fas fa-arrow-right';
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Login request failed:', err);
-                        // Fallback: submit normally
-                        form.submit();
-                    });
-            });
-        })();
     </script>
 </body>
 

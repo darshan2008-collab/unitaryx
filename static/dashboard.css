@@ -734,9 +734,16 @@ a {
 .req-card,
 .quick-card,
 .dstat {
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal .req-card,
+.reveal .quick-card,
+.reveal .dstat {
     opacity: 0;
     transform: translateY(20px);
-    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .reveal.active .req-card,

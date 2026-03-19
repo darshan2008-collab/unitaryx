@@ -8,17 +8,64 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap"
         rel="stylesheet" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}?v=20260319forcevisible2" />
+    <style>
+        /* Emergency visibility layer to prevent blank/hidden dashboard content. */
+        body.dash-body {
+            background: #f8fafc !important;
+            color: #0f172a !important;
+            display: flex !important;
+            min-height: 100vh !important;
+        }
+
+        .dash-sidebar,
+        .dash-main,
+        .dash-topbar,
+        .dash-stats,
+        .dash-section,
+        .req-grid,
+        .quick-grid {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+
+        .dash-main,
+        .dash-main h1,
+        .dash-main h2,
+        .dash-main h3,
+        .dash-main p,
+        .dash-main span,
+        .dash-main a,
+        .dash-main div {
+            color: #0f172a !important;
+        }
+
+        .greeting-sub,
+        .dstat-lbl,
+        .req-card-meta,
+        .m-label,
+        .req-id {
+            color: #475569 !important;
+        }
+
+        .dash-sidebar,
+        .dash-main {
+            display: block !important;
+        }
+
+        body.dash-body {
+            display: flex !important;
+        }
+    </style>
 </head>
 
-<body class="dash-body">
+<body class="dash-body" data-dashboard-stable="true" data-visible-force="true">
 
     <!-- Sidebar -->
     <aside class="dash-sidebar">
         <div class="sidebar-logo">
             <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Unitary X"
-                style="width:36px;height:36px;object-fit:contain;border-radius:10px;" />
-            <span>Unitary<strong>X</strong></span>
+                style="height:30px;width:auto;max-width:120px;object-fit:contain;" />
         </div>
         <nav class="sidebar-nav">
             <a href="/dashboard" class="sidebar-link active"><i class="fas fa-th-large"></i> Dashboard</a>

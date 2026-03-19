@@ -66,6 +66,18 @@
         <a href="/admin/export/pdf" class="top-action-btn" data-tooltip="Download Detailed PDF Report">
             <i class="fa-solid fa-list-ul"></i>
         </a>
+        <a href="/admin/export/csv" class="top-action-btn" data-tooltip="Export CSV Snapshot">
+            <i class="fa-solid fa-file-csv"></i>
+        </a>
+        <button id="quick-expand-all" class="top-action-btn" type="button" data-tooltip="Expand All Details">
+            <i class="fa-solid fa-expand"></i>
+        </button>
+        <button id="quick-collapse-all" class="top-action-btn" type="button" data-tooltip="Collapse All Details">
+            <i class="fa-solid fa-compress"></i>
+        </button>
+        <button id="quick-compact-toggle" class="top-action-btn" type="button" data-tooltip="Toggle Compact Mode">
+            <i class="fa-solid fa-table-cells"></i>
+        </button>
     </div>
 
     <!-- Layout Wrapper -->
@@ -75,9 +87,10 @@
                 style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; width: 100%;">
                 <div class="sidebar-logo"
                     style="font-size: 1.5rem; font-weight: 800; color: var(--sidebar-text); display: flex; align-items: center; gap: 12px; white-space: nowrap;">
-                    <img src="{{ url_for('static', filename='img/logo_x.png') }}" alt="Unitary X"
-                        style="height: 36px; width: auto; max-width: 36px; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0, 82, 204, 0.4));">
-                    <span class="logo-text">Unitary<span style="color:var(--primary)">X</span></span>
+                    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Unitary X"
+                        style="height: 30px; width: auto; max-width: 120px; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0, 82, 204, 0.4));"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                    <span class="logo-fallback-inline" style="display:none;">Unitary X</span>
                 </div>
                 <button id="sidebar-toggle" class="menu-toggle-btn"
                     style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted); display: flex;">
@@ -156,6 +169,49 @@
 
             <!-- 📊 Tabbed Content Containers -->
             <div id="tab-dashboard" class="admin-tab-content active">
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-user-plus"
+                            style="color:var(--primary); margin-right:8px;"></i>Create Team Account</h3>
+                    <form method="POST" action="/admin/create-user"
+                        style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; align-items:end;">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <div>
+                            <label
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Name</label>
+                            <input type="text" name="name" required minlength="2" placeholder="Full name"
+                                style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);">
+                        </div>
+                        <div>
+                            <label
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Email</label>
+                            <input type="email" name="email" required placeholder="user@example.com"
+                                style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);">
+                        </div>
+                        <div>
+                            <label
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Password</label>
+                            <input type="password" name="password" required minlength="6" placeholder="Min 6 chars"
+                                style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);">
+                        </div>
+                        <div>
+                            <label
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Role</label>
+                            <select name="role"
+                                style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button type="submit"
+                                style="width:100%; padding:10px 12px; border:none; border-radius:10px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer;">Create
+                                Account</button>
+                        </div>
+                    </form>
+                    <p style="margin-top:10px; font-size:0.8rem; color:var(--text-dim);">Admin role creation is
+                        restricted to authorized super-admin emails.</p>
+                </section>
+
                 <!-- 📊 Live Vitality Grid -->
                 <section class="admin-stats">
                     <div class="adm-stat">
@@ -192,6 +248,47 @@
                         <div class="adm-stat-label">Projected Revenue</div>
                         <div style="font-size: 0.75rem; color:var(--text-dim); margin-top: 5px;">Based on active
                             valuations
+                        </div>
+                    </div>
+                </section>
+
+                <section class="dash-card advanced-console" style="margin-bottom: 18px;">
+                    <div class="advanced-console-head">
+                        <h3 class="card-title" style="margin-bottom: 14px;"><i class="fas fa-gauge-high"
+                                style="color:var(--primary);"></i> Advanced Mission Console</h3>
+                        <p style="color: var(--text-dim); font-size: 0.92rem;">Live command metrics for operational
+                            quality and conversion velocity.</p>
+                    </div>
+                    <div class="kpi-grid">
+                        <div class="kpi-chip">
+                            <div class="kpi-chip-head">
+                                <span>Completion Rate</span>
+                                <strong>{{ admin_metrics.completion_rate }}%</strong>
+                            </div>
+                            <div class="kpi-progress">
+                                <span style="width: {{ admin_metrics.completion_rate }}%;"></span>
+                            </div>
+                        </div>
+                        <div class="kpi-chip">
+                            <div class="kpi-chip-head">
+                                <span>High Priority Queue</span>
+                                <strong>{{ admin_metrics.high_priority_count }}</strong>
+                            </div>
+                            <div class="kpi-sub">Requires immediate admin action</div>
+                        </div>
+                        <div class="kpi-chip">
+                            <div class="kpi-chip-head">
+                                <span>Average Deal Value</span>
+                                <strong>₹{{ "{:,}".format(admin_metrics.avg_value) }}</strong>
+                            </div>
+                            <div class="kpi-sub">Average valuation per lead</div>
+                        </div>
+                        <div class="kpi-chip">
+                            <div class="kpi-chip-head">
+                                <span>Today Inquiries (UTC)</span>
+                                <strong>{{ admin_metrics.todays_inquiries }}</strong>
+                            </div>
+                            <div class="kpi-sub">Fresh opportunities in current cycle</div>
                         </div>
                     </div>
                 </section>
@@ -326,10 +423,46 @@
                         <h3 class="card-title"><i class="fa-solid fa-list-ul" style="color: var(--primary);"></i>
                             Project
                             Inquiry Logs</h3>
-                        <div class="search-wrap">
-                            <i class="fa-solid fa-search"></i>
-                            <input type="text" id="tableSearch" placeholder="Search inquiries..."
-                                onkeyup="filterTable()">
+                        <div class="table-tools">
+                            <div class="search-wrap">
+                                <i class="fa-solid fa-search"></i>
+                                <input type="text" id="tableSearch" placeholder="Search inquiries..."
+                                    onkeyup="filterTable()">
+                            </div>
+                            <select id="statusFilter" class="filter-control" title="Filter by status">
+                                <option value="all">All Status</option>
+                                <option value="New">New</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Done">Done</option>
+                            </select>
+                            <select id="priorityFilter" class="filter-control" title="Filter by priority">
+                                <option value="all">All Priority</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                            <select id="serviceFilter" class="filter-control" title="Filter by service">
+                                <option value="all">All Services</option>
+                                {% for r in requests %}
+                                <option value="{{ r.service }}">{{ r.service }}</option>
+                                {% endfor %}
+                            </select>
+                            <select id="sortMode" class="filter-control" title="Sort inquiries">
+                                <option value="latest">Sort: Latest First</option>
+                                <option value="oldest">Sort: Oldest First</option>
+                                <option value="value_high">Sort: Value High to Low</option>
+                                <option value="value_low">Sort: Value Low to High</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="bulk-action-bar" id="bulkActionBar">
+                        <div class="bulk-summary"><span id="selectedCount">0</span> selected</div>
+                        <div class="bulk-actions">
+                            <button type="button" class="bulk-btn" data-action="mark_progress">Mark In Progress</button>
+                            <button type="button" class="bulk-btn" data-action="mark_done">Mark Done</button>
+                            <button type="button" class="bulk-btn" data-action="priority_high">High Priority</button>
+                            <button type="button" class="bulk-btn danger" data-action="delete">Delete</button>
                         </div>
                     </div>
 
@@ -338,6 +471,7 @@
                         <table class="adm-table" id="requestsTable">
                             <thead>
                                 <tr>
+                                    <th class="select-col"><input type="checkbox" id="selectAllRows"></th>
                                     <th>ID</th>
                                     <th>Strategic Client</th>
                                     <th>Operational Tier</th>
@@ -349,7 +483,12 @@
                             </thead>
                             <tbody>
                                 {% for r in requests %}
-                                <tr class="main-row" id="row-{{ r.id }}">
+                                <tr class="main-row" id="row-{{ r.id }}" data-id="{{ r.id }}"
+                                    data-status="{{ r.status }}" data-priority="{{ r.priority }}"
+                                    data-service="{{ r.service }}" data-value="{{ r.value }}"
+                                    data-created="{{ r.created_at.timestamp() if r.created_at else 0 }}">
+                                    <td class="select-col"><input type="checkbox" class="row-select" value="{{ r.id }}">
+                                    </td>
                                     <td style="font-family:'JetBrains Mono'; color:var(--primary);">#{{
                                         r.id|format_id }}
                                     </td>
@@ -436,7 +575,7 @@
                                     </td>
                                 </tr>
                                 <tr class="detail-row" id="detail-{{ r.id }}">
-                                    <td colspan="7">
+                                    <td colspan="8">
                                         <div class="detail-pnl">
                                             <div class="detail-grid">
                                                 <div class="dtl-card">
@@ -574,25 +713,203 @@
         setInterval(updatePulse, 1000);
         updatePulse();
 
-        function filterTable() {
-            const input = document.getElementById('tableSearch').value.toUpperCase();
+        function getMainRows() {
             const table = document.getElementById('requestsTable');
-            const rows = table.querySelectorAll('.main-row');
-            rows.forEach(row => {
-                const text = row.innerText.toUpperCase();
-                row.style.display = text.includes(input) ? '' : 'none';
+            if (!table) return [];
+            return Array.from(table.querySelectorAll('.main-row'));
+        }
 
-                // Close details if row is hidden
-                const btn = row.querySelector('.btn-inspect');
-                if (btn) {
-                    const idMatch = btn.getAttribute('onclick').match(/'(.*?)'/);
-                    if (idMatch) {
-                        const dtl = document.getElementById('detail-' + idMatch[1]);
-                        if (dtl && row.style.display === 'none') dtl.classList.remove('active');
-                    }
-                }
+        function getSelectedIds() {
+            return Array.from(document.querySelectorAll('.row-select:checked')).map(cb => cb.value);
+        }
+
+        function updateBulkActionBar() {
+            const bulkBar = document.getElementById('bulkActionBar');
+            const selectedCount = document.getElementById('selectedCount');
+            const totalVisibleRows = getMainRows().filter(row => row.style.display !== 'none').length;
+            const selected = getSelectedIds();
+
+            if (selectedCount) {
+                selectedCount.textContent = selected.length;
+            }
+
+            if (bulkBar) {
+                bulkBar.classList.toggle('active', selected.length > 0);
+            }
+
+            const selectAll = document.getElementById('selectAllRows');
+            if (selectAll) {
+                selectAll.checked = totalVisibleRows > 0 && selected.length === totalVisibleRows;
+                selectAll.indeterminate = selected.length > 0 && selected.length < totalVisibleRows;
+            }
+        }
+
+        function sortVisibleRows(mode) {
+            const tbody = document.querySelector('#requestsTable tbody');
+            if (!tbody) return;
+
+            const pairs = getMainRows().map(main => {
+                const id = main.dataset.id;
+                const detail = document.getElementById('detail-' + id);
+                return { main, detail };
+            });
+
+            pairs.sort((a, b) => {
+                const aValue = Number(a.main.dataset.value || 0);
+                const bValue = Number(b.main.dataset.value || 0);
+                const aCreated = Number(a.main.dataset.created || 0);
+                const bCreated = Number(b.main.dataset.created || 0);
+
+                if (mode === 'oldest') return aCreated - bCreated;
+                if (mode === 'value_high') return bValue - aValue;
+                if (mode === 'value_low') return aValue - bValue;
+                return bCreated - aCreated;
+            });
+
+            pairs.forEach(pair => {
+                tbody.appendChild(pair.main);
+                if (pair.detail) tbody.appendChild(pair.detail);
             });
         }
+
+        function applyAdvancedFilters() {
+            const searchTerm = (document.getElementById('tableSearch')?.value || '').toUpperCase();
+            const statusFilter = document.getElementById('statusFilter')?.value || 'all';
+            const priorityFilter = document.getElementById('priorityFilter')?.value || 'all';
+            const serviceFilter = document.getElementById('serviceFilter')?.value || 'all';
+
+            getMainRows().forEach(row => {
+                const rowText = row.innerText.toUpperCase();
+                const matchesSearch = rowText.includes(searchTerm);
+                const matchesStatus = statusFilter === 'all' || row.dataset.status === statusFilter;
+                const matchesPriority = priorityFilter === 'all' || row.dataset.priority === priorityFilter;
+                const matchesService = serviceFilter === 'all' || row.dataset.service === serviceFilter;
+                const visible = matchesSearch && matchesStatus && matchesPriority && matchesService;
+
+                row.style.display = visible ? '' : 'none';
+
+                const detail = document.getElementById('detail-' + row.dataset.id);
+                if (detail) {
+                    if (!visible) {
+                        detail.classList.remove('active');
+                        detail.style.display = 'none';
+                    } else {
+                        detail.style.display = '';
+                    }
+                }
+
+                if (!visible) {
+                    const cb = row.querySelector('.row-select');
+                    if (cb) cb.checked = false;
+                }
+            });
+
+            updateBulkActionBar();
+        }
+
+        function filterTable() {
+            applyAdvancedFilters();
+        }
+
+        function normalizeServiceFilterOptions() {
+            const serviceSelect = document.getElementById('serviceFilter');
+            if (!serviceSelect) return;
+
+            const seen = new Set();
+            Array.from(serviceSelect.options).forEach(option => {
+                const key = option.value.trim().toLowerCase();
+                if (!key || key === 'all') return;
+                if (seen.has(key)) {
+                    option.remove();
+                    return;
+                }
+                seen.add(key);
+            });
+        }
+
+        normalizeServiceFilterOptions();
+
+        document.getElementById('statusFilter')?.addEventListener('change', applyAdvancedFilters);
+        document.getElementById('priorityFilter')?.addEventListener('change', applyAdvancedFilters);
+        document.getElementById('serviceFilter')?.addEventListener('change', applyAdvancedFilters);
+
+        document.getElementById('sortMode')?.addEventListener('change', (e) => {
+            sortVisibleRows(e.target.value);
+            applyAdvancedFilters();
+        });
+
+        document.getElementById('selectAllRows')?.addEventListener('change', (e) => {
+            const checked = e.target.checked;
+            getMainRows().forEach(row => {
+                if (row.style.display === 'none') return;
+                const cb = row.querySelector('.row-select');
+                if (cb) cb.checked = checked;
+            });
+            updateBulkActionBar();
+        });
+
+        document.querySelectorAll('.row-select').forEach(cb => {
+            cb.addEventListener('change', updateBulkActionBar);
+        });
+
+        document.querySelectorAll('.bulk-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const selectedIds = getSelectedIds();
+                if (!selectedIds.length) return;
+
+                const action = btn.dataset.action;
+                const needsConfirm = action === 'delete';
+                if (needsConfirm && !confirm('Delete selected inquiries permanently?')) {
+                    return;
+                }
+
+                const csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
+                btn.disabled = true;
+
+                try {
+                    const res = await fetch('/admin/bulk-update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify({ ids: selectedIds, action })
+                    });
+                    const payload = await res.json();
+
+                    if (payload.success) {
+                        showNotification(payload.message, '', 0, false);
+                        setTimeout(() => window.location.reload(), 900);
+                    } else {
+                        alert(payload.message || 'Bulk action failed.');
+                    }
+                } catch (err) {
+                    console.error('Bulk action error:', err);
+                    alert('Network error while processing bulk action.');
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        });
+
+        document.getElementById('quick-expand-all')?.addEventListener('click', () => {
+            getMainRows().forEach(row => {
+                if (row.style.display === 'none') return;
+                const detail = document.getElementById('detail-' + row.dataset.id);
+                if (detail) detail.classList.add('active');
+            });
+        });
+
+        document.getElementById('quick-collapse-all')?.addEventListener('click', () => {
+            document.querySelectorAll('.detail-row').forEach(row => row.classList.remove('active'));
+        });
+
+        document.getElementById('quick-compact-toggle')?.addEventListener('click', () => {
+            document.body.classList.toggle('compact-mode');
+        });
+
+        applyAdvancedFilters();
 
         // Sector Momentum Chart (Line)
         const ctxSector = document.getElementById('sectorChart').getContext('2d');
@@ -779,6 +1096,7 @@
                         if (detailRow) {
                             detailRow.remove();
                         }
+                        updateBulkActionBar();
                     } else {
                         alert("Error deleting project.");
                         submitBtn.innerHTML = originalContent;

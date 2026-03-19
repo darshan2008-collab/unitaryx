@@ -13,7 +13,7 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20260320gapfix3" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 
@@ -25,9 +25,10 @@
     <nav class="navbar" id="navbar">
         <div class="nav-container">
             <a href="#home" class="nav-logo">
-                <span class="logo-icon"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="Unitary X"
-                        loading="lazy" style="width:28px;height:28px;object-fit:contain;" /></span>
-                <span class="logo-text">Unitary<span class="logo-x">X</span></span>
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Unitary X" class="brand-logo-img"
+                    loading="lazy"
+                    onerror="this.style.display='none'; this.parentElement.classList.add('logo-fallback-active');" />
+                <span class="logo-fallback-text" aria-hidden="true">Unitary X</span>
             </a>
             <ul class="nav-links" id="nav-links">
                 <li><a href="#home" class="nav-link active">Home</a></li>
@@ -68,22 +69,27 @@
     <!-- ── HERO ── -->
     <section class="hero" id="home">
         <!-- Animated AI Tech Hero Background (Preserving Original Image & Overlay) -->
-        <div class="hero-video-wrap" id="ai-hero-wrap" aria-hidden="true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: -1; background-image: url('{{ url_for('static', filename='img/user_lab_bg.png') }}'); background-size: cover; background-position: center;">
-            <video autoplay muted loop playsinline preload="auto" id="hero-vid" poster="{{ url_for('static', filename='img/hero-poster.jpg') }}" aria-hidden="true" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; pointer-events:none;">
-                <source src="{{ url_for('static', filename='video/3251808-uhd_3840_2160_25fps.mp4') }}" type="video/mp4">
+        <div class="hero-video-wrap" id="ai-hero-wrap" aria-hidden="true"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: -1; background-image: url('{{ url_for('static', filename='img/user_lab_bg.png') }}'); background-size: cover; background-position: center;">
+            <video autoplay muted loop playsinline preload="auto" id="hero-vid"
+                poster="{{ url_for('static', filename='img/hero-poster.jpg') }}" aria-hidden="true"
+                style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; pointer-events:none;">
+                <source src="{{ url_for('static', filename='video/3251808-uhd_3840_2160_25fps.mp4') }}"
+                    type="video/mp4">
             </video>
             <div class="hero-video-overlay" aria-hidden="true"></div>
-            <canvas id="ai-tech-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; z-index: 2; pointer-events: none;"></canvas>
-            
+            <canvas id="ai-tech-canvas"
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; z-index: 2; pointer-events: none;"></canvas>
+
             <script>
                 // Self-contained localized script for the Hero Canvas as requested
                 (() => {
                     const canvas = document.getElementById('ai-tech-canvas');
                     const wrap = document.getElementById('ai-hero-wrap');
-                    if(!canvas || !wrap) return;
+                    if (!canvas || !wrap) return;
                     const ctx = canvas.getContext('2d');
                     let width, height;
-                    
+
                     // Variables
                     let particles = [];
                     const particleCount = window.innerWidth < 768 ? 40 : 80;
@@ -165,13 +171,13 @@
                         ctx.strokeStyle = 'rgba(15, 23, 42, 0.03)'; // extremely subtle grid
                         ctx.lineWidth = 1;
                         const gridSize = 50;
-                        
+
                         ctx.beginPath();
-                        for(let x = 0; x <= width; x += gridSize) {
+                        for (let x = 0; x <= width; x += gridSize) {
                             ctx.moveTo(x, 0);
                             ctx.lineTo(x, height);
                         }
-                        for(let y = 0; y <= height; y += gridSize) {
+                        for (let y = 0; y <= height; y += gridSize) {
                             ctx.moveTo(0, y);
                             ctx.lineTo(width, y);
                         }
@@ -180,22 +186,22 @@
 
                     function animate() {
                         ctx.clearRect(0, 0, width, height);
-                        
+
                         drawGrid();
 
                         for (let i = 0; i < particles.length; i++) {
                             particles[i].update();
                             particles[i].draw();
-                            
+
                             // Draw circuit connections
                             for (let j = i; j < particles.length; j++) {
                                 let dx = particles[i].x - particles[j].x;
                                 let dy = particles[i].y - particles[j].y;
                                 let dist = Math.sqrt(dx * dx + dy * dy);
-                                
+
                                 if (dist < 120) {
                                     ctx.beginPath();
-                                    ctx.strokeStyle = `rgba(59, 130, 246, ${1 - dist/120})`;
+                                    ctx.strokeStyle = `rgba(59, 130, 246, ${1 - dist / 120})`;
                                     ctx.lineWidth = 0.5;
                                     ctx.moveTo(particles[i].x, particles[i].y);
                                     ctx.lineTo(particles[j].x, particles[j].y);
@@ -271,6 +277,9 @@
                 <h2 class="section-title">Premium <span class="gradient-text">Services</span></h2>
                 <p class="section-desc">From concept to deployment — software, hardware, web, and more for your student
                     projects.</p>
+                <p class="section-desc">Freelancer service highlights: one-to-one consultation, milestone-based
+                    delivery,
+                    progress updates, post-delivery support, and complete confidentiality.</p>
             </div>
             <div class="services-grid">
                 {% set services = [
@@ -280,11 +289,13 @@
                 Systems"], "glow":"glow-blue", "featured":false},
                 {"icon":"fas fa-code", "color":"icon-purple", "title":"Software Projects", "desc":"Desktop apps, CLI
                 tools, automation scripts, data analysis — anything your college demands.", "features":["Python / Java /
-                C++","Data Structures & Algorithms","Machine Learning / AI","DBMS Projects"],
+                C++","Data Structures & Algorithms","Machine Learning / AI","DBMS Projects","Clean Architecture &
+                Version Control","Testing, Debugging & Deployment Notes"],
                 "glow":"glow-purple", "featured":true},
                 {"icon":"fas fa-microchip","color":"icon-cyan", "title":"Hardware & IoT", "desc":"Arduino, sensor
                 integration, and embedded systems.", "features":["Arduino Programming","Sensor Integration","Circuit
-                Interfacing","Embedded Systems"], "glow":"glow-cyan",
+                Interfacing","Embedded Systems","Prototype to Final Demonstration","Documentation with Circuit
+                Diagrams"], "glow":"glow-cyan",
                 "featured":false},
                 {"icon":"fas fa-mobile-alt","color":"icon-green", "title":"Mobile Apps", "desc":"Android and iOS apps
                 using Flutter or React Native with beautiful UI.", "features":["Flutter / React Native","Firebase
@@ -427,7 +438,8 @@
                         <div class="icon-ring"></div>
                     </div>
                     <h3>On-Time Delivery</h3>
-                    <p>Deadlines are sacred. Your project is always delivered before your submission date — guaranteed.</p>
+                    <p>Deadlines are sacred. Your project is always delivered before your submission date — guaranteed.
+                    </p>
                 </div>
 
                 <!-- Card 2: 100% Confidential -->
@@ -463,7 +475,8 @@
                         </div>
                     </div>
                     <h3>Clean Code</h3>
-                    <p>Well-structured, commented, and plagiarism-free code you can explain confidently to your professors.</p>
+                    <p>Well-structured, commented, and plagiarism-free code you can explain confidently to your
+                        professors.</p>
                 </div>
 
                 <!-- Card 5: Free Revisions -->
@@ -483,7 +496,8 @@
                         <div class="cap-ripple"></div>
                     </div>
                     <h3>Expert Guidance</h3>
-                    <p>Professional mentorship and guidance throughout your project journey. Learn from experts, get professional quality.</p>
+                    <p>Professional mentorship and guidance throughout your project journey. Learn from experts, get
+                        professional quality.</p>
                 </div>
 
             </div>
@@ -527,9 +541,10 @@
                             </div>
                         </div>
                         <div class="contact-item">
-                                    <div class="ci-icon bg-pink"><i class="fab fa-instagram"></i></div>
-                                    <div><span class="ci-label">Instagram</span><span class="ci-value">@unitaryx__official</span>
-                                    </div>
+                            <div class="ci-icon bg-pink"><i class="fab fa-instagram"></i></div>
+                            <div><span class="ci-label">Instagram</span><span
+                                    class="ci-value">@unitaryx__official</span>
+                            </div>
                         </div>
                         <div class="contact-item">
                             <div class="ci-icon bg-cyan"><i class="fab fa-telegram"></i></div>
@@ -671,124 +686,149 @@
         </div>
     </div>
 
+    <script>
+        // ── SCROLL REVEAL — Intersection Observer ──────────────────
+        // First, mark all .reveal elements as pre-reveal (hidden) NOW that JS is confirmed working
+        document.addEventListener('DOMContentLoaded', function () {
+            var reveals = document.querySelectorAll('.reveal');
+            if (!window.IntersectionObserver) {
+                // Fallback: just show everything
+                reveals.forEach(function (el) { el.classList.add('active'); });
+                return;
+            }
+            reveals.forEach(function (el) { el.classList.add('pre-reveal'); });
+
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.remove('pre-reveal');
+                        entry.target.classList.add('active');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+            reveals.forEach(function (el) { observer.observe(el); });
+        });
+    </script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script>
-    // ── CINEMATIC CONTACT SECTION ─────────────────────────────
-    (() => {
-      const section  = document.getElementById('contact');
-      const form     = document.getElementById('contact-form');
-      const info     = document.querySelector('.contact-info');
-      const spotlight = document.getElementById('contact-spotlight');
-      const cvs      = document.getElementById('contact-particles');
-      if (!section) return;
+        // ── CINEMATIC CONTACT SECTION ─────────────────────────────
+        (() => {
+            const section = document.getElementById('contact');
+            const form = document.getElementById('contact-form');
+            const info = document.querySelector('.contact-info');
+            const spotlight = document.getElementById('contact-spotlight');
+            const cvs = document.getElementById('contact-particles');
+            if (!section) return;
 
-      // ── Particle canvas ──
-      if (cvs) {
-        const ctx = cvs.getContext('2d');
-        const resize = () => { cvs.width = section.offsetWidth; cvs.height = section.offsetHeight; };
-        resize();
-        window.addEventListener('resize', resize);
+            // ── Particle canvas ──
+            if (cvs) {
+                const ctx = cvs.getContext('2d');
+                const resize = () => { cvs.width = section.offsetWidth; cvs.height = section.offsetHeight; };
+                resize();
+                window.addEventListener('resize', resize);
 
-        const pts = Array.from({ length: 50 }, () => ({
-          x: Math.random() * cvs.width, y: Math.random() * cvs.height,
-          r: Math.random() * 1.8 + 0.4,
-          vx: (Math.random() - 0.5) * 0.18, vy: (Math.random() - 0.5) * 0.18,
-          a: Math.random() * 0.4 + 0.1,
-          mx: 0, my: 0,   // mouse-delta push
-          c: ['139,92,246','37,99,235','6,182,212'][Math.floor(Math.random()*3)]
-        }));
+                const pts = Array.from({ length: 50 }, () => ({
+                    x: Math.random() * cvs.width, y: Math.random() * cvs.height,
+                    r: Math.random() * 1.8 + 0.4,
+                    vx: (Math.random() - 0.5) * 0.18, vy: (Math.random() - 0.5) * 0.18,
+                    a: Math.random() * 0.4 + 0.1,
+                    mx: 0, my: 0,   // mouse-delta push
+                    c: ['139,92,246', '37,99,235', '6,182,212'][Math.floor(Math.random() * 3)]
+                }));
 
-        let mx = 0, my = 0;
-        section.addEventListener('mousemove', e => {
-          const r = section.getBoundingClientRect();
-          mx = e.clientX - r.left; my = e.clientY - r.top;
-        });
+                let mx = 0, my = 0;
+                section.addEventListener('mousemove', e => {
+                    const r = section.getBoundingClientRect();
+                    mx = e.clientX - r.left; my = e.clientY - r.top;
+                });
 
-        const draw = () => {
-          ctx.clearRect(0, 0, cvs.width, cvs.height);
-          pts.forEach(p => {
-            // gentle push toward cursor
-            const dx = mx - p.x, dy = my - p.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < 200) { p.mx += dx / dist * 0.02; p.my += dy / dist * 0.02; }
-            p.mx *= 0.95; p.my *= 0.95;
+                const draw = () => {
+                    ctx.clearRect(0, 0, cvs.width, cvs.height);
+                    pts.forEach(p => {
+                        // gentle push toward cursor
+                        const dx = mx - p.x, dy = my - p.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 200) { p.mx += dx / dist * 0.02; p.my += dy / dist * 0.02; }
+                        p.mx *= 0.95; p.my *= 0.95;
 
-            p.x += p.vx + p.mx; p.y += p.vy + p.my;
-            if (p.x < 0) p.x = cvs.width; if (p.x > cvs.width) p.x = 0;
-            if (p.y < 0) p.y = cvs.height; if (p.y > cvs.height) p.y = 0;
+                        p.x += p.vx + p.mx; p.y += p.vy + p.my;
+                        if (p.x < 0) p.x = cvs.width; if (p.x > cvs.width) p.x = 0;
+                        if (p.y < 0) p.y = cvs.height; if (p.y > cvs.height) p.y = 0;
 
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-            ctx.fillStyle = `rgba(${p.c},${p.a})`;
-            ctx.fill();
-          });
-          requestAnimationFrame(draw);
-        };
-        draw();
-      }
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                        ctx.fillStyle = `rgba(${p.c},${p.a})`;
+                        ctx.fill();
+                    });
+                    requestAnimationFrame(draw);
+                };
+                draw();
+            }
 
-      // ── Cursor spotlight ──
-      section.addEventListener('mousemove', e => {
-        const r = section.getBoundingClientRect();
-        if (spotlight) {
-          spotlight.style.left = (e.clientX - r.left) + 'px';
-          spotlight.style.top  = (e.clientY - r.top)  + 'px';
-        }
-      });
+            // ── Cursor spotlight ──
+            section.addEventListener('mousemove', e => {
+                const r = section.getBoundingClientRect();
+                if (spotlight) {
+                    spotlight.style.left = (e.clientX - r.left) + 'px';
+                    spotlight.style.top = (e.clientY - r.top) + 'px';
+                }
+            });
 
-      // ── Parallax layers on mouse move ──
-      section.addEventListener('mousemove', e => {
-        const r  = section.getBoundingClientRect();
-        const xN = (e.clientX - r.left) / r.width  - 0.5;  // −0.5 to 0.5
-        const yN = (e.clientY - r.top)  / r.height - 0.5;
+            // ── Parallax layers on mouse move ──
+            section.addEventListener('mousemove', e => {
+                const r = section.getBoundingClientRect();
+                const xN = (e.clientX - r.left) / r.width - 0.5;  // −0.5 to 0.5
+                const yN = (e.clientY - r.top) / r.height - 0.5;
 
-        // Form: moves forward / slightly tilts (fastest layer)
-        if (form) {
-          form.classList.remove('floating');  // stop idle float on interaction
-          form.style.transform = `
+                // Form: moves forward / slightly tilts (fastest layer)
+                if (form) {
+                    form.classList.remove('floating');  // stop idle float on interaction
+                    form.style.transform = `
             perspective(1200px)
             rotateX(${-yN * 3}deg)
             rotateY(${xN * 4}deg)
             translateY(${-yN * 8}px)
             translateZ(20px)
           `;
-        }
+                }
 
-        // Info panel: moves slightly slower
-        if (info) {
-          info.style.transform = `translateX(${xN * -6}px) translateY(${yN * -4}px)`;
-        }
-      });
+                // Info panel: moves slightly slower
+                if (info) {
+                    info.style.transform = `translateX(${xN * -6}px) translateY(${yN * -4}px)`;
+                }
+            });
 
-      // ── Reset transforms when cursor leaves ──
-      section.addEventListener('mouseleave', () => {
-        if (form) {
-          form.style.transform = '';
-          form.classList.add('floating');
-        }
-        if (info) info.style.transform = '';
-      });
+            // ── Reset transforms when cursor leaves ──
+            section.addEventListener('mouseleave', () => {
+                if (form) {
+                    form.style.transform = '';
+                    form.classList.add('floating');
+                }
+                if (info) info.style.transform = '';
+            });
 
-      // ── Start idle float ──
-      if (form) {
-        setTimeout(() => form.classList.add('floating'), 600);
-      }
+            // ── Start idle float ──
+            if (form) {
+                setTimeout(() => form.classList.add('floating'), 600);
+            }
 
-      // ── Magnetic icons ──
-      document.querySelectorAll('.ci-icon').forEach(icon => {
-        icon.addEventListener('mousemove', e => {
-          const r  = icon.getBoundingClientRect();
-          const dx = e.clientX - (r.left + r.width  / 2);
-          const dy = e.clientY - (r.top  + r.height / 2);
-          icon.style.transform = `translate(${dx * 0.25}px, ${dy * 0.25}px) scale(1.1)`;
-        });
-        icon.addEventListener('mouseleave', () => { icon.style.transform = ''; });
-      });
+            // ── Magnetic icons ──
+            document.querySelectorAll('.ci-icon').forEach(icon => {
+                icon.addEventListener('mousemove', e => {
+                    const r = icon.getBoundingClientRect();
+                    const dx = e.clientX - (r.left + r.width / 2);
+                    const dy = e.clientY - (r.top + r.height / 2);
+                    icon.style.transform = `translate(${dx * 0.25}px, ${dy * 0.25}px) scale(1.1)`;
+                });
+                icon.addEventListener('mouseleave', () => { icon.style.transform = ''; });
+            });
 
-    })();
+        })();
 
-    // ── Typewriter (existing, keep intact) ──
-    (() => {
+        // ── Typewriter (existing, keep intact) ──
+        (() => {
             const lines = [
                 { el: document.getElementById('type-line-1'), text: 'Premium Tech' },
                 { el: document.getElementById('type-line-2'), text: 'Solutions for' },
@@ -866,7 +906,7 @@
             });
         })();
     </script>
-    
+
 </body>
 
 </html>
