@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNITARY X - Cinematic Portfolio</title>
+    <meta name="description" content="UNITARY X - Elite digital experiences through design and engineering">
+
+    <link rel="preload" href="{{ url_for('static', filename='cinematic.css') }}" as="style">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" as="script">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='cinematic.css') }}?v=1.3">
+</head>
+
+<body>
+    <div class="custom-cursor"></div>
+    <div class="cursor-glow"></div>
+
+    <div class="loading-screen">
+        <div class="loading-logo">
+            <svg class="logo-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                        <feMerge>
+                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+                <circle class="particle" cx="50" cy="50" r="3" filter="url(#glow)" />
+                <circle class="particle" cx="150" cy="50" r="3" filter="url(#glow)" />
+                <circle class="particle" cx="100" cy="100" r="3" filter="url(#glow)" />
+                <circle class="particle" cx="50" cy="150" r="3" filter="url(#glow)" />
+                <circle class="particle" cx="150" cy="150" r="3" filter="url(#glow)" />
+            </svg>
+            <p class="loading-text">INITIALIZING UNITARY X</p>
+        </div>
+    </div>
+
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#hero" class="nav-logo" aria-label="UNITARY X Home">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="UNITARY X"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                <span style="display:none;">UNITARY X</span>
+            </a>
+            <div class="nav-menu">
+                <a href="#about" class="nav-link">About</a>
+                <a href="#work" class="nav-link">Projects</a>
+                <a href="#services" class="nav-link">Services</a>
+                <a href="#capabilities" class="nav-link">Tech Stack</a>
+                <a href="#contact" class="nav-link nav-cta">Contact</a>
+            </div>
+            <div class="nav-toggle" aria-label="Open menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <canvas id="canvas-3d"></canvas>
+
+    <main class="main-content">
+        <section id="hero" class="hero">
+            <div class="floating-objects">
+                <div class="geometric-shape shape-1"></div>
+                <div class="geometric-shape shape-2"></div>
+                <div class="geometric-shape shape-3"></div>
+            </div>
+
+            <div class="hero-content">
+                <h1 class="hero-title">Design. Build. Scale.</h1>
+                <p class="hero-subtitle">
+                    Elite digital experiences through design and engineering.
+                </p>
+                <div class="hero-cta">
+                    <a href="#work" class="btn btn-primary" data-magnetic>
+                        <span class="btn-text">View Projects</span>
+                        <span class="btn-glow"></span>
+                    </a>
+                    <a href="#contact" class="btn btn-secondary" data-magnetic>
+                        <span class="btn-text">Start a Project</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="about">
+            <div class="about-container">
+                <div class="about-header">
+                    <h2 class="section-title">About UNITARY X</h2>
+                    <p class="section-subtitle">Premium execution with technical depth</p>
+                </div>
+
+                <div class="about-grid">
+                    <div class="about-hologram">
+                        <div class="hologram-frame">
+                            <img class="profile-image" src="{{ url_for('static', filename='img/logo.png') }}"
+                                alt="UNITARY X Logo"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="profile-fallback" style="display:none;">UNITARY X</div>
+                            <div class="hologram-border"></div>
+                            <div class="hologram-scanlines"></div>
+                        </div>
+                    </div>
+
+                    <div class="about-content">
+                        <p class="about-text">
+                            We engineer digital systems that combine aesthetics and performance. From business websites
+                            to
+                            platform-level products, our process aligns strategy, UX, and implementation into measurable
+                            outcomes.
+                        </p>
+                        <p class="about-text">
+                            Every build is structured for clarity, scalability, and speed so teams can launch
+                            confidently,
+                            iterate quickly, and grow with a strong technical foundation.
+                        </p>
+
+                        <div class="skills-network">
+                            <div class="skills-center">UNITARY<br>X</div>
+                            <div class="skill-node">
+                                <div class="node-dot"></div>
+                                <div class="node-label">UI/UX</div>
+                                <div class="node-tooltip">Experience Design</div>
+                            </div>
+                            <div class="skill-node">
+                                <div class="node-dot"></div>
+                                <div class="node-label">Frontend</div>
+                                <div class="node-tooltip">Responsive Interfaces</div>
+                            </div>
+                            <div class="skill-node">
+                                <div class="node-dot"></div>
+                                <div class="node-label">Backend</div>
+                                <div class="node-tooltip">Scalable APIs</div>
+                            </div>
+                            <div class="skill-node">
+                                <div class="node-dot"></div>
+                                <div class="node-label">Automation</div>
+                                <div class="node-tooltip">Workflow Efficiency</div>
+                            </div>
+                            <div class="skill-node">
+                                <div class="node-dot"></div>
+                                <div class="node-label">Hardware</div>
+                                <div class="node-tooltip">Embedded Systems</div>
+                            </div>
+                            <div class="skill-node">
+                                <div class="node-dot"></div>
+                                <div class="node-label">Optimization</div>
+                                <div class="node-tooltip">Performance Tuning</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="unitary-x" class="services">
+            <div class="services-header">
+                <h2 class="section-title">More About UNITARY X</h2>
+                <p class="section-subtitle">Built for ambitious founders, teams, and digital-first brands</p>
+            </div>
+
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-bullseye"></i></div>
+                    <h3>Mission-Driven Delivery</h3>
+                    <p>UNITARY X exists to transform ideas into production-ready digital systems with clarity, speed,
+                        and measurable outcomes.</p>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-layer-group"></i></div>
+                    <h3>Cross-Disciplinary Expertise</h3>
+                    <p>From interface design and frontend engineering to backend logic and automation, we deliver
+                        complete end-to-end execution.</p>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-shield-halved"></i></div>
+                    <h3>Reliability First</h3>
+                    <p>Our builds focus on maintainable architecture, clean code structure, and performance stability so
+                        your product grows without friction.</p>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-chart-line"></i></div>
+                    <h3>Growth-Focused Thinking</h3>
+                    <p>Every page, workflow, and interaction is optimized for business impact, from lead generation to
+                        engagement and conversion quality.</p>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-people-group"></i></div>
+                    <h3>Collaborative Process</h3>
+                    <p>We work closely with clients in transparent milestones, ensuring strategy, design, and
+                        engineering stay aligned at every phase.</p>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-rocket"></i></div>
+                    <h3>Launch to Scale Support</h3>
+                    <p>Beyond launch, UNITARY X helps optimize, iterate, and scale products with practical technical
+                        improvements and ongoing refinement.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="work" class="work">
+            <div class="work-header">
+                <h2 class="section-title">Featured Projects</h2>
+                <p class="section-subtitle">Crafted systems and digital experiences</p>
+            </div>
+
+            <div class="projects-container">
+                {% for p in projects %}
+                {% set cat = (p.category or 'web')|lower %}
+                {% if p.icon %}
+                {% set icon_class = p.icon %}
+                {% elif 'hardware' in cat or 'robot' in cat or 'iot' in cat %}
+                {% set icon_class = 'fas fa-microchip' %}
+                {% elif 'ai' in cat or 'ml' in cat or 'vision' in cat %}
+                {% set icon_class = 'fas fa-brain' %}
+                {% elif 'software' in cat or 'python' in cat or 'backend' in cat %}
+                {% set icon_class = 'fas fa-code' %}
+                {% elif 'web' in cat or 'frontend' in cat or 'ui' in cat %}
+                {% set icon_class = 'fas fa-laptop-code' %}
+                {% else %}
+                {% set icon_class = 'fas fa-cube' %}
+                {% endif %}
+                <div class="project-card" data-case-study="true" data-case-title="{{ p.title }}"
+                    data-case-description="{{ p.description or 'Premium execution pipeline with measurable outcomes.' }}"
+                    data-case-category="{{ cat }}" data-case-tags="{{ p.tags or '' }}">
+                    <div class="project-visual">
+                        <span class="project-visual-icon"><i class="{{ icon_class }}"></i></span>
+                        <div class="project-mockup"></div>
+                        <div class="project-overlay"></div>
+                    </div>
+                    <div class="project-content">
+                        <div class="project-title-row">
+                            <span class="project-icon"><i class="{{ icon_class }}"></i></span>
+                            <h3 class="project-title">{{ p.title }}</h3>
+                        </div>
+                        <p class="project-description">{{ p.description or 'Premium execution pipeline with measurable
+                            outcomes.' }}</p>
+                        <div class="project-tags">
+                            <span class="tag">{{ cat|upper }}</span>
+                            {% if p.tags %}
+                            {% for t in p.tags.split(',')[:3] %}
+                            <span class="tag">{{ t.strip() }}</span>
+                            {% endfor %}
+                            {% else %}
+                            <span class="tag">Premium</span>
+                            <span class="tag">Conversion</span>
+                            {% endif %}
+                        </div>
+                        <button class="btn btn-small" data-case-study-trigger>View Case Study →</button>
+                    </div>
+                </div>
+                {% else %}
+                <div class="project-card" data-case-study="true">
+                    <div class="project-visual">
+                        <span class="project-visual-icon"><i class="fas fa-laptop-code"></i></span>
+                        <div class="project-mockup"></div>
+                        <div class="project-overlay"></div>
+                    </div>
+                    <div class="project-content">
+                        <div class="project-title-row">
+                            <span class="project-icon"><i class="fas fa-laptop-code"></i></span>
+                            <h3 class="project-title">Next-Gen Product Site</h3>
+                        </div>
+                        <p class="project-description">High-conversion product storytelling and premium UI system.</p>
+                        <div class="project-tags">
+                            <span class="tag">WEB</span>
+                            <span class="tag">UI/UX</span>
+                            <span class="tag">Conversion</span>
+                        </div>
+                        <button class="btn btn-small" data-case-study-trigger>View Case Study →</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section id="services" class="services">
+            <div class="services-header">
+                <h2 class="section-title">Services</h2>
+                <p class="section-subtitle">Focused solutions designed to create business momentum</p>
+            </div>
+
+            <div class="services-grid">
+                <div class="service-card" data-service="Interactive Design">
+                    <div class="service-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 3h18v18H3z" stroke="currentColor" fill="none" stroke-width="1.5" />
+                            <circle cx="12" cy="12" r="2" fill="currentColor" />
+                        </svg>
+                    </div>
+                    <h3>Web Design</h3>
+                    <p>Modern websites designed for clarity, trust, and high first-impression impact.</p>
+                </div>
+
+                <div class="service-card" data-service="Full-Stack Development">
+                    <div class="service-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 7h18M3 12h18M3 17h18" stroke="currentColor" fill="none" stroke-width="1.5" />
+                        </svg>
+                    </div>
+                    <h3>UI/UX Design</h3>
+                    <p>Intuitive user journeys that make every interaction smooth, intentional, and conversion-ready.
+                    </p>
+                </div>
+
+                <div class="service-card" data-service="AI Integration">
+                    <div class="service-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2v20M2 12h20M6 6l12 12M18 6L6 18" stroke="currentColor" fill="none"
+                                stroke-width="1.5" />
+                        </svg>
+                    </div>
+                    <h3>Frontend Development</h3>
+                    <p>Responsive, fast, and scalable frontends built to perform flawlessly across devices.</p>
+                </div>
+
+                <div class="service-card" data-service="3D & WebGL">
+                    <div class="service-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2l10 6v8l-10 6-10-6V8l10-6z" stroke="currentColor" fill="none"
+                                stroke-width="1.5" />
+                        </svg>
+                    </div>
+                    <h3>Branding Assets</h3>
+                    <p>Clean visual systems and digital brand elements that create strong market presence.</p>
+                </div>
+
+                <div class="service-card" data-service="IoT Solutions">
+                    <div class="service-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="8" stroke="currentColor" fill="none" stroke-width="1.5" />
+                            <circle cx="12" cy="12" r="2" fill="currentColor" />
+                            <path
+                                d="M12 2v2M12 18v2M19.07 4.93l-1.41 1.41M6.34 17.66l-1.41 1.41M22 12h-2M4 12H2M19.07 19.07l1.41-1.41M6.34 6.34L7.75 4.93"
+                                stroke="currentColor" stroke-width="1.5" />
+                        </svg>
+                    </div>
+                    <h3>Conversion Optimization</h3>
+                    <p>Layout and messaging refinements that help turn visitors into serious inquiries.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="capabilities" class="capabilities">
+            <div class="services-header">
+                <h2 class="section-title">Hardware, Software & Web Development</h2>
+                <p class="section-subtitle">End-to-end technical execution from architecture to deployment</p>
+            </div>
+
+            <div class="capabilities-grid">
+                <article class="capability-card">
+                    <div class="capability-head">
+                        <span class="capability-icon"><i class="fas fa-microchip"></i></span>
+                        <h3>Hardware Engineering</h3>
+                    </div>
+                    <p>We design robust hardware foundations for connected products, automation systems, and edge
+                        devices built for reliability in real-world environments.</p>
+                    <ul class="capability-list">
+                        <li>Embedded system architecture, microcontroller selection, and board-level planning</li>
+                        <li>Sensor integration, signal integrity checks, and communication protocols like UART, SPI, and
+                            I2C</li>
+                        <li>Power optimization, thermal considerations, and enclosure-ready hardware validation</li>
+                        <li>Prototyping workflows from proof-of-concept rigs to pilot-ready hardware revisions</li>
+                    </ul>
+                </article>
+
+                <article class="capability-card">
+                    <div class="capability-head">
+                        <span class="capability-icon"><i class="fas fa-code"></i></span>
+                        <h3>Software Development</h3>
+                    </div>
+                    <p>Our software stacks are engineered for scale, maintainability, and performance, with clean
+                        architecture and measurable delivery milestones.</p>
+                    <ul class="capability-list">
+                        <li>Backend APIs with Flask and modern service patterns for secure business logic</li>
+                        <li>Database modeling, migration planning, and data integrity for long-term product growth</li>
+                        <li>Automation, admin workflows, and role-based systems for operational efficiency</li>
+                        <li>Testing, performance profiling, and deployment pipelines for stable production releases</li>
+                    </ul>
+                </article>
+
+                <article class="capability-card">
+                    <div class="capability-head">
+                        <span class="capability-icon"><i class="fas fa-globe"></i></span>
+                        <h3>Web Development</h3>
+                    </div>
+                    <p>We build high-impact digital experiences that combine premium design, fast delivery, and
+                        conversion-focused user flows across devices.</p>
+                    <ul class="capability-list">
+                        <li>Responsive UI systems with strong accessibility, typography hierarchy, and interaction
+                            polish</li>
+                        <li>SEO-aware page structures, semantic HTML, and performance budgets for search visibility</li>
+                        <li>Frontend animation strategy with meaningful motion, not distracting effects</li>
+                        <li>Conversion optimization using analytics-informed CTA placement and content clarity</li>
+                    </ul>
+                </article>
+            </div>
+
+            <div class="delivery-track">
+                <h3>How We Deliver</h3>
+                <div class="delivery-points">
+                    <div class="delivery-item"><span>1</span>
+                        <p>Discovery and requirement mapping</p>
+                    </div>
+                    <div class="delivery-item"><span>2</span>
+                        <p>System design and prototyping</p>
+                    </div>
+                    <div class="delivery-item"><span>3</span>
+                        <p>Implementation and iterative testing</p>
+                    </div>
+                    <div class="delivery-item"><span>4</span>
+                        <p>Deployment, monitoring, and optimization</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="contact">
+            <div class="contact-container">
+                <div class="services-header">
+                    <h2 class="section-title">Let's Build Something Exceptional</h2>
+                    <p class="section-subtitle">Share your vision and let's turn it into a premium digital experience
+                    </p>
+                </div>
+
+                <div class="contact-content">
+                    <form class="contact-form" id="contact-form">
+                        <div class="form-group">
+                            <label class="form-label" for="name">Name</label>
+                            <input class="form-input" type="text" id="name" name="name" placeholder="Your name"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="email">Email</label>
+                            <input class="form-input" type="email" id="email" name="email" placeholder="you@brand.com"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="message">Project Brief</label>
+                            <textarea class="form-textarea" id="message" name="message"
+                                placeholder="Tell me what you want to build" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-submit">
+                            <span class="btn-text">Send Inquiry</span>
+                            <span class="btn-glow"></span>
+                        </button>
+                    </form>
+
+                    <div class="contact-info">
+                        <h3>Connect with UNITARY X</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.7;">
+                            Open to freelance collaborations, product builds, and design-focused digital projects.
+                        </p>
+                        <div class="contact-email">hello@unitaryx.com</div>
+                        <div class="contact-location">Available for remote projects worldwide</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 UNITARY X. Crafted with obsession over pixels and human delight.</p>
+            <div class="footer-links">
+                <a href="#" class="footer-link">Privacy</a>
+                <a href="#" class="footer-link">Terms</a>
+                <a href="#" class="footer-link">Sitemap</a>
+            </div>
+        </div>
+    </footer>
+
+    <div class="case-study-modal" id="case-study-modal">
+        <div class="case-study-close">✕</div>
+        <div class="case-study-content">
+            <h2 id="case-study-title">Project Title</h2>
+            <div id="case-study-body"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="{{ url_for('static', filename='cinematic.js') }}"></script>
+</body>
+
+</html>

@@ -4,909 +4,515 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Unitary X — Premium Tech Freelancer | Software &amp; Hardware Projects</title>
+    <title>Unitary X | Hyper Premium Freelancer Studio</title>
     <meta name="description"
-        content="Unitary X — Your trusted freelancer for college and school student projects in web development, software engineering, hardware &amp; IoT, and more." />
+        content="Hyper-premium freelance digital studio for web, app, AI, UI, and branding with cinematic delivery quality." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20260320gapfix3" />
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='user_premium.css') }}?v=20260320cinematic7" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
 </head>
 
-<body>
+<body class="ux-body">
+    <canvas id="ux-bg-canvas" class="ux-bg-canvas" aria-hidden="true"></canvas>
+    <div class="ux-grid-overlay" aria-hidden="true"></div>
 
-    <canvas id="particle-canvas"></canvas>
-
-    <!-- ── NAVBAR ── -->
-    <nav class="navbar" id="navbar">
-        <div class="nav-container">
-            <a href="#home" class="nav-logo">
-                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Unitary X" class="brand-logo-img"
-                    loading="lazy"
-                    onerror="this.style.display='none'; this.parentElement.classList.add('logo-fallback-active');" />
-                <span class="logo-fallback-text" aria-hidden="true">Unitary X</span>
-            </a>
-            <ul class="nav-links" id="nav-links">
-                <li><a href="#home" class="nav-link active">Home</a></li>
-                <li><a href="#services" class="nav-link">Services</a></li>
-                <li><a href="#projects" class="nav-link">Projects</a></li>
-                <li><a href="#process" class="nav-link">Process</a></li>
-                <li><a href="#contact" class="nav-link">Contact</a></li>
-            </ul>
-            <div class="nav-actions">
-                {% if user %}
-                {% if user.role == 'admin' %}
-                <div class="user-greeting">
-                    <span class="hi-text">Hi, <strong>{{ user.name.split()[0] }}</strong> (Admin)</span>
-                    <a href="/admin" class="nav-icon-link" title="Admin Dashboard"><i class="fas fa-chart-line"></i></a>
-                </div>
-                {% else %}
-                <div class="user-greeting">
-                    <span class="hi-text">Hi, <strong>{{ user.name.split()[0] }}</strong></span>
-                    <a href="/dashboard" class="nav-icon-link" title="My Dashboard"><i
-                            class="fas fa-user-circle"></i></a>
-                </div>
-                {% endif %}
-                <a href="/logout" class="nav-icon-link" title="Logout"><i class="fas fa-sign-out-alt"></i></a>
-                {% else %}
-                <a href="javascript:void(0)" class="nav-icon-link" id="admin-trigger" title="Admin Panel"><i
-                        class="fas fa-user-shield"></i></a>
-                <a href="/login" class="nav-icon-link" aria-label="User Login" title="Login / Register"><i
-                        class="fas fa-user-circle"></i></a>
-                {% endif %}
-                <a href="#contact" class="btn-hire" id="nav-hire-btn">Hire Me <i class="fas fa-arrow-right"></i></a>
-                <button class="hamburger" id="hamburger" aria-label="Open menu">
-                    <span></span><span></span><span></span>
-                </button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- ── HERO ── -->
-    <section class="hero" id="home">
-        <!-- Animated AI Tech Hero Background (Preserving Original Image & Overlay) -->
-        <div class="hero-video-wrap" id="ai-hero-wrap" aria-hidden="true"
-            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: -1; background-image: url('{{ url_for('static', filename='img/user_lab_bg.png') }}'); background-size: cover; background-position: center;">
-            <video autoplay muted loop playsinline preload="auto" id="hero-vid"
-                poster="{{ url_for('static', filename='img/hero-poster.jpg') }}" aria-hidden="true"
-                style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; pointer-events:none;">
-                <source src="{{ url_for('static', filename='video/3251808-uhd_3840_2160_25fps.mp4') }}"
-                    type="video/mp4">
-            </video>
-            <div class="hero-video-overlay" aria-hidden="true"></div>
-            <canvas id="ai-tech-canvas"
-                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; z-index: 2; pointer-events: none;"></canvas>
-
-            <script>
-                // Self-contained localized script for the Hero Canvas as requested
-                (() => {
-                    const canvas = document.getElementById('ai-tech-canvas');
-                    const wrap = document.getElementById('ai-hero-wrap');
-                    if (!canvas || !wrap) return;
-                    const ctx = canvas.getContext('2d');
-                    let width, height;
-
-                    // Variables
-                    let particles = [];
-                    const particleCount = window.innerWidth < 768 ? 40 : 80;
-                    let mouse = { x: -1000, y: -1000, radius: 150 };
-
-                    function resize() {
-                        width = wrap.offsetWidth;
-                        height = wrap.offsetHeight;
-                        canvas.width = width;
-                        canvas.height = height;
-                    }
-                    window.addEventListener('resize', resize);
-                    resize();
-
-                    // Track mouse inside the hero area specifically
-                    wrap.parentElement.addEventListener('mousemove', (e) => {
-                        const rect = wrap.getBoundingClientRect();
-                        mouse.x = e.clientX - rect.left;
-                        mouse.y = e.clientY - rect.top;
-                    });
-                    wrap.parentElement.addEventListener('mouseleave', () => {
-                        mouse.x = -1000;
-                        mouse.y = -1000;
-                    });
-
-                    class Node {
-                        constructor() {
-                            this.x = Math.random() * width;
-                            this.y = Math.random() * height;
-                            this.vx = (Math.random() - 0.5) * 0.5;
-                            this.vy = (Math.random() - 0.5) * 0.5;
-                            this.baseRadius = Math.random() * 2 + 1;
-                            this.radius = this.baseRadius;
-                            // Cool cyan / blue palette for light theme
-                            this.color = Math.random() > 0.5 ? '#3b82f6' : '#0ea5e9';
-                        }
-                        update() {
-                            // Movement
-                            this.x += this.vx;
-                            this.y += this.vy;
-
-                            // Edge bounce
-                            if (this.x < 0 || this.x > width) this.vx *= -1;
-                            if (this.y < 0 || this.y > height) this.vy *= -1;
-
-                            // Mouse interaction
-                            let dx = mouse.x - this.x;
-                            let dy = mouse.y - this.y;
-                            let distance = Math.sqrt(dx * dx + dy * dy);
-                            if (distance < mouse.radius) {
-                                // Subtle dodge
-                                const force = (mouse.radius - distance) / mouse.radius;
-                                this.x -= (dx / distance) * force * 1.5;
-                                this.y -= (dy / distance) * force * 1.5;
-                                this.radius = this.baseRadius + (force * 2);
-                            } else {
-                                this.radius = this.baseRadius;
-                            }
-                        }
-                        draw() {
-                            ctx.beginPath();
-                            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                            ctx.fillStyle = this.color;
-                            ctx.shadowBlur = 10;
-                            ctx.shadowColor = this.color;
-                            ctx.fill();
-                            ctx.shadowBlur = 0; // reset
-                        }
-                    }
-
-                    function init() {
-                        particles = [];
-                        for (let i = 0; i < particleCount; i++) {
-                            particles.push(new Node());
-                        }
-                    }
-
-                    function drawGrid() {
-                        ctx.strokeStyle = 'rgba(15, 23, 42, 0.03)'; // extremely subtle grid
-                        ctx.lineWidth = 1;
-                        const gridSize = 50;
-
-                        ctx.beginPath();
-                        for (let x = 0; x <= width; x += gridSize) {
-                            ctx.moveTo(x, 0);
-                            ctx.lineTo(x, height);
-                        }
-                        for (let y = 0; y <= height; y += gridSize) {
-                            ctx.moveTo(0, y);
-                            ctx.lineTo(width, y);
-                        }
-                        ctx.stroke();
-                    }
-
-                    function animate() {
-                        ctx.clearRect(0, 0, width, height);
-
-                        drawGrid();
-
-                        for (let i = 0; i < particles.length; i++) {
-                            particles[i].update();
-                            particles[i].draw();
-
-                            // Draw circuit connections
-                            for (let j = i; j < particles.length; j++) {
-                                let dx = particles[i].x - particles[j].x;
-                                let dy = particles[i].y - particles[j].y;
-                                let dist = Math.sqrt(dx * dx + dy * dy);
-
-                                if (dist < 120) {
-                                    ctx.beginPath();
-                                    ctx.strokeStyle = `rgba(59, 130, 246, ${1 - dist / 120})`;
-                                    ctx.lineWidth = 0.5;
-                                    ctx.moveTo(particles[i].x, particles[i].y);
-                                    ctx.lineTo(particles[j].x, particles[j].y);
-                                    ctx.stroke();
-                                }
-                            }
-                        }
-                        requestAnimationFrame(animate);
-                    }
-
-                    init();
-                    animate();
-                })();
-            </script>
-        </div>
-
-        <div class="hero-container">
-            <h1 class="hero-title" id="typewriter-title">
-                <span class="title-line" id="type-line-1">Premium Tech</span>
-                <span class="title-line gradient-text" id="type-line-2">Solutions for</span>
-                <span class="title-line" id="type-line-3">Everyone</span>
-            </h1>
-            <p class="hero-subtitle">Crafting High-Performance Software, Smart IoT Systems, and Intelligent AI Solutions
-                tailored for your vision.</p>
-
-            <div class="hero-cta">
-                <a href="#projects" class="btn-primary"><span>Explore Projects</span><i class="fas fa-rocket"></i></a>
-                <a href="#contact" class="btn-secondary"><span>Get a Quote</span><i class="fas fa-paper-plane"></i></a>
-            </div>
-
-            <div class="tech-stack-row">
-                <span class="tech-label">Technologies:</span>
-                <div class="tech-pills">
-                    <span class="tech-pill"><i class="fab fa-python"></i> Python</span>
-                    <span class="tech-pill"><i class="fab fa-js"></i> JavaScript</span>
-                    <span class="tech-pill"><i class="fab fa-react"></i> React</span>
-                    <span class="tech-pill"><i class="fas fa-microchip"></i> Arduino</span>
-                    <span class="tech-pill"><i class="fas fa-server"></i> Flask</span>
-                    <span class="tech-pill"><i class="fab fa-node-js"></i> Node.js</span>
-                </div>
-            </div>
-        </div>
-
-
-        <div class="hero-scroll-hint">
-            <div class="scroll-mouse">
-                <div class="scroll-wheel"></div>
-            </div>
-            <span>Scroll to explore</span>
-        </div>
-    </section>
-
-    <!-- ── MARQUEE ── -->
-    <div class="marquee-strip">
-        <div class="marquee-track">
-            {% set items = ['Web Development','Mobile Apps','Hardware Projects','IoT Systems','AI & ML','Database
-            Design','Arduino Projects','Raspberry Pi','PCB Design','React Apps'] %}
-            {% for item in items %}<span>{{ item }}</span><span class="sep">✦</span>{% endfor %}
-            {% for item in items %}<span>{{ item }}</span><span class="sep">✦</span>{% endfor %}
-        </div>
+    <div class="ux-loader" id="ux-loader" aria-hidden="true">
+        <div class="ux-loader-logo">UX</div>
     </div>
 
-    <!-- ── SERVICES ── -->
-    <section class="services reveal" id="services">
-        <div class="services-bg">
-            <div class="glass-orb orb-1"></div>
-            <div class="glass-orb orb-2"></div>
-            <div class="glass-orb orb-3"></div>
-        </div>
-        <div class="section-container">
-            <div class="section-header">
-                <div class="section-tag"><i class="fas fa-layer-group"></i> What I Offer</div>
-                <h2 class="section-title">Premium <span class="gradient-text">Services</span></h2>
-                <p class="section-desc">From concept to deployment — software, hardware, web, and more for your student
-                    projects.</p>
-                <p class="section-desc">Freelancer service highlights: one-to-one consultation, milestone-based
-                    delivery,
-                    progress updates, post-delivery support, and complete confidentiality.</p>
+    <div class="ux-cursor" id="ux-cursor" aria-hidden="true"></div>
+    <div class="ux-cursor-trail" id="ux-cursor-trail" aria-hidden="true"></div>
+
+    <div class="ux-shell">
+        <nav class="ux-nav" id="ux-nav">
+            <div class="ux-nav-inner">
+                <a href="#home" class="ux-brand">
+                    <span class="ux-brand-mark">U</span>
+                    <span>Unitary X</span>
+                </a>
+
+                <ul class="ux-links">
+                    <li><a href="#home" class="active">Home</a></li>
+                    <li><a href="#projects">Projects</a></li>
+                    <li><a href="#lab">Lab</a></li>
+                    <li><a href="#process">Process</a></li>
+                    <li><a href="#services">Services</a></li>
+                    <li><a href="#pricing">Pricing</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+
+                <a href="#contact" class="ux-nav-cta ux-ripple ux-magnetic">Hire Me</a>
             </div>
-            <div class="services-grid">
-                {% set services = [
-                {"icon":"fas fa-globe", "color":"icon-blue", "title":"Web Development", "desc":"Full-stack web
-                applications using React, Node.js, Flask, Django. Responsive, modern, and blazing-fast.",
-                "features":["Frontend & Backend","Database Integration","REST API Development","Authentication
-                Systems"], "glow":"glow-blue", "featured":false},
-                {"icon":"fas fa-code", "color":"icon-purple", "title":"Software Projects", "desc":"Desktop apps, CLI
-                tools, automation scripts, data analysis — anything your college demands.", "features":["Python / Java /
-                C++","Data Structures & Algorithms","Machine Learning / AI","DBMS Projects","Clean Architecture &
-                Version Control","Testing, Debugging & Deployment Notes"],
-                "glow":"glow-purple", "featured":true},
-                {"icon":"fas fa-microchip","color":"icon-cyan", "title":"Hardware & IoT", "desc":"Arduino, sensor
-                integration, and embedded systems.", "features":["Arduino Programming","Sensor Integration","Circuit
-                Interfacing","Embedded Systems","Prototype to Final Demonstration","Documentation with Circuit
-                Diagrams"], "glow":"glow-cyan",
-                "featured":false},
-                {"icon":"fas fa-mobile-alt","color":"icon-green", "title":"Mobile Apps", "desc":"Android and iOS apps
-                using Flutter or React Native with beautiful UI.", "features":["Flutter / React Native","Firebase
-                Integration","UI/UX Design","APK Delivery"], "glow":"glow-green",
-                "featured":false},
-                {"icon":"fas fa-brain", "color":"icon-orange", "title":"AI & Machine Learning", "desc":"Intelligent
-                systems, image recognition, NLP models, data analytics for final year projects.",
-                "features":["TensorFlow / PyTorch","Computer Vision","NLP & Chatbots","Data Analysis"],
-                "glow":"glow-orange", "featured":false},
-                {"icon":"fas fa-file-alt", "color":"icon-pink", "title":"Reports & Documentation","desc":"IEEE reports,
-                project documentation, PPTs, technical write-ups, and full project guides.", "features":["IEEE Format
-                Reports","UML Diagrams","PowerPoint Presentations","Project Documentation"],
-                "glow":"glow-pink", "featured":false}
-                ] %}
-                {% for s in services %}
-                <div class="service-card {% if s.featured %}featured-card{% endif %}">
-                    {% if s.featured %}<div class="featured-badge"><i class="fas fa-fire"></i> Most Popular</div>{%
-                    endif %}
-                    <div class="service-icon-wrap {{ s.color }}"><i class="{{ s.icon }}"></i></div>
-                    <h3 class="service-title">{{ s.title }}</h3>
-                    <p class="service-desc">{{ s.desc }}</p>
-                    <ul class="service-list">
-                        {% for f in s.features %}<li><i class="fas fa-check"></i> {{ f }}</li>{% endfor %}
-                    </ul>
-                    <div class="service-footer">
-                        <a href="#contact" class="service-cta">Get Quote <i class="fas fa-arrow-right"></i></a>
+        </nav>
+
+        <section class="ux-section ux-hero" id="home">
+            <div class="ux-hero-wrap">
+                <div class="ux-hero-main ux-reveal">
+                    <span class="ux-kicker"><i class="fas fa-briefcase"></i> Premium Conversion Design</span>
+                    <h1 class="ux-headline" id="ux-headline">I Build Digital Experiences That Convert</h1>
+                    <p class="ux-sub" id="ux-sub">Cinematic interfaces, software systems, and hardware-ready builds
+                        crafted for founders, students, and premium clients.</p>
+
+                    <div class="ux-cta-row">
+                        <a href="#contact" class="ux-btn ux-btn-primary ux-ripple ux-magnetic">Hire Me <span
+                                class="sweep"></span></a>
+                        <a href="#projects" class="ux-btn ux-ripple ux-magnetic">View Projects <span
+                                class="sweep"></span></a>
+                        <a href="/cinematic" class="ux-btn ux-ripple ux-magnetic">Portfolio <span
+                                class="sweep"></span></a>
                     </div>
-                    <div class="card-glow {{ s.glow }}"></div>
                 </div>
-                {% endfor %}
-            </div>
-        </div>
-    </section>
 
-    <!-- ── PROJECTS ── -->
-    <section class="projects reveal" id="projects">
-        <div class="projects-bg">
-            <div class="proj-orb orb-1"></div>
-            <div class="proj-orb orb-2"></div>
-            <div class="proj-orb orb-3"></div>
-        </div>
-        <div class="section-container">
-            <div class="section-header">
-                <div class="section-tag"><i class="fas fa-folder-open"></i> Our Work</div>
-                <h2 class="section-title">Featured <span class="gradient-text">Projects</span></h2>
-                <p class="section-desc">A showcase of premium student projects delivered — from intelligent apps to
-                    smart hardware systems.</p>
+                <aside class="ux-hero-side ux-reveal">
+                    <div class="ux-float">
+                        <h4><i class="fas fa-cube"></i> Live Product Thinking</h4>
+                        <p>Built like premium software products, not static pages.</p>
+                    </div>
+                    <div class="ux-float">
+                        <h4><i class="fas fa-microchip"></i> AI + Automation</h4>
+                        <p>Intelligent workflows, APIs, and scalable architecture.</p>
+                    </div>
+                    <div class="ux-float">
+                        <h4><i class="fas fa-star"></i> Client WOW Delivery</h4>
+                        <p>Designed to impress in 3 seconds and retain attention.</p>
+                    </div>
+                </aside>
+            </div>
+            <div class="ux-scroll-indicator" aria-hidden="true"></div>
+        </section>
+
+        <section class="ux-section ux-reveal" id="projects">
+            <h2 class="ux-title">Featured Portfolio</h2>
+            <p class="ux-muted">Interactive, conversion-driven projects across web, app, branding, and intelligent
+                systems.</p>
+
+            <div class="ux-filters">
+                <button class="ux-filter active" data-filter="all">All</button>
+                <button class="ux-filter" data-filter="web">Web</button>
+                <button class="ux-filter" data-filter="app">App</button>
+                <button class="ux-filter" data-filter="ui">UI</button>
+                <button class="ux-filter" data-filter="branding">Branding</button>
             </div>
 
-            <div class="projects-filter" id="projects-filter">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="software">Software</button>
-                <button class="filter-btn" data-filter="hardware">Hardware</button>
-                <button class="filter-btn" data-filter="web">Web</button>
-                <button class="filter-btn" data-filter="ai">AI / ML</button>
+            <div class="ux-project-tools">
+                <label class="ux-project-search" for="ux-project-search">
+                    <i class="fas fa-search"></i>
+                    <input id="ux-project-search" type="search" placeholder="Search projects by title or description" />
+                </label>
+                <span class="ux-project-count" id="ux-project-count">Showing all projects</span>
             </div>
 
-            <div class="projects-grid" id="projects-grid">
+            <div class="ux-project-grid">
                 {% for p in projects %}
-                <div class="project-card" data-category="{{ p.category }}">
-                    <div class="proj-thumb">
-                        <div class="proj-thumb-bg {{ p.bg_class }}">
-                            <i class="{{ p.icon }} proj-icon"></i>
-                        </div>
-                        <div class="proj-overlay">
-                            <a href="#contact" class="proj-view-btn">View Details <i
-                                    class="fas fa-external-link-alt"></i></a>
-                        </div>
+                {% set cat = (p.category or 'web')|lower %}
+                <article class="ux-project-card"
+                    data-category="{{ 'web' if cat not in ['web','app','ui','branding'] else cat }}">
+                    <div class="ux-project-thumb">
+                        <i class="{{ p.icon or 'fas fa-cube' }}"></i>
                     </div>
-                    <div class="proj-info">
-                        <div class="proj-tags">
-                            {% for tag in p.tags.split(',') if p.tags %}
-                            <span class="proj-tag">{{ tag.strip() }}</span>
-                            {% endfor %}
-                        </div>
-                        <h3 class="proj-title">{{ p.title }}</h3>
-                        <p class="proj-desc">{{ p.description }}</p>
+                    <div class="ux-project-overlay">
+                        <a href="#contact" class="ux-btn ux-btn-primary ux-ripple">View Case Study <span
+                                class="sweep"></span></a>
                     </div>
-                </div>
+                    <div class="ux-project-info">
+                        <h4>{{ p.title }}</h4>
+                        <p>{{ p.description or 'Premium execution pipeline with measurable outcomes.' }}</p>
+                    </div>
+                </article>
+                {% else %}
+                <article class="ux-project-card" data-category="web">
+                    <div class="ux-project-thumb"><i class="fas fa-laptop-code"></i></div>
+                    <div class="ux-project-overlay"><a href="#contact" class="ux-btn ux-btn-primary ux-ripple">View Case
+                            Study <span class="sweep"></span></a></div>
+                    <div class="ux-project-info">
+                        <h4>Next-Gen Product Site</h4>
+                        <p>High-conversion product storytelling and premium UI system.</p>
+                    </div>
+                </article>
+                <article class="ux-project-card" data-category="app">
+                    <div class="ux-project-thumb"><i class="fas fa-mobile-screen-button"></i></div>
+                    <div class="ux-project-overlay"><a href="#contact" class="ux-btn ux-btn-primary ux-ripple">View Case
+                            Study <span class="sweep"></span></a></div>
+                    <div class="ux-project-info">
+                        <h4>Client Dashboard App</h4>
+                        <p>Realtime insights with futuristic design language and smooth interactions.</p>
+                    </div>
+                </article>
+                <article class="ux-project-card" data-category="branding">
+                    <div class="ux-project-thumb"><i class="fas fa-palette"></i></div>
+                    <div class="ux-project-overlay"><a href="#contact" class="ux-btn ux-btn-primary ux-ripple">View Case
+                            Study <span class="sweep"></span></a></div>
+                    <div class="ux-project-info">
+                        <h4>Brand Identity Suite</h4>
+                        <p>Visual system, tone, and interface styling aligned for premium market appeal.</p>
+                    </div>
+                </article>
                 {% endfor %}
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- ── PROCESS ── -->
-    <section class="process reveal" id="process">
-        <div class="section-container">
-            <div class="section-header">
-                <div class="section-tag"><i class="fas fa-route"></i> How It Works</div>
-                <h2 class="section-title">Simple <span class="gradient-text">Process</span></h2>
-                <p class="section-desc">Getting your project done is simple, transparent, and stress-free.</p>
-            </div>
-            <div class="process-timeline">
-                {% set steps = [
-                {"num":"01","icon":"fas fa-comments","title":"Share Your Requirements","desc":"Tell me about your
-                project — subject, deadline, tech stack, and any specific requirements."},
-                {"num":"02","icon":"fas fa-file-invoice","title":"Get a Custom Quote","desc":"Receive a transparent
-                price quote within hours. No hidden fees, no surprises."},
-                {"num":"03","icon":"fas fa-code","title":"Project Development","desc":"I build your project with clean,
-                well-commented code and regular progress updates."},
-                {"num":"04","icon":"fas fa-check-double","title":"Review & Deliver","desc":"Review the completed
-                project, request revisions if needed. Delivery includes source code, docs & support."}
-                ] %}
-                {% for s in steps %}
-                <div class="process-step">
-                    <div class="step-number">{{ s.num }}</div>
-                    <div class="step-content">
-                        <div class="step-icon"><i class="{{ s.icon }}"></i></div>
-                        <h3 class="step-title">{{ s.title }}</h3>
-                        <p class="step-desc">{{ s.desc }}</p>
+        <section class="ux-section ux-reveal" id="lab">
+            <h2 class="ux-title">Special Feature Lab</h2>
+            <p class="ux-muted">Live signals, premium tooling, and intelligent production workflows in one command
+                deck.</p>
+
+            <div class="ux-lab-grid">
+                <article class="ux-lab-card">
+                    <h4><i class="fas fa-satellite-dish"></i> Live Availability</h4>
+                    <p class="ux-muted">Current sprint capacity based on active delivery pipeline.</p>
+                    <div class="ux-availability">
+                        <span class="ux-dot-live"></span>
+                        <strong id="ux-live-status">Accepting 2 premium projects this week</strong>
                     </div>
-                    {% if not loop.last %}<div class="step-connector"></div>{% endif %}
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </section>
+                </article>
 
-
-    <!-- ── WHY CHOOSE ── -->
-    <section class="why-choose reveal" id="why">
-        <div class="why-choose-bg">
-            <canvas id="why-particles"></canvas>
-            <div class="why-light-orb orb-1"></div>
-            <div class="why-light-orb orb-2"></div>
-            <div class="why-light-orb orb-3"></div>
-        </div>
-        <div class="section-container">
-            <div class="section-header">
-                <div class="section-tag"><i class="fas fa-shield-alt"></i> Why Us</div>
-                <h2 class="section-title">Why Choose <span class="gradient-text">Unitary X</span></h2>
-            </div>
-            <div class="why-grid">
-
-                <!-- Card 1: On-Time Delivery -->
-                <div class="why-card" data-scene="1" data-anim="rise">
-                    <div class="card-glow-sweep"></div>
-                    <div class="why-icon icon-clock">
-                        <i class="fas fa-clock"></i>
-                        <div class="icon-ring"></div>
-                    </div>
-                    <h3>On-Time Delivery</h3>
-                    <p>Deadlines are sacred. Your project is always delivered before your submission date — guaranteed.
-                    </p>
-                </div>
-
-                <!-- Card 2: 100% Confidential -->
-                <div class="why-card" data-scene="2" data-anim="slide-right">
-                    <div class="card-security-glow"></div>
-                    <div class="why-icon icon-lock">
-                        <i class="fas fa-lock"></i>
-                        <div class="icon-pulse-ring"></div>
-                    </div>
-                    <h3>100% Confidential</h3>
-                    <p>Your project details are kept strictly private. We never share, sell, or reuse your work.</p>
-                </div>
-
-                <!-- Card 3: 24/7 Support -->
-                <div class="why-card" data-scene="3" data-anim="scale-in">
-                    <div class="why-icon icon-headset">
-                        <i class="fas fa-headset"></i>
-                        <div class="ripple-ring r1"></div>
-                        <div class="ripple-ring r2"></div>
-                        <div class="ripple-ring r3"></div>
-                    </div>
-                    <h3>24/7 Support</h3>
-                    <p>Got a doubt during viva? Need last-minute changes? I'm always just a WhatsApp message away.</p>
-                </div>
-
-                <!-- Card 4: Clean Code -->
-                <div class="why-card" data-scene="4" data-anim="code-flow">
-                    <div class="card-highlight-sweep"></div>
-                    <div class="why-icon icon-code">
-                        <i class="fas fa-code-branch"></i>
-                        <div class="code-lines">
-                            <span></span><span></span><span></span>
+                <article class="ux-lab-card">
+                    <h4><i class="fas fa-wave-square"></i> Active Stack Pulse</h4>
+                    <div class="ux-marquee" aria-hidden="true">
+                        <div class="ux-marquee-track">
+                            <span>Flask</span><span>React</span><span>Figma</span><span>Docker</span><span>PostgreSQL</span><span>Stripe</span><span>OpenAI
+                                APIs</span><span>Framer Motion</span>
+                            <span>Flask</span><span>React</span><span>Figma</span><span>Docker</span><span>PostgreSQL</span><span>Stripe</span><span>OpenAI
+                                APIs</span><span>Framer Motion</span>
                         </div>
                     </div>
-                    <h3>Clean Code</h3>
-                    <p>Well-structured, commented, and plagiarism-free code you can explain confidently to your
-                        professors.</p>
-                </div>
+                </article>
 
-                <!-- Card 5: Free Revisions -->
-                <div class="why-card" data-scene="5" data-anim="rotate-settle">
-                    <div class="why-icon icon-redo">
-                        <i class="fas fa-redo"></i>
-                    </div>
-                    <h3>Free Revisions</h3>
-                    <p>Not satisfied? I'll revise until you're 100% happy. Your satisfaction is my top priority.</p>
-                </div>
-
-                <!-- Card 6: Expert Guidance -->
-                <div class="why-card" data-scene="6" data-anim="drop-cap">
-                    <div class="card-expert-glow"></div>
-                    <div class="why-icon icon-grad">
-                        <i class="fas fa-graduation-cap"></i>
-                        <div class="cap-ripple"></div>
-                    </div>
-                    <h3>Expert Guidance</h3>
-                    <p>Professional mentorship and guidance throughout your project journey. Learn from experts, get
-                        professional quality.</p>
-                </div>
-
+                <article class="ux-lab-card ux-lab-log">
+                    <h4><i class="fas fa-terminal"></i> Delivery Feed</h4>
+                    <ul>
+                        <li><span>09:40</span> Hero animation system tuned for smoothness.</li>
+                        <li><span>11:15</span> API latency budget reduced by 23 percent.</li>
+                        <li><span>13:30</span> Mobile conversion CTA updated and deployed.</li>
+                        <li><span>16:05</span> Accessibility contrast pass completed.</li>
+                    </ul>
+                </article>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- ── CONTACT ── -->
-    <section class="contact reveal" id="contact" style="position:relative;overflow:hidden;">
-        <!-- Cinematic layers -->
-        <canvas id="contact-particles"></canvas>
-        <div class="contact-spotlight" id="contact-spotlight"></div>
-        <div class="section-container">
-            <div class="section-header">
-                <div class="section-tag"><i class="fas fa-envelope"></i> Get In Touch</div>
-                <h2 class="section-title">Start Your <span class="gradient-text">Project</span></h2>
-                <p class="section-desc">Fill out the form and get a free quote within hours.</p>
+        <section class="ux-section ux-reveal" id="services">
+            <h2 class="ux-title">Services</h2>
+            <p class="ux-muted">Hyper-premium deliverables designed with business impact and polished user experience.
+            </p>
+
+            <div class="ux-services">
+                <article class="ux-service-card"><i class="fas fa-globe"></i>
+                    <h4>Web Systems</h4>
+                    <p class="ux-muted">High-end web experiences with conversion-first architecture.</p>
+                </article>
+                <article class="ux-service-card"><i class="fas fa-mobile-alt"></i>
+                    <h4>App Products</h4>
+                    <p class="ux-muted">Smooth mobile interfaces with practical backend intelligence.</p>
+                </article>
+                <article class="ux-service-card"><i class="fas fa-robot"></i>
+                    <h4>AI Interfaces</h4>
+                    <p class="ux-muted">Assistants, workflows, and smart automation layers.</p>
+                </article>
+                <article class="ux-service-card"><i class="fas fa-paint-brush"></i>
+                    <h4>UI/Branding</h4>
+                    <p class="ux-muted">Visual systems that communicate trust and premium value.</p>
+                </article>
+                <article class="ux-service-card"><i class="fas fa-chart-line"></i>
+                    <h4>Optimization</h4>
+                    <p class="ux-muted">Performance tuning for speed, UX, and conversion lift.</p>
+                </article>
+                <article class="ux-service-card"><i class="fas fa-headset"></i>
+                    <h4>Support</h4>
+                    <p class="ux-muted">Active post-delivery support with rapid revision cycles.</p>
+                </article>
             </div>
-            <div class="contact-wrapper">
-                <div class="contact-info">
-                    <h3 class="contact-info-title">Let's Talk</h3>
-                    <p class="contact-info-text">Have questions? Need a custom project? Reach out through any channel
-                        below.</p>
-                    <div class="contact-items">
-                        <div class="contact-item">
-                            <div class="ci-icon bg-green"><i class="fab fa-whatsapp"></i></div>
-                            <div class="wa-links">
-                                <span class="ci-label">WhatsApp Support</span>
-                                <div class="wa-numbers">
-                                    <a href="https://wa.me/919363734565" target="_blank" class="ci-value">+91 93637
-                                        34565</a>
-                                    <a href="https://wa.me/918610568487" target="_blank" class="ci-value">+91 86105
-                                        68487</a>
-                                    <a href="https://wa.me/919363931903" target="_blank" class="ci-value">+91 93639
-                                        31903</a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="contact-item">
-                            <div class="ci-icon bg-blue"><i class="fas fa-envelope"></i></div>
-                            <div><span class="ci-label">Email</span><span class="ci-value">unitaryx@gmail.com</span>
-                            </div>
-                        </div>
-                        <div class="contact-item">
-                            <div class="ci-icon bg-pink"><i class="fab fa-instagram"></i></div>
-                            <div><span class="ci-label">Instagram</span><span
-                                    class="ci-value">@unitaryx__official</span>
-                            </div>
-                        </div>
-                        <div class="contact-item">
-                            <div class="ci-icon bg-cyan"><i class="fab fa-telegram"></i></div>
-                            <div><span class="ci-label">Telegram</span><span class="ci-value">@unitaryx</span></div>
-                        </div>
-                    </div>
-                    <div class="availability-badge">
-                        <span class="avail-dot"></span>Currently accepting new projects
-                    </div>
-                </div>
+        </section>
 
-                <div class="contact-form-container {% if not user %}locked{% endif %}">
+        <section class="ux-section ux-reveal" id="process">
+            <h2 class="ux-title">Freelancer Workflow</h2>
+            <p class="ux-muted">A transparent process designed for students, founders, and teams who need delivery
+                confidence.</p>
+
+            <div class="ux-process-grid">
+                <article class="ux-process-step">
+                    <span class="ux-step-no">01</span>
+                    <h4><i class="fas fa-comments"></i> Requirement Discussion</h4>
+                    <p class="ux-muted">Share goals, tech stack, deadline, and expected outcomes.</p>
+                </article>
+                <article class="ux-process-step">
+                    <span class="ux-step-no">02</span>
+                    <h4><i class="fas fa-file-signature"></i> Scope + Quote</h4>
+                    <p class="ux-muted">Get clear pricing, timeline, and delivery milestones before kickoff.</p>
+                </article>
+                <article class="ux-process-step">
+                    <span class="ux-step-no">03</span>
+                    <h4><i class="fas fa-code"></i> Build + Review</h4>
+                    <p class="ux-muted">Development with progress updates, demos, and feedback loops.</p>
+                </article>
+                <article class="ux-process-step">
+                    <span class="ux-step-no">04</span>
+                    <h4><i class="fas fa-check-double"></i> Delivery + Support</h4>
+                    <p class="ux-muted">Source code, docs, walkthrough, and post-delivery support.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="ux-section ux-reveal" id="stack">
+            <h2 class="ux-title">Tech Stack For Freelancer Projects</h2>
+            <p class="ux-muted">Production-proven stack across software, web, AI, and hardware delivery.</p>
+
+            <div class="ux-stack-grid">
+                <article class="ux-stack-card">
+                    <h4><i class="fas fa-laptop-code"></i> Software + Web</h4>
+                    <div class="ux-stack-tags">
+                        <span>Python</span><span>Flask</span><span>JavaScript</span><span>React</span><span>Node.js</span><span>PostgreSQL</span>
+                    </div>
+                </article>
+                <article class="ux-stack-card">
+                    <h4><i class="fas fa-brain"></i> AI + Automation</h4>
+                    <div class="ux-stack-tags">
+                        <span>OpenAI
+                            APIs</span><span>TensorFlow</span><span>PyTorch</span><span>NLP</span><span>Chatbots</span><span>Data
+                            Pipelines</span>
+                    </div>
+                </article>
+                <article class="ux-stack-card">
+                    <h4><i class="fas fa-microchip"></i> Hardware + IoT</h4>
+                    <div class="ux-stack-tags">
+                        <span>Arduino</span><span>ESP32</span><span>Raspberry
+                            Pi</span><span>Sensors</span><span>Embedded C</span><span>PCB Prototyping</span>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="ux-section ux-reveal" id="pricing">
+            <div class="ux-pricing-head">
+                <div>
+                    <h2 class="ux-title">Flexible Freelancer Packages</h2>
+                    <p class="ux-muted">Switch between Student Mode and Professional Mode pricing guidance.</p>
+                </div>
+                <div class="ux-price-toggle" id="ux-price-toggle" role="group" aria-label="Pricing mode">
+                    <button type="button" class="active" data-mode="student">Student Mode</button>
+                    <button type="button" data-mode="pro">Professional Mode</button>
+                </div>
+            </div>
+
+            <div class="ux-pricing-grid">
+                <article class="ux-price-card">
+                    <h4>Starter Build</h4>
+                    <p class="ux-price-value" data-student="INR 12,000" data-pro="INR 24,000">INR 12,000</p>
+                    <ul>
+                        <li>Single module or mini project</li>
+                        <li>Basic documentation</li>
+                        <li>2 revision rounds</li>
+                    </ul>
+                    <a href="#contact" class="ux-btn ux-ripple">Choose Starter <span class="sweep"></span></a>
+                </article>
+                <article class="ux-price-card featured">
+                    <h4>Growth Build</h4>
+                    <p class="ux-price-value" data-student="INR 28,000" data-pro="INR 52,000">INR 28,000</p>
+                    <ul>
+                        <li>End-to-end application flow</li>
+                        <li>Deployment-ready architecture</li>
+                        <li>Priority support window</li>
+                    </ul>
+                    <a href="#contact" class="ux-btn ux-btn-primary ux-ripple">Choose Growth <span
+                            class="sweep"></span></a>
+                </article>
+                <article class="ux-price-card">
+                    <h4>Signature Build</h4>
+                    <p class="ux-price-value" data-student="INR 45,000" data-pro="INR 95,000">INR 45,000</p>
+                    <ul>
+                        <li>Advanced custom requirements</li>
+                        <li>AI/Hardware integration options</li>
+                        <li>Extended post-launch support</li>
+                    </ul>
+                    <a href="#contact" class="ux-btn ux-ripple">Choose Signature <span class="sweep"></span></a>
+                </article>
+            </div>
+        </section>
+
+        <section class="ux-section ux-reveal" id="testimonials">
+            <h2 class="ux-title">Testimonials</h2>
+            <p class="ux-muted">Auto-sliding feedback from clients who experienced the premium workflow.</p>
+
+            <div class="ux-testi-shell">
+                <div class="ux-testi-track" id="ux-testi-track">
+                    <article class="ux-testi-card">
+                        <p>"Everything felt premium. The design quality and smooth interactions made our demo stand out
+                            immediately."</p>
+                        <h4>- Product Founder</h4>
+                    </article>
+                    <article class="ux-testi-card">
+                        <p>"Delivered on time with crystal-clear architecture and polished documentation. Zero chaos."
+                        </p>
+                        <h4>- Final Year Team Lead</h4>
+                    </article>
+                    <article class="ux-testi-card">
+                        <p>"The website felt like a luxury product. Clients noticed the difference in seconds."</p>
+                        <h4>- Freelance Partner</h4>
+                    </article>
+                </div>
+                <div class="ux-testi-dots">
+                    <button class="ux-dot active"></button>
+                    <button class="ux-dot"></button>
+                    <button class="ux-dot"></button>
+                </div>
+            </div>
+        </section>
+
+        <section class="ux-section ux-reveal" id="contact">
+            <h2 class="ux-title">Start Your Project</h2>
+            <p class="ux-muted">Submit your scope and get a premium execution plan tailored to your objective.</p>
+
+            <div class="ux-contact-wrap">
+                <aside class="ux-contact-panel">
+                    <h3 style="margin-top:0;">Direct Channels</h3>
+                    <p class="ux-muted">Fastest way to begin: share your goal and timeline.</p>
+                    <div class="ux-list">
+                        <a href="https://wa.me/919363734565" target="_blank"><i class="fab fa-whatsapp"></i> +91 93637
+                            34565</a>
+                        <span class="ux-email-row"><i class="fas fa-envelope"></i> <span
+                                id="ux-email-text">unitaryx@gmail.com</span> <button type="button" class="ux-mini-btn"
+                                id="ux-copy-email">Copy</button></span>
+                        <span><i class="fab fa-instagram"></i> @unitaryx__official</span>
+                        <span><i class="fab fa-telegram"></i> @unitaryx</span>
+                    </div>
+                </aside>
+
+                <div class="ux-contact-panel">
                     {% if not user %}
-                    <div class="login-overlay">
-                        <div class="login-overlay-content">
-                            <i class="fas fa-lock"></i>
-                            <h3>Login Required</h3>
-                            <p>Please log in to your student account to submit project inquiries and track your
-                                progress.
-                            </p>
-                            <a href="/login" class="btn-login-cta">Login to Continue <i
-                                    class="fas fa-arrow-right"></i></a>
-                        </div>
-                    </div>
+                    <div class="ux-feedback err" style="display:block; margin-bottom:10px;">Login required to submit
+                        project request. <a href="/login" style="color:#93c5fd;">Go to login</a>.</div>
                     {% endif %}
 
-                    <form class="contact-form" id="contact-form" novalidate>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="cf-name">Your Name</label>
-                                <input type="text" id="cf-name" name="name" placeholder="Rahul Kumar" required />
-                                <span class="field-error" id="err-name"></span>
+                    <form class="ux-form" id="ux-contact-form" data-logged-in="{{ '1' if user else '0' }}">
+                        <div class="ux-row">
+                            <div class="ux-field">
+                                <label for="ux-name">Name</label>
+                                <input id="ux-name" name="name" type="text" placeholder="Your name" required />
                             </div>
-                            <div class="form-group">
-                                <label for="cf-email">Email Address</label>
-                                <input type="email" id="cf-email" name="email" placeholder="rahul@student.com"
+                            <div class="ux-field">
+                                <label for="ux-email">Email</label>
+                                <input id="ux-email" name="email" type="email" placeholder="name@example.com"
                                     required />
-                                <span class="field-error" id="err-email"></span>
                             </div>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="cf-phone">WhatsApp Number</label>
-                                <input type="tel" id="cf-phone" name="phone" placeholder="+91 98765 43210" />
+
+                        <div class="ux-row">
+                            <div class="ux-field">
+                                <label for="ux-phone">Phone</label>
+                                <input id="ux-phone" name="phone" type="text" placeholder="+91 XXXXX XXXXX" />
                             </div>
-                            <div class="form-group">
-                                <label for="cf-service">Service Needed</label>
-                                <select id="cf-service" name="service">
-                                    <option value="">Select a service</option>
-                                    <option value="web">Web Development</option>
-                                    <option value="software">Software Project</option>
-                                    <option value="hardware">Hardware / IoT</option>
-                                    <option value="mobile">Mobile App</option>
-                                    <option value="ai">AI / ML Project</option>
-                                    <option value="docs">Documentation</option>
+                            <div class="ux-field">
+                                <label for="ux-service">Service</label>
+                                <select id="ux-service" name="service" required>
+                                    <option value="">Select service</option>
+                                    <option value="web">Web</option>
+                                    <option value="app">App</option>
+                                    <option value="ui">UI</option>
+                                    <option value="branding">Branding</option>
+                                    <option value="ai">AI</option>
+                                    <option value="software">Software</option>
+                                    <option value="hardware">Hardware</option>
                                 </select>
-                                <span class="field-error" id="err-service"></span>
                             </div>
                         </div>
-                        <div class="form-group full-width">
-                            <label for="cf-deadline">Project Deadline</label>
-                            <input type="date" id="cf-deadline" name="deadline" />
+
+                        <div class="ux-service-quick" id="ux-service-quick">
+                            <span>Quick pick:</span>
+                            <button type="button" data-service="software">Software</button>
+                            <button type="button" data-service="web">Web</button>
+                            <button type="button" data-service="hardware">Hardware</button>
+                            <button type="button" data-service="ai">AI</button>
                         </div>
-                        <div class="form-group full-width">
-                            <label for="cf-message">Project Description</label>
-                            <textarea id="cf-message" name="message" rows="5"
-                                placeholder="Describe your project — topic, features needed, tech stack preferences, college/university name..."
+
+                        <div class="ux-field">
+                            <label for="ux-deadline">Deadline</label>
+                            <input id="ux-deadline" name="deadline" type="date" />
+                        </div>
+
+                        <div class="ux-field">
+                            <label for="ux-message">Project Details</label>
+                            <textarea id="ux-message" name="message" rows="5"
+                                placeholder="Describe your requirement, expected outcome, and constraints..."
                                 required></textarea>
-                            <span class="field-error" id="err-message"></span>
+                            <small class="ux-char-count" id="ux-char-count">0 characters</small>
                         </div>
-                        <button type="submit" class="form-submit" id="form-submit-btn">
-                            {% if user %}
-                            <span>Send Project Request</span><i class="fas fa-paper-plane"></i>
-                            {% else %}
-                            <span>Login to Send Request</span><i class="fas fa-sign-in-alt"></i>
-                            {% endif %}
-                        </button>
-                        <div class="form-success" id="form-success" style="display:none">
-                            <i class="fas fa-check-circle"></i>
-                            <span id="success-msg">Request sent! I'll contact you within 2 hours.</span>
-                        </div>
-                        <div class="form-error-msg" id="form-error-msg" style="display:none">
-                            <i class="fas fa-exclamation-circle"></i>
-                            <span id="error-msg"></span>
-                        </div>
+
+                        <button class="ux-submit ux-ripple ux-magnetic" id="ux-submit-btn" type="submit">Submit Project
+                            Request</button>
+                        <div id="ux-feedback" class="ux-feedback"></div>
                     </form>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-
-
-    <button class="scroll-top" id="scroll-top" aria-label="Scroll to top">
-        <i class="fas fa-chevron-up"></i>
-    </button>
-
-    <!-- ── AI VOICE ASSISTANT BUTTON ── -->
-    <button class="ai-voice-btn" id="ai-voice-btn" aria-label="Play AI Website Overview">
-        <div class="ai-rings"></div>
-        <i class="fas fa-robot"></i>
-        <div class="ai-tooltip">Play Website Overview</div>
-    </button>
-
-    <!-- ── ADMIN PASSWORD MODAL ── -->
-    <div class="admin-modal-overlay" id="admin-modal">
-        <div class="admin-modal-card">
-            <button class="modal-close-btn" id="admin-modal-close"><i class="fas fa-times"></i></button>
-            <div class="modal-icon-wrap">
-                <i class="fas fa-lock"></i>
+        <section class="ux-section ux-reveal" id="faq">
+            <h2 class="ux-title">FAQ</h2>
+            <p class="ux-muted">Common questions before kickoff.</p>
+            <div class="ux-faq">
+                <article class="ux-faq-item">
+                    <button class="ux-faq-btn" type="button"><span>How fast can we start?</span><i
+                            class="fas fa-plus"></i></button>
+                    <div class="ux-faq-a">
+                        <p>Usually within 24 hours after scope and timeline confirmation.</p>
+                    </div>
+                </article>
+                <article class="ux-faq-item">
+                    <button class="ux-faq-btn" type="button"><span>Do you support revisions?</span><i
+                            class="fas fa-plus"></i></button>
+                    <div class="ux-faq-a">
+                        <p>Yes. Revision loops are included to align final quality and objectives.</p>
+                    </div>
+                </article>
+                <article class="ux-faq-item">
+                    <button class="ux-faq-btn" type="button"><span>Can this scale for clients?</span><i
+                            class="fas fa-plus"></i></button>
+                    <div class="ux-faq-a">
+                        <p>Yes. Builds are structured for maintainability, performance, and growth.</p>
+                    </div>
+                </article>
             </div>
-            <h3 class="modal-title">Admin Access</h3>
-            <p class="modal-subtitle">Restricted area. Please verify your identity.</p>
+        </section>
 
-            <form id="admin-gate-form">
-                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-form-group">
-                    <div class="modal-input-wrap">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" id="admin-email-input" placeholder="Admin Email" required
-                            autocomplete="email">
-                    </div>
-                </div>
-                <div class="modal-form-group">
-                    <div class="modal-input-wrap">
-                        <i class="fas fa-key"></i>
-                        <input type="password" id="admin-pass-input" placeholder="Admin Password" required
-                            autocomplete="current-password">
-                        <button type="button" class="password-toggle" id="toggle-admin-pass">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                </div>
-                <div id="admin-modal-error" class="modal-error-text"></div>
-                <button type="submit" class="modal-submit-btn" id="admin-modal-submit">
-                    <span>Unlock Dashboard</span><i class="fas fa-unlock"></i>
-                </button>
-            </form>
+        <footer class="ux-footer">
+            <p>Unitary X - Hyper Premium Freelancer Experience</p>
+        </footer>
+    </div>
+
+    <a class="ux-mobile-cta ux-ripple" href="#contact">Hire Me</a>
+    <button class="ux-progress" id="ux-progress" type="button" aria-label="Back to top">
+        <span id="ux-progress-val">0%</span>
+    </button>
+
+    <div class="ux-accent-switch" id="ux-accent-switch" aria-label="Accent switcher">
+        <button type="button" class="ux-accent-chip active" data-accent="neon">Neon</button>
+        <button type="button" class="ux-accent-chip" data-accent="ocean">Ocean</button>
+        <button type="button" class="ux-accent-chip" data-accent="ember">Ember</button>
+    </div>
+
+    <div class="ux-command" id="ux-command" aria-hidden="true">
+        <div class="ux-command-card">
+            <div class="ux-command-head">
+                <strong>Quick Command</strong>
+                <span>Press Esc to close</span>
+            </div>
+            <div class="ux-command-list">
+                <button type="button" data-jump="#projects">Open Projects</button>
+                <button type="button" data-jump="#process">Open Process</button>
+                <button type="button" data-jump="#pricing">Open Pricing</button>
+                <button type="button" data-jump="#stack">Open Tech Stack</button>
+                <button type="button" data-jump="#services">Open Services</button>
+                <button type="button" data-jump="#contact">Open Contact</button>
+            </div>
         </div>
     </div>
 
-    <script>
-        // ── SCROLL REVEAL — Intersection Observer ──────────────────
-        // First, mark all .reveal elements as pre-reveal (hidden) NOW that JS is confirmed working
-        document.addEventListener('DOMContentLoaded', function () {
-            var reveals = document.querySelectorAll('.reveal');
-            if (!window.IntersectionObserver) {
-                // Fallback: just show everything
-                reveals.forEach(function (el) { el.classList.add('active'); });
-                return;
-            }
-            reveals.forEach(function (el) { el.classList.add('pre-reveal'); });
+    <div id="ux-easter" class="ux-easter">Easter Egg: Premium Mode Enabled</div>
 
-            var observer = new IntersectionObserver(function (entries) {
-                entries.forEach(function (entry) {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.remove('pre-reveal');
-                        entry.target.classList.add('active');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
-
-            reveals.forEach(function (el) { observer.observe(el); });
-        });
-    </script>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-    <script>
-        // ── CINEMATIC CONTACT SECTION ─────────────────────────────
-        (() => {
-            const section = document.getElementById('contact');
-            const form = document.getElementById('contact-form');
-            const info = document.querySelector('.contact-info');
-            const spotlight = document.getElementById('contact-spotlight');
-            const cvs = document.getElementById('contact-particles');
-            if (!section) return;
-
-            // ── Particle canvas ──
-            if (cvs) {
-                const ctx = cvs.getContext('2d');
-                const resize = () => { cvs.width = section.offsetWidth; cvs.height = section.offsetHeight; };
-                resize();
-                window.addEventListener('resize', resize);
-
-                const pts = Array.from({ length: 50 }, () => ({
-                    x: Math.random() * cvs.width, y: Math.random() * cvs.height,
-                    r: Math.random() * 1.8 + 0.4,
-                    vx: (Math.random() - 0.5) * 0.18, vy: (Math.random() - 0.5) * 0.18,
-                    a: Math.random() * 0.4 + 0.1,
-                    mx: 0, my: 0,   // mouse-delta push
-                    c: ['139,92,246', '37,99,235', '6,182,212'][Math.floor(Math.random() * 3)]
-                }));
-
-                let mx = 0, my = 0;
-                section.addEventListener('mousemove', e => {
-                    const r = section.getBoundingClientRect();
-                    mx = e.clientX - r.left; my = e.clientY - r.top;
-                });
-
-                const draw = () => {
-                    ctx.clearRect(0, 0, cvs.width, cvs.height);
-                    pts.forEach(p => {
-                        // gentle push toward cursor
-                        const dx = mx - p.x, dy = my - p.y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist < 200) { p.mx += dx / dist * 0.02; p.my += dy / dist * 0.02; }
-                        p.mx *= 0.95; p.my *= 0.95;
-
-                        p.x += p.vx + p.mx; p.y += p.vy + p.my;
-                        if (p.x < 0) p.x = cvs.width; if (p.x > cvs.width) p.x = 0;
-                        if (p.y < 0) p.y = cvs.height; if (p.y > cvs.height) p.y = 0;
-
-                        ctx.beginPath();
-                        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                        ctx.fillStyle = `rgba(${p.c},${p.a})`;
-                        ctx.fill();
-                    });
-                    requestAnimationFrame(draw);
-                };
-                draw();
-            }
-
-            // ── Cursor spotlight ──
-            section.addEventListener('mousemove', e => {
-                const r = section.getBoundingClientRect();
-                if (spotlight) {
-                    spotlight.style.left = (e.clientX - r.left) + 'px';
-                    spotlight.style.top = (e.clientY - r.top) + 'px';
-                }
-            });
-
-            // ── Parallax layers on mouse move ──
-            section.addEventListener('mousemove', e => {
-                const r = section.getBoundingClientRect();
-                const xN = (e.clientX - r.left) / r.width - 0.5;  // −0.5 to 0.5
-                const yN = (e.clientY - r.top) / r.height - 0.5;
-
-                // Form: moves forward / slightly tilts (fastest layer)
-                if (form) {
-                    form.classList.remove('floating');  // stop idle float on interaction
-                    form.style.transform = `
-            perspective(1200px)
-            rotateX(${-yN * 3}deg)
-            rotateY(${xN * 4}deg)
-            translateY(${-yN * 8}px)
-            translateZ(20px)
-          `;
-                }
-
-                // Info panel: moves slightly slower
-                if (info) {
-                    info.style.transform = `translateX(${xN * -6}px) translateY(${yN * -4}px)`;
-                }
-            });
-
-            // ── Reset transforms when cursor leaves ──
-            section.addEventListener('mouseleave', () => {
-                if (form) {
-                    form.style.transform = '';
-                    form.classList.add('floating');
-                }
-                if (info) info.style.transform = '';
-            });
-
-            // ── Start idle float ──
-            if (form) {
-                setTimeout(() => form.classList.add('floating'), 600);
-            }
-
-            // ── Magnetic icons ──
-            document.querySelectorAll('.ci-icon').forEach(icon => {
-                icon.addEventListener('mousemove', e => {
-                    const r = icon.getBoundingClientRect();
-                    const dx = e.clientX - (r.left + r.width / 2);
-                    const dy = e.clientY - (r.top + r.height / 2);
-                    icon.style.transform = `translate(${dx * 0.25}px, ${dy * 0.25}px) scale(1.1)`;
-                });
-                icon.addEventListener('mouseleave', () => { icon.style.transform = ''; });
-            });
-
-        })();
-
-        // ── Typewriter (existing, keep intact) ──
-        (() => {
-            const lines = [
-                { el: document.getElementById('type-line-1'), text: 'Premium Tech' },
-                { el: document.getElementById('type-line-2'), text: 'Solutions for' },
-                { el: document.getElementById('type-line-3'), text: 'Everyone' }
-            ];
-
-            let currentLine = 0;
-            let currentChar = 0;
-            let typingTimeout;
-
-            function initTyping() {
-                if (sessionStorage.getItem('typewriterDone')) {
-                    lines.forEach(l => { if (l.el) l.el.innerHTML = l.text; });
-                    return;
-                }
-                clearTimeout(typingTimeout);
-                currentLine = 0;
-                currentChar = 0;
-
-                // Initialize all empty
-                lines.forEach(l => {
-                    if (l.el) {
-                        l.el.innerHTML = '';
-                        l.el.style.opacity = '1';
-                        l.el.style.animation = 'none'; // Ensure no CSS fade conflicts
-                        l.el.classList.remove('typing-cursor');
-                    }
-                });
-
-                typingTimeout = setTimeout(typeWriter, 400);
-            }
-
-            function typeWriter() {
-                if (currentLine < lines.length) {
-                    const lineInfo = lines[currentLine];
-                    const element = lineInfo.el;
-                    const text = lineInfo.text;
-
-                    if (!element) {
-                        currentLine++;
-                        typeWriter();
-                        return;
-                    }
-
-                    // Add typing cursor
-                    if (currentChar === 0 && currentLine > 0) {
-                        lines[currentLine - 1].el.classList.remove('typing-cursor');
-                    }
-                    element.classList.add('typing-cursor');
-
-                    if (currentChar < text.length) {
-                        element.innerHTML += text.charAt(currentChar);
-                        currentChar++;
-                        typingTimeout = setTimeout(typeWriter, 60); // Speed of typing
-                    } else {
-                        // Finished line
-                        currentLine++;
-                        currentChar = 0;
-                        typingTimeout = setTimeout(typeWriter, 300); // Pause before next line
-                    }
-                } else {
-                    // Finished all
-                    if (lines[lines.length - 1].el) {
-                        typingTimeout = setTimeout(() => {
-                            lines[lines.length - 1].el.classList.remove('typing-cursor');
-                            sessionStorage.setItem('typewriterDone', 'true');
-                        }, 1000); // Remove cursor after 1s
-                    }
-                }
-            }
-
-            // Start Typing Effect on load and when navigating back via browser history (BFCache)
-            window.addEventListener('pageshow', () => {
-                initTyping();
-            });
-        })();
-    </script>
-
+    <script src="{{ url_for('static', filename='user_premium.js') }}?v=20260320cinematic7"></script>
 </body>
 
 </html>

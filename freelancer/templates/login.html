@@ -11,7 +11,9 @@
         href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
         rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    {% if google_signin_enabled %}
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    {% endif %}
     <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}?v={{ range(1000, 9999) | random }}" />
     <meta name="csrf-token" content="{{ csrf_token() }}" />
 </head>
@@ -108,6 +110,7 @@
                         <span>Sign In</span>
                     </button>
 
+                    {% if google_signin_enabled %}
                     <div id="g_id_onload" data-client_id="{{ config['GOOGLE_CLIENT_ID'] }}" data-context="signin"
                         data-ux_mode="popup" data-callback="handleCredentialResponse" data-auto_prompt="false">
                     </div>
@@ -116,6 +119,12 @@
                             data-text="continue_with" data-size="large" data-logo_alignment="left" data-width="360">
                         </div>
                     </div>
+                    {% else %}
+                    <div class="auth-alert" style="display:block; margin-top:12px; font-size:0.86rem;">
+                        Google Sign-In disabled for this host ({{ google_current_origin }}). Add this origin in Google
+                        Cloud OAuth Client then reload.
+                    </div>
+                    {% endif %}
                 </form>
             </section>
 
@@ -171,11 +180,13 @@
                         <span>Create Account</span>
                     </button>
 
+                    {% if google_signin_enabled %}
                     <div class="google-signin-wrap">
                         <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="filled_white"
                             data-text="continue_with" data-size="large" data-logo_alignment="left" data-width="360">
                         </div>
                     </div>
+                    {% endif %}
                 </form>
             </section>
 

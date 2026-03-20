@@ -40,10 +40,65 @@ if not _env_google_client_id or "your_google_client_id_here" in _env_google_clie
 else:
     app.config['GOOGLE_CLIENT_ID'] = _env_google_client_id
 
+DEFAULT_GOOGLE_ALLOWED_ORIGINS = {
+    "http://localhost:5005",
+    "http://127.0.0.1:5005",
+}
+
 OAUTH_ADMIN_EMAILS = {
     "harikavi1301@gmail.com",
     "darshankannan2008@gmail.com",
 }
+
+SUPERADMIN_EMAIL = "harikavi1301@gmail.com"
+SUPERADMIN_PASSWORD = "hari@123"
+
+
+def normalize_email(value):
+    return (value or "").strip().lower()
+
+
+def normalize_role(value):
+    role = (value or "user").strip().lower()
+    return role if role in {"user", "admin"} else "user"
+
+
+def find_user_by_email(email):
+    normalized = normalize_email(email)
+    if not normalized:
+        return None
+    return User.query.filter(db.func.lower(User.email) == normalized).first()
+
+
+def oauth_admin_emails():
+    emails = {normalize_email(e) for e in OAUTH_ADMIN_EMAILS if normalize_email(e)}
+    configured_admin = normalize_email(os.getenv("ADMIN_EMAIL", "admin@unitaryx.com"))
+    if configured_admin:
+        emails.add(configured_admin)
+    emails.add(normalize_email(SUPERADMIN_EMAIL))
+    return emails
+
+
+def is_admin_identity(email, existing_user=None):
+    normalized = normalize_email(email)
+    if normalized == normalize_email(SUPERADMIN_EMAIL):
+        return True
+    if existing_user and normalize_role(existing_user.role) == "admin":
+        return True
+    return normalized in oauth_admin_emails()
+
+
+def establish_session_for_user(user, remember=False):
+    user_email = normalize_email(user.email)
+    role = normalize_role(user.role)
+    if user_email == normalize_email(SUPERADMIN_EMAIL):
+        role = "admin"
+    session.permanent = bool(remember)
+    session['user_id'] = user.id
+    session['user_name'] = user.name
+    session['user_email'] = user_email
+    session['role'] = role
+    session['is_superadmin'] = user_email == normalize_email(SUPERADMIN_EMAIL)
 
 # ─── Security Configuration ──────────────────────────────────────────────────
 
@@ -182,6 +237,32 @@ class PasswordResetOTP(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 
+class AdminTask(db.Model):
+    """Tasks assigned by superadmin to specific admin emails."""
+    __tablename__ = 'admin_tasks'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(160), nullable=False)
+    details = db.Column(db.Text)
+    assigned_to_email = db.Column(db.String(150), nullable=False, index=True)
+    assigned_by_email = db.Column(db.String(150), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='Pending')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class AdminAuditLog(db.Model):
+    """Tracks sensitive superadmin actions for accountability."""
+    __tablename__ = 'admin_audit_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    actor_email = db.Column(db.String(150), nullable=False, index=True)
+    action = db.Column(db.String(80), nullable=False)
+    target = db.Column(db.String(180))
+    details = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
 class ProjectRequest(db.Model):
     """Project enquiries from students"""
     __tablename__ = 'project_requests'
@@ -294,9 +375,47 @@ def validate_email(email):
     return bool(re.match(r'^[\w\.-]+@[\w\.-]+\.\w{2,}$', email))
 
 
+def _normalize_origin(origin):
+    return (origin or "").strip().rstrip("/")
+
+
+def get_google_origin_settings(current_origin):
+    raw = (os.getenv("GOOGLE_ALLOWED_ORIGINS") or "").strip()
+    configured = {
+        _normalize_origin(x) for x in raw.split(",") if _normalize_origin(x)
+    }
+    allowed_origins = configured if configured else DEFAULT_GOOGLE_ALLOWED_ORIGINS
+    normalized_current = _normalize_origin(current_origin)
+    enabled = normalized_current in allowed_origins
+    return {
+        "enabled": enabled,
+        "current_origin": normalized_current,
+        "allowed_origins": sorted(allowed_origins),
+    }
+
+
 def current_user():
     uid = session.get('user_id')
     return db.session.get(User, uid) if uid else None
+
+
+def is_super_admin(user_obj=None):
+    user_obj = user_obj or current_user()
+    if not user_obj:
+        return False
+    return normalize_email(user_obj.email) == normalize_email(SUPERADMIN_EMAIL)
+
+
+def log_superadmin_action(action, target="", details="", actor=None):
+    actor = actor or current_user()
+    if not actor or not is_super_admin(actor):
+        return
+    db.session.add(AdminAuditLog(
+        actor_email=(actor.email or "").strip().lower(),
+        action=(action or "").strip()[:80],
+        target=(target or "").strip()[:180],
+        details=(details or "").strip()[:2000],
+    ))
 
 
 OTP_TTL_MINUTES = 10
@@ -390,6 +509,15 @@ def seed_data():
         admin.set_password(admin_pass)
         db.session.add(admin)
 
+    # Ensure superadmin credentials are always available for the fixed email.
+    super_admin = User.query.filter(db.func.lower(User.email) == SUPERADMIN_EMAIL).first()
+    if not super_admin:
+        super_admin = User(name='Super Admin', email=SUPERADMIN_EMAIL, role='admin')
+        db.session.add(super_admin)
+    super_admin.role = 'admin'
+    super_admin.is_active = True
+    super_admin.set_password(SUPERADMIN_PASSWORD)
+
     if Project.query.count() == 0:
         db.session.add_all([
             Project(title="E-Commerce Platform",
@@ -463,6 +591,19 @@ def index():
                            user=current_user())
 
 
+@app.route("/cinematic")
+def cinematic_portfolio():
+    """Next-generation cinematic portfolio experience"""
+    projects = Project.query.all()
+    return render_template("cinematic.html", projects=projects)
+
+
+@app.route("/portfolio")
+def portfolio():
+    """Alias for cinematic portfolio"""
+    return redirect(url_for('cinematic_portfolio'))
+
+
 @app.route('/favicon.ico')
 def favicon():
     return redirect(url_for('static', filename='img/logo.png'))
@@ -480,10 +621,11 @@ def login():
 
     tab   = request.args.get('tab', 'user')  # 'user' or 'admin'
     error = None
+    origin_settings = get_google_origin_settings(f"{request.scheme}://{request.host}")
 
     if request.method == "POST":
         login_type = request.form.get('login_type', 'user')
-        email      = request.form.get('email', '').strip().lower()
+        email      = normalize_email(request.form.get('email', ''))
         password   = request.form.get('password', '').strip()
         remember   = request.form.get('remember') == 'on'
 
@@ -491,7 +633,7 @@ def login():
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
                   request.headers.get('Accept') == 'application/json'
 
-        user = User.query.filter_by(email=email).first()
+        user = find_user_by_email(email)
 
         if not user or not user.check_password(password):
             error = "Email or password is incorrect."
@@ -501,25 +643,42 @@ def login():
             error = "Your account has been deactivated. Contact admin."
             if is_ajax: return jsonify({"success": False, "error": error})
             tab   = login_type
-        elif login_type == 'admin' and user.role != 'admin':
+        elif login_type == 'admin' and normalize_role(user.role) != 'admin':
             error = "You don't have admin privileges."
             if is_ajax: return jsonify({"success": False, "error": error})
             tab   = 'admin'
         else:
-            session.permanent = remember
-            session['user_id'] = user.id
-            session['user_name'] = user.name
-            session['role']    = user.role
-            
-            target = url_for('admin_panel') if user.role == 'admin' else url_for('user_dashboard')
+            normalized_role = normalize_role(user.role)
+            if normalize_email(user.email) == normalize_email(SUPERADMIN_EMAIL):
+                normalized_role = 'admin'
+            if user.role != normalized_role:
+                user.role = normalized_role
+                db.session.commit()
+
+            establish_session_for_user(user, remember=remember)
+
+            target = url_for('admin_panel') if normalized_role == 'admin' else url_for('user_dashboard')
             
             if is_ajax:
-                return jsonify({"success": True, "redirect": target})
+                return jsonify({
+                    "success": True,
+                    "redirect": target,
+                    "email": session.get('user_email', ''),
+                    "role": session.get('role', 'user'),
+                    "is_superadmin": bool(session.get('is_superadmin')),
+                })
             
             flash(f"Welcome back, {user.name}!", "success")
             return redirect(target)
 
-    return render_template("login.html", tab=tab, error=error)
+    return render_template(
+        "login.html",
+        tab=tab,
+        error=error,
+        google_signin_enabled=origin_settings["enabled"],
+        google_current_origin=origin_settings["current_origin"],
+        google_allowed_origins=origin_settings["allowed_origins"],
+    )
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -711,37 +870,50 @@ def google_login():
         
     try:
         idinfo = id_token.verify_oauth2_token(token, google_requests.Request(), app.config['GOOGLE_CLIENT_ID'])
-        email = (idinfo['email'] or '').strip().lower()
+        if not idinfo.get("email_verified", False):
+            return jsonify({"success": False, "error": "Google account email is not verified."}), 400
+
+        email = normalize_email(idinfo.get('email', ''))
+        if not email:
+            return jsonify({"success": False, "error": "Google did not provide an email address."}), 400
+
         name = idinfo.get('name', email.split("@")[0])
-        is_oauth_admin = email in OAUTH_ADMIN_EMAILS
+        is_oauth_admin = is_admin_identity(email)
         
-        user = User.query.filter_by(email=email).first()
+        user = find_user_by_email(email)
         if not user:
             user = User(name=name, email=email, role='admin' if is_oauth_admin else 'user')
             user.set_password(os.urandom(24).hex())
             db.session.add(user)
             db.session.commit()
         else:
-            normalized_role = (user.role or 'user').strip().lower()
-            if normalized_role not in {'user', 'admin'}:
-                normalized_role = 'user'
+            normalized_role = normalize_role(user.role)
 
             if user.role != normalized_role:
                 user.role = normalized_role
 
-            if is_oauth_admin and user.role != 'admin':
+            if is_admin_identity(email, existing_user=user) and user.role != 'admin':
                 user.role = 'admin'
+
+            if normalize_email(user.email) != email:
+                user.email = email
+
+            if name and user.name != name:
+                user.name = name
 
             db.session.commit()
             
-        session.permanent = True
-        session['user_id'] = user.id
-        session['user_name'] = user.name
-        session['role'] = 'admin' if user.role == 'admin' else 'user'
+        establish_session_for_user(user, remember=True)
         flash(f"Signed in via Google! Welcome, {user.name}!", "success")
         
         target = url_for('admin_panel') if session['role'] == 'admin' else url_for('user_dashboard')
-        return jsonify({"success": True, "redirect": target})
+        return jsonify({
+            "success": True,
+            "redirect": target,
+            "email": session.get('user_email', ''),
+            "role": session.get('role', 'user'),
+            "is_superadmin": bool(session.get('is_superadmin')),
+        })
         
     except Exception as e:
         app.logger.exception("Google login verification failed")
@@ -889,12 +1061,539 @@ def admin_panel():
     services = ['Web Development', 'Software Projects', 'Hardware & IoT', 'AI & Machine Learning', 'Mobile Apps', 'Reports & Documentation']
     dist_data = [ProjectRequest.query.filter_by(service=s).count() for s in services]
 
+    admin_user = current_user()
+    admin_email = (admin_user.email or "").strip().lower() if admin_user else ""
+    my_tasks = AdminTask.query.filter(
+        db.func.lower(AdminTask.assigned_to_email) == admin_email
+    ).order_by(AdminTask.created_at.desc()).all()
+    admin_users = User.query.filter_by(role='admin', is_active=True).order_by(User.email.asc()).all()
+    managed_admins = User.query.filter_by(role='admin').order_by(User.created_at.desc()).all()
+    assignment_feed = AdminTask.query.order_by(AdminTask.created_at.desc()).limit(25).all()
+    all_admin_tasks = AdminTask.query.order_by(AdminTask.created_at.desc()).limit(120).all()
+    admin_task_leaderboard = []
+    superadmin_audit_feed = []
+    superadmin_summary = {}
+    risk_admins = []
+    critical_pending_tasks = []
+
+    if is_super_admin(admin_user):
+        now_utc = datetime.utcnow()
+        task_perf = {}
+        pending_count = 0
+        in_progress_count = 0
+        done_count = 0
+        for task in all_admin_tasks:
+            email = (task.assigned_to_email or "").strip().lower()
+            if not email:
+                continue
+            row = task_perf.setdefault(email, {"email": email, "total": 0, "done": 0, "in_progress": 0, "pending": 0})
+            row["total"] += 1
+            status = (task.status or "").strip()
+            if status == "Done":
+                row["done"] += 1
+                done_count += 1
+            elif status == "In Progress":
+                row["in_progress"] += 1
+                in_progress_count += 1
+            else:
+                row["pending"] += 1
+                pending_count += 1
+
+                # Pending tasks older than 2 days are marked as critical queue.
+                if task.created_at and (now_utc - task.created_at).days >= 2:
+                    critical_pending_tasks.append(task)
+
+        admin_task_leaderboard = sorted(
+            task_perf.values(),
+            key=lambda x: (x["done"], x["in_progress"], x["total"]),
+            reverse=True,
+        )[:12]
+        superadmin_audit_feed = AdminAuditLog.query.order_by(AdminAuditLog.created_at.desc()).limit(40).all()
+
+        total_admin_accounts = len(managed_admins)
+        active_admin_accounts = sum(1 for u in managed_admins if bool(u.is_active))
+        inactive_admin_accounts = max(total_admin_accounts - active_admin_accounts, 0)
+        total_task_count = len(all_admin_tasks)
+        completion_ratio = round((done_count / total_task_count) * 100, 1) if total_task_count else 0.0
+
+        today_actions = sum(
+            1 for ev in superadmin_audit_feed
+            if ev.created_at and ev.created_at.date() == now_utc.date()
+        )
+
+        risk_admins = [
+            row for row in admin_task_leaderboard
+            if row["pending"] > row["done"] + 1
+        ][:6]
+
+        critical_pending_tasks = sorted(
+            critical_pending_tasks,
+            key=lambda t: t.created_at or now_utc,
+        )[:8]
+
+        superadmin_summary = {
+            "total_admin_accounts": total_admin_accounts,
+            "active_admin_accounts": active_admin_accounts,
+            "inactive_admin_accounts": inactive_admin_accounts,
+            "total_task_count": total_task_count,
+            "pending_task_count": pending_count,
+            "in_progress_task_count": in_progress_count,
+            "done_task_count": done_count,
+            "completion_ratio": completion_ratio,
+            "today_actions": today_actions,
+            "critical_pending_count": len(critical_pending_tasks),
+        }
+
     return render_template("admin.html", 
                            requests=requests_list, 
                            stats=stats,
                            admin_metrics=admin_metrics,
                            dist_data=dist_data,
-                           admin=current_user())
+                           admin=admin_user,
+                           is_superadmin=is_super_admin(admin_user),
+                           my_tasks=my_tasks,
+                           admin_users=admin_users,
+                           managed_admins=managed_admins,
+                           assignment_feed=assignment_feed,
+                           all_admin_tasks=all_admin_tasks,
+                           admin_task_leaderboard=admin_task_leaderboard,
+                           superadmin_audit_feed=superadmin_audit_feed,
+                           superadmin_summary=superadmin_summary,
+                           risk_admins=risk_admins,
+                           critical_pending_tasks=critical_pending_tasks)
+
+
+@app.route("/admin/tasks/assign", methods=["POST"])
+@csrf.exempt
+@admin_required
+def assign_admin_task():
+    creator = current_user()
+    if not is_super_admin(creator):
+        flash("Only the superadmin can assign admin tasks.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    title = str(request.form.get("title", "")).strip()
+    details = str(request.form.get("details", "")).strip()
+    assigned_to_email = str(request.form.get("assigned_to_email", "")).strip().lower()
+
+    if len(title) < 3 or len(title) > 160:
+        flash("Task title must be between 3 and 160 characters.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    if not validate_email(assigned_to_email):
+        flash("Please choose a valid admin email.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    assignee = User.query.filter(
+        db.func.lower(User.email) == assigned_to_email,
+        User.role == 'admin',
+        User.is_active.is_(True)
+    ).first()
+    if not assignee:
+        flash("Selected email is not an active admin account.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    task = AdminTask(
+        title=title,
+        details=details,
+        assigned_to_email=assigned_to_email,
+        assigned_by_email=(creator.email or "").strip().lower(),
+        status='Pending'
+    )
+    db.session.add(task)
+    log_superadmin_action(
+        action="TASK_ASSIGNED",
+        target=assigned_to_email,
+        details=f"title={title}",
+        actor=creator,
+    )
+    db.session.commit()
+
+    flash(f"Task assigned to {assigned_to_email}.", "success")
+    return redirect(url_for("admin_panel"))
+
+
+@app.route("/admin/tasks/<int:task_id>/status", methods=["POST"])
+@csrf.exempt
+@admin_required
+def update_admin_task_status(task_id):
+    actor = current_user()
+    actor_email = (actor.email or "").strip().lower() if actor else ""
+    next_status = str(request.form.get("status", "")).strip()
+    allowed_statuses = {"Pending", "In Progress", "Done"}
+
+    if next_status not in allowed_statuses:
+        flash("Invalid task status selected.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    task = AdminTask.query.get_or_404(task_id)
+    task_owner_email = (task.assigned_to_email or "").strip().lower()
+    if task_owner_email != actor_email and not is_super_admin(actor):
+        flash("You can only update tasks assigned to your admin account.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    task.status = next_status
+    task.updated_at = datetime.utcnow()
+    if is_super_admin(actor):
+        log_superadmin_action(
+            action="TASK_STATUS_UPDATED",
+            target=(task.assigned_to_email or "").strip().lower(),
+            details=f"task_id={task.id},status={next_status}",
+            actor=actor,
+        )
+    db.session.commit()
+    flash("Task status updated.", "success")
+    return redirect(url_for("admin_panel"))
+
+
+@app.route("/admin/tasks/assign-bulk", methods=["POST"])
+@csrf.exempt
+@admin_required
+def assign_admin_task_bulk():
+    creator = current_user()
+    if not is_super_admin(creator):
+        flash("Only the superadmin can assign bulk tasks.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    title = str(request.form.get("title", "")).strip()
+    details = str(request.form.get("details", "")).strip()
+    raw_emails = str(request.form.get("admin_emails", "")).strip()
+
+    if len(title) < 3 or len(title) > 160:
+        flash("Task title must be between 3 and 160 characters.", "danger")
+        return redirect(url_for("admin_panel"))
+    if not raw_emails:
+        flash("Provide at least one admin email.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    cleaned = raw_emails.replace("\n", ",").replace(";", ",")
+    email_list = []
+    seen = set()
+    for part in cleaned.split(","):
+        email = part.strip().lower()
+        if not email or email in seen:
+            continue
+        if validate_email(email):
+            email_list.append(email)
+            seen.add(email)
+
+    if not email_list:
+        flash("No valid admin emails provided.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    admins = User.query.filter(User.role == 'admin', User.is_active.is_(True)).all()
+    active_admin_emails = {(u.email or "").strip().lower() for u in admins}
+
+    valid_targets = [e for e in email_list if e in active_admin_emails]
+    skipped = [e for e in email_list if e not in active_admin_emails]
+
+    if not valid_targets:
+        flash("None of the provided emails belong to active admin accounts.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    for email in valid_targets:
+        db.session.add(AdminTask(
+            title=title,
+            details=details,
+            assigned_to_email=email,
+            assigned_by_email=(creator.email or "").strip().lower(),
+            status='Pending'
+        ))
+
+    log_superadmin_action(
+        action="TASK_BULK_ASSIGNED",
+        target=",".join(valid_targets)[:180],
+        details=f"title={title},assigned={len(valid_targets)},skipped={len(skipped)}",
+        actor=creator,
+    )
+    db.session.commit()
+
+    if skipped:
+        flash(f"Assigned to {len(valid_targets)} admins. Skipped {len(skipped)} invalid/inactive emails.", "warning")
+    else:
+        flash(f"Assigned task to {len(valid_targets)} admins.", "success")
+    return redirect(url_for("admin_panel"))
+
+
+@app.route("/admin/admins/create", methods=["POST"])
+@csrf.exempt
+@admin_required
+def superadmin_create_admin():
+    actor = current_user()
+    if not is_super_admin(actor):
+        flash("Only the superadmin can create admin accounts.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    name = str(request.form.get("name", "")).strip()
+    email = str(request.form.get("email", "")).strip().lower()
+    password = str(request.form.get("password", "")).strip()
+
+    if len(name) < 2:
+        flash("Name must be at least 2 characters.", "danger")
+        return redirect(url_for("admin_panel"))
+    if not validate_email(email):
+        flash("Please enter a valid email address.", "danger")
+        return redirect(url_for("admin_panel"))
+    if len(password) < 6:
+        flash("Password must be at least 6 characters.", "danger")
+        return redirect(url_for("admin_panel"))
+    if User.query.filter(db.func.lower(User.email) == email).first():
+        flash("An account with this email already exists.", "warning")
+        return redirect(url_for("admin_panel"))
+
+    user = User(name=name, email=email, role='admin', is_active=True)
+    user.set_password(password)
+    db.session.add(user)
+    log_superadmin_action(
+        action="ADMIN_CREATED",
+        target=email,
+        details=f"name={name}",
+        actor=actor,
+    )
+    db.session.commit()
+
+    flash(f"Admin account created for {email}.", "success")
+    return redirect(url_for("admin_panel"))
+
+
+@app.route("/admin/admins/<int:uid>/update", methods=["POST"])
+@csrf.exempt
+@admin_required
+def superadmin_update_admin(uid):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
+              request.headers.get('Accept') == 'application/json'
+
+    actor = current_user()
+    if not is_super_admin(actor):
+        if is_ajax:
+            return jsonify({"success": False, "message": "Only the superadmin can update admin accounts."}), 403
+        flash("Only the superadmin can update admin accounts.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    target = User.query.get_or_404(uid)
+    if target.role != 'admin':
+        if is_ajax:
+            return jsonify({"success": False, "message": "Selected account is not an admin."}), 400
+        flash("Selected account is not an admin.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    name = str(request.form.get("name", "")).strip()
+    email = str(request.form.get("email", "")).strip().lower()
+    new_password = str(request.form.get("password", "")).strip()
+    is_active = str(request.form.get("is_active", "")).strip() == "1"
+
+    if len(name) < 2:
+        if is_ajax:
+            return jsonify({"success": False, "message": "Name must be at least 2 characters."}), 400
+        flash("Name must be at least 2 characters.", "danger")
+        return redirect(url_for("admin_panel"))
+    if not validate_email(email):
+        if is_ajax:
+            return jsonify({"success": False, "message": "Please enter a valid email address."}), 400
+        flash("Please enter a valid email address.", "danger")
+        return redirect(url_for("admin_panel"))
+    if new_password and len(new_password) < 6:
+        if is_ajax:
+            return jsonify({"success": False, "message": "New password must be at least 6 characters."}), 400
+        flash("New password must be at least 6 characters.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    target_email_before = (target.email or "").strip().lower()
+    target_is_superadmin = target_email_before == SUPERADMIN_EMAIL
+
+    existing = User.query.filter(
+        db.func.lower(User.email) == email,
+        User.id != target.id
+    ).first()
+    if existing:
+        if is_ajax:
+            return jsonify({"success": False, "message": "Email already used by another account."}), 400
+        flash("Email already used by another account.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    if target_is_superadmin and email != SUPERADMIN_EMAIL:
+        if is_ajax:
+            return jsonify({"success": False, "message": "Superadmin email cannot be changed."}), 400
+        flash("Superadmin email cannot be changed.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    target.name = name
+    target.email = email
+    target.is_active = True if target_is_superadmin else is_active
+    if new_password:
+        target.set_password(new_password)
+
+    # Keep task ownership references in sync if non-superadmin email changes.
+    if target_email_before != email and not target_is_superadmin:
+        AdminTask.query.filter(
+            db.func.lower(AdminTask.assigned_to_email) == target_email_before
+        ).update({"assigned_to_email": email}, synchronize_session=False)
+        AdminTask.query.filter(
+            db.func.lower(AdminTask.assigned_by_email) == target_email_before
+        ).update({"assigned_by_email": email}, synchronize_session=False)
+
+    log_superadmin_action(
+        action="ADMIN_UPDATED",
+        target=email,
+        details=f"uid={target.id},active={target.is_active},password_changed={bool(new_password)}",
+        actor=actor,
+    )
+    db.session.commit()
+    flash(f"Admin account updated for {target.email}.", "success")
+
+    if is_ajax:
+        return jsonify({
+            "success": True,
+            "message": "",
+            "id": target.id,
+            "name": target.name,
+            "email": target.email,
+            "is_active": bool(target.is_active),
+        })
+
+    return redirect(url_for("admin_panel"))
+
+
+@app.route("/admin/admins/<int:uid>/delete", methods=["POST"])
+@csrf.exempt
+@admin_required
+def superadmin_delete_admin(uid):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
+              request.headers.get('Accept') == 'application/json'
+
+    actor = current_user()
+    if not is_super_admin(actor):
+        if is_ajax:
+            return jsonify({"success": False, "message": "Only the superadmin can delete admin accounts."}), 403
+        flash("Only the superadmin can delete admin accounts.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    target = User.query.get_or_404(uid)
+    target_email = (target.email or "").strip().lower()
+    if target.role != 'admin':
+        if is_ajax:
+            return jsonify({"success": False, "message": "Selected account is not an admin."}), 400
+        flash("Selected account is not an admin.", "danger")
+        return redirect(url_for("admin_panel"))
+    if target_email == SUPERADMIN_EMAIL:
+        if is_ajax:
+            return jsonify({"success": False, "message": "Superadmin account cannot be deleted."}), 400
+        flash("Superadmin account cannot be deleted.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    AdminTask.query.filter(
+        (db.func.lower(AdminTask.assigned_to_email) == target_email) |
+        (db.func.lower(AdminTask.assigned_by_email) == target_email)
+    ).delete(synchronize_session=False)
+
+    log_superadmin_action(
+        action="ADMIN_DELETED",
+        target=target_email,
+        details=f"uid={target.id}",
+        actor=actor,
+    )
+    db.session.delete(target)
+    db.session.commit()
+
+    if is_ajax:
+        return jsonify({
+            "success": True,
+            "message": "",
+            "id": uid,
+            "email": target_email,
+        })
+
+    flash(f"Admin account {target_email} deleted.", "success")
+
+    return redirect(url_for("admin_panel"))
+
+
+@app.route("/admin/admins/<int:uid>/reset-password", methods=["POST"])
+@csrf.exempt
+@admin_required
+def superadmin_reset_admin_password(uid):
+    actor = current_user()
+    if not is_super_admin(actor):
+        flash("Only the superadmin can reset admin passwords.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    target = User.query.get_or_404(uid)
+    if target.role != 'admin':
+        flash("Selected account is not an admin.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    temp_password = os.urandom(6).hex()
+    target.set_password(temp_password)
+    log_superadmin_action(
+        action="ADMIN_PASSWORD_RESET",
+        target=(target.email or "").strip().lower(),
+        details=f"uid={target.id}",
+        actor=actor,
+    )
+    db.session.commit()
+    flash(f"Temporary password for {target.email}: {temp_password}", "success")
+    return redirect(url_for("admin_panel"))
+
+
+@app.route("/admin/tasks/<int:task_id>/reassign", methods=["POST"])
+@csrf.exempt
+@admin_required
+def superadmin_reassign_task(task_id):
+    actor = current_user()
+    if not is_super_admin(actor):
+        flash("Only the superadmin can reassign admin tasks.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    next_email = str(request.form.get("assigned_to_email", "")).strip().lower()
+    if not validate_email(next_email):
+        flash("Please choose a valid admin email for reassignment.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    assignee = User.query.filter(
+        db.func.lower(User.email) == next_email,
+        User.role == 'admin',
+        User.is_active.is_(True)
+    ).first()
+    if not assignee:
+        flash("Target reassignment email is not an active admin account.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    task = AdminTask.query.get_or_404(task_id)
+    previous = (task.assigned_to_email or "").strip().lower()
+    task.assigned_to_email = next_email
+    task.status = 'Pending'
+    task.updated_at = datetime.utcnow()
+    log_superadmin_action(
+        action="TASK_REASSIGNED",
+        target=next_email,
+        details=f"task_id={task.id},from={previous},to={next_email}",
+        actor=actor,
+    )
+    db.session.commit()
+    flash(f"Task #{task.id:04d} reassigned to {next_email}.", "success")
+    return redirect(url_for("admin_panel"))
+
+
+@app.route("/admin/tasks/<int:task_id>/delete", methods=["POST"])
+@csrf.exempt
+@admin_required
+def superadmin_delete_task(task_id):
+    actor = current_user()
+    if not is_super_admin(actor):
+        flash("Only the superadmin can delete admin tasks.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    task = AdminTask.query.get_or_404(task_id)
+    log_superadmin_action(
+        action="TASK_DELETED",
+        target=(task.assigned_to_email or "").strip().lower(),
+        details=f"task_id={task.id},title={task.title}",
+        actor=actor,
+    )
+    db.session.delete(task)
+    db.session.commit()
+    flash(f"Task #{task_id:04d} removed.", "success")
+    return redirect(url_for("admin_panel"))
 
 
 @app.route("/admin/bulk-update", methods=["POST"])
@@ -976,8 +1675,7 @@ def admin_create_user():
         return redirect(url_for("admin_panel"))
 
     # Only explicit super-admin emails can grant admin role to others.
-    creator_email = (creator.email if creator else "").strip().lower()
-    if role == "admin" and creator_email not in OAUTH_ADMIN_EMAILS:
+    if role == "admin" and not is_super_admin(creator):
         flash("Only authorized super admins can create admin accounts.", "danger")
         return redirect(url_for("admin_panel"))
 
@@ -1199,16 +1897,19 @@ def toggle_user(uid):
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 
+with app.app_context():
+    db.create_all()
+    seed_data()
+
 if __name__ == "__main__":
     with app.app_context():
-        db.create_all()
-        seed_data()
         print("\n" + "="*58)
         print("  [*]  Unitary X Freelancer Website")
         print("  [*]  Main Site : http://127.0.0.1:5005")
         print("  [*]  Login     : http://127.0.0.1:5005/login")
         print("  [*]  Admin     : http://127.0.0.1:5005/admin")
         print("  [*]  Admin creds: admin@unitaryx.com / Admin@123")
+        print("  [*]  Superadmin: harikavi1301@gmail.com / hari@123")
         print("="*58 + "\n")
     app.run(
         host='0.0.0.0',

@@ -55,12 +55,68 @@
     }
 }
 
+@keyframes textSheen {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    100% {
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes fadeSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 body {
     background: var(--bg-deep);
     color: var(--text);
     font-family: 'Outfit', sans-serif;
     min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
     animation: dashEntrance 1s ease-out forwards;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    letter-spacing: 0.2px;
+    line-height: 1.6;
+}
+
+/* Premium Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 82, 204, 0.05);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(0, 82, 204, 0.4), rgba(0, 82, 204, 0.2));
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(0, 82, 204, 0.6), rgba(0, 82, 204, 0.4));
+}
+
+/* Luxury Focus States */
+*:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
 }
 
 body::before {
@@ -133,13 +189,17 @@ body::before {
     border-right: 1px solid var(--glass-border);
     display: flex;
     flex-direction: column;
-    padding: 30px;
+    padding: 32px;
     position: sticky;
     top: 0;
     height: 100vh;
     z-index: 100;
-    box-shadow: 5px 0 30px rgba(0, 20, 50, 0.05);
-    transition: width 0.3s var(--transition), padding 0.3s var(--transition);
+    box-shadow: 5px 0 30px rgba(0, 20, 50, 0.08);
+    transition: all 0.4s var(--transition);
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 .admin-sidebar.collapsed {
@@ -193,7 +253,7 @@ body::before {
 
 .sidebar-logo {
     font-size: 1.5rem;
-    font-weight: 800;
+    font-weight: 900;
     color: var(--sidebar-text);
     letter-spacing: -0.5px;
     display: flex;
@@ -232,6 +292,16 @@ body::before {
     margin-left: 12px;
 }
 
+.menu-label {
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    margin-left: 0;
+}
+
 .sidebar-nav {
     display: flex;
     flex-direction: column;
@@ -245,16 +315,37 @@ body::before {
     padding: 14px 20px;
     border-radius: 16px;
     color: var(--text-dim);
-    font-weight: 500;
-    transition: var(--transition);
+    font-weight: 600;
+    transition: all 0.35s var(--transition);
     border: 1px solid transparent;
     text-decoration: none;
+    transform: translateZ(0);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.2px;
+}
+
+.adm-nav-link::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transform: translateX(-100%);
+    opacity: 0;
+}
+
+.adm-nav-link:hover::before {
+    transform: translateX(100%);
+    opacity: 1;
+    transition: all 0.35s var(--transition);
 }
 
 .adm-nav-link:hover {
     background: var(--sidebar-hover);
     color: var(--primary);
-    border-color: transparent;
+    border-color: rgba(0, 82, 204, 0.3);
+    transform: translateX(6px);
+    box-shadow: 0 4px 12px rgba(0, 82, 204, 0.1);
 }
 
 .adm-nav-link.active {
@@ -262,6 +353,18 @@ body::before {
     color: var(--primary);
     border-color: transparent;
     box-shadow: none;
+    position: relative;
+}
+
+.adm-nav-link.active::after {
+    content: '';
+    position: absolute;
+    right: 10px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary);
+    box-shadow: 0 0 10px var(--primary-glow);
 }
 
 .sidebar-link i {
@@ -299,7 +402,9 @@ body::before {
     flex: 1;
     padding: 30px 40px;
     max-width: 1400px;
+    min-width: 0;
     margin: 0 auto;
+    overflow-x: hidden;
     scroll-behavior: smooth;
     scroll-padding-top: 100px;
 }
@@ -316,6 +421,13 @@ body::before {
     font-weight: 900;
     letter-spacing: -1.5px;
     color: var(--text);
+    line-height: 1.1;
+    background: linear-gradient(90deg, var(--text), var(--primary), var(--text));
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: textSheen 8s linear infinite;
 }
 
 .admin-date {
@@ -511,6 +623,29 @@ body::before {
     border: 1px solid var(--glass-border);
     padding: 30px;
     border-radius: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.35s var(--transition), box-shadow 0.35s var(--transition), border-color 0.35s var(--transition);
+}
+
+.dash-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.48) 45%, transparent 70%);
+    transform: translateX(-120%);
+    pointer-events: none;
+}
+
+.dash-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--glass-border-bright);
+    box-shadow: 0 14px 34px rgba(0, 32, 90, 0.10);
+}
+
+.dash-card:hover::before {
+    transition: transform 0.8s ease;
+    transform: translateX(120%);
 }
 
 .table-card {
@@ -520,6 +655,13 @@ body::before {
     border-radius: 24px;
     padding: 0;
     overflow: hidden;
+    transition: transform 0.35s var(--transition), box-shadow 0.35s var(--transition), border-color 0.35s var(--transition);
+}
+
+.table-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--glass-border-bright);
+    box-shadow: 0 14px 34px rgba(0, 32, 90, 0.09);
 }
 
 .admin-table-wrap {
@@ -558,6 +700,14 @@ body::before {
     background: rgba(0, 82, 204, 0.04);
 }
 
+.adm-table .main-row {
+    transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.adm-table .main-row:hover {
+    transform: translateX(3px);
+}
+
 .card-title {
     font-size: 1.6rem;
     font-weight: 900;
@@ -565,6 +715,8 @@ body::before {
     display: flex;
     align-items: center;
     gap: 14px;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
 }
 
 .health-item {
@@ -867,6 +1019,7 @@ body::before {
     color: var(--text);
     font-size: 0.85rem;
     width: 100%;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
 .adm-select:focus,
@@ -874,6 +1027,7 @@ body::before {
     border-color: var(--primary);
     outline: none;
     box-shadow: 0 0 10px var(--primary-glow);
+    transform: translateY(-1px);
 }
 
 .btn-update-cmd {
@@ -929,6 +1083,33 @@ body::before {
 
 .status-done {
     background: var(--accent);
+}
+
+.admin-pass-wrap {
+    position: relative;
+    width: 100%;
+}
+
+.admin-pass-toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: var(--transition);
+}
+
+.admin-pass-toggle:hover {
+    color: var(--primary);
+    background: rgba(0, 82, 204, 0.1);
 }
 
 .wa-btn {
@@ -1194,6 +1375,33 @@ body::before {
     transform: translateY(-5px);
 }
 
+.admin-tab-content.active>* {
+    animation: fadeSlideUp 0.45s ease both;
+}
+
+.admin-tab-content.active>*:nth-child(2) {
+    animation-delay: 0.04s;
+}
+
+.admin-tab-content.active>*:nth-child(3) {
+    animation-delay: 0.08s;
+}
+
+.admin-tab-content.active>*:nth-child(4) {
+    animation-delay: 0.12s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .admin-title,
+    .dash-card,
+    .table-card,
+    .admin-tab-content.active>* {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
 .toast-content {
     flex: 1;
 }
@@ -1435,4 +1643,8 @@ body.compact-mode .control-form {
         flex-direction: column;
         align-items: flex-start;
     }
+}
+
+.adm-nav-link span {
+    font-weight: 700;
 }

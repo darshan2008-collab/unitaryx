@@ -30,6 +30,7 @@ for db_path in db_paths:
             if "duplicate column name" in str(e).lower():
                 print(f"  Column {col_name} already exists.")
             else:
+            
                 print(f"  Error adding {col_name}: {e}")
     
     conn.commit()
