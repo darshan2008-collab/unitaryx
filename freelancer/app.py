@@ -17,7 +17,6 @@ from google.auth.transport import requests as google_requests
 
 # Security & Config
 from flask_talisman import Talisman
-# from flask_seasurf import SeaSurf # Incompatible with Flask 3.x, CSRF is handled by DummyCSRF below
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
@@ -30,6 +29,9 @@ app = Flask(
     template_folder=os.path.join(APP_DIR, "templates"),
     static_folder=os.path.join(APP_DIR, "static"),
 )
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.jinja_env.auto_reload = True
 app.secret_key = os.getenv("SECRET_KEY", "fallback_weak_key_for_dev_only")
 PASSWORD_HASH_METHOD = (os.getenv("PASSWORD_HASH_METHOD") or "pbkdf2:sha256:260000").strip()
 
@@ -85,10 +87,23 @@ def is_admin_identity(email, existing_user=None):
         return True
     if existing_user and normalize_role(existing_user.role) == "admin":
         return True
+    admin_user = User.query.filter(
+        db.func.lower(User.email) == normalized,
+        db.func.lower(User.role) == 'admin'
+    ).first()
+    if admin_user:
+        return True
+
+    cred_record = AdminCredentialRecord.query.filter(
+        db.func.lower(AdminCredentialRecord.admin_email) == normalized
+    ).first()
+    if cred_record:
+        return True
+
     return normalized in oauth_admin_emails()
 
 
-def establish_session_for_user(user, remember=False):
+def establish_session_for_user(user, remember=False, profile_photo=None, auth_provider="password"):
     user_email = normalize_email(user.email)
     role = normalize_role(user.role)
     if user_email == normalize_email(SUPERADMIN_EMAIL):
@@ -99,6 +114,8 @@ def establish_session_for_user(user, remember=False):
     session['user_email'] = user_email
     session['role'] = role
     session['is_superadmin'] = user_email == normalize_email(SUPERADMIN_EMAIL)
+    session['user_profile_photo'] = (profile_photo or "").strip()
+    session['auth_provider'] = (auth_provider or "password").strip().lower()
 
 # ─── Security Configuration ──────────────────────────────────────────────────
 
@@ -186,8 +203,13 @@ limiter = Limiter(
 
 @app.after_request
 def add_no_cache_headers(response):
-    # Prevent stale cached auth pages from serving outdated reset-password JS.
-    if response.mimetype == "text/html" or request.path in {"/login", "/send-otp", "/verify-otp", "/reset-password"}:
+    # Prevent stale cache so local template/CSS/JS changes are visible immediately.
+    path = (request.path or "").lower()
+    if (
+        path.startswith("/static/")
+        or response.mimetype in {"text/html", "text/css", "application/javascript", "application/json"}
+        or path in {"/login", "/send-otp", "/verify-otp", "/reset-password"}
+    ):
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
@@ -230,7 +252,7 @@ class PasswordResetOTP(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(150), nullable=False, index=True)
-    otp = db.Column(db.String(6), nullable=False)
+    otp = db.Column(db.String(255), nullable=False)
     expires_at = db.Column(db.DateTime, nullable=False)
     attempts_left = db.Column(db.Integer, nullable=False, default=5)
     is_verified = db.Column(db.Boolean, nullable=False, default=False)
@@ -261,6 +283,67 @@ class AdminAuditLog(db.Model):
     target = db.Column(db.String(180))
     details = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+    
+class AdminCredentialRecord(db.Model):
+    """Stores superadmin-managed admin credential references."""
+    __tablename__ = 'admin_credential_records'
+
+    id = db.Column(db.Integer, primary_key=True)
+    admin_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    admin_email = db.Column(db.String(150), unique=True, nullable=False, index=True)
+    temporary_password = db.Column(db.String(200), nullable=False)
+    permanent_password = db.Column(db.String(200), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+def upsert_admin_credential_record(admin_user_id, admin_email, temporary_password, permanent_password):
+    normalized_email = (admin_email or "").strip().lower()
+    record = AdminCredentialRecord.query.filter(
+        db.func.lower(AdminCredentialRecord.admin_email) == normalized_email
+    ).first()
+
+    if not record and admin_user_id:
+        record = AdminCredentialRecord.query.filter_by(admin_user_id=admin_user_id).first()
+
+    if record:
+        record.admin_user_id = admin_user_id or record.admin_user_id
+        record.admin_email = normalized_email
+        record.temporary_password = temporary_password
+        record.permanent_password = permanent_password
+        record.updated_at = datetime.utcnow()
+    else:
+        record = AdminCredentialRecord(
+            admin_user_id=admin_user_id,
+            admin_email=normalized_email,
+            temporary_password=temporary_password,
+            permanent_password=permanent_password,
+        )
+        db.session.add(record)
+
+    return record
+
+
+def sync_admin_vault_to_latest_password(admin_user, latest_password):
+    """Keep only one latest vault entry for an admin and drop stale password records."""
+    if not admin_user or normalize_role(admin_user.role) != 'admin':
+        return
+
+    normalized_email = normalize_email(admin_user.email)
+    if not normalized_email:
+        return
+
+    # Remove stale records tied to this admin id or email, then keep only latest.
+    AdminCredentialRecord.query.filter(
+        (AdminCredentialRecord.admin_user_id == admin_user.id)
+        | (db.func.lower(AdminCredentialRecord.admin_email) == normalized_email)
+    ).delete(synchronize_session=False)
+
+    db.session.add(AdminCredentialRecord(
+        admin_user_id=admin_user.id,
+        admin_email=normalized_email,
+        temporary_password="",
+        permanent_password=(latest_password or "").strip(),
+    ))
 
 
 class ProjectRequest(db.Model):
@@ -360,7 +443,6 @@ def admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'user_id' not in session:
-            flash('Please log in as Admin.', 'warning')
             return redirect(url_for('login', tab='admin'))
         if session.get('role') != 'admin':
             flash('Admin access only.', 'danger')
@@ -418,7 +500,7 @@ def log_superadmin_action(action, target="", details="", actor=None):
     ))
 
 
-OTP_TTL_MINUTES = 10
+OTP_TTL_MINUTES = 1
 OTP_MAX_ATTEMPTS = 5
 
 
@@ -446,13 +528,21 @@ def _save_otp_for_email(email, otp_code):
     PasswordResetOTP.query.filter_by(email=email).delete(synchronize_session=False)
     row = PasswordResetOTP(
         email=email,
-        otp=otp_code,
+        otp=generate_password_hash(otp_code, method=PASSWORD_HASH_METHOD),
         expires_at=datetime.utcnow() + timedelta(minutes=OTP_TTL_MINUTES),
         attempts_left=OTP_MAX_ATTEMPTS,
         is_verified=False,
     )
     db.session.add(row)
     _safe_commit()
+
+
+def _otp_matches(stored_otp_value, otp_code):
+    """Verify OTP against hashed storage with compatibility for legacy plain-text rows."""
+    try:
+        return check_password_hash(stored_otp_value, otp_code)
+    except (ValueError, TypeError):
+        return str(stored_otp_value or "") == str(otp_code or "")
 
 
 def _get_active_otp(email):
@@ -513,10 +603,10 @@ def seed_data():
     super_admin = User.query.filter(db.func.lower(User.email) == SUPERADMIN_EMAIL).first()
     if not super_admin:
         super_admin = User(name='Super Admin', email=SUPERADMIN_EMAIL, role='admin')
+        super_admin.set_password(SUPERADMIN_PASSWORD)
         db.session.add(super_admin)
     super_admin.role = 'admin'
     super_admin.is_active = True
-    super_admin.set_password(SUPERADMIN_PASSWORD)
 
     if Project.query.count() == 0:
         db.session.add_all([
@@ -545,14 +635,18 @@ def seed_data():
                     description="Smart IoT-based water monitoring and leak detection system using AI algorithms for predictive maintenance.",
                     category="ai", tags="AI,IoT,Water Management", price="Rs.2,100",
                     duration="10 days", rating=5.0, icon="fas fa-tint", bg_class="bg-7", featured=True),
-            Project(title="Vision X - Smart Cap",
-                    description="Custom-built wearable hardware with integrated camera and haptic feedback sensors for obstacle detection.",
-                    category="hardware", tags="Hardware,IoT,Arduino", price="Rs.2,900",
-                    duration="14 days", rating=5.0, icon="fas fa-low-vision", bg_class="bg-3", featured=True),
             Project(title="Smart Classroom Management System",
                     description="Integrated software and hardware platform for automated attendance, smart lighting, and classroom resource management.",
                     category="hardware", tags="Hardware,Software,IoT,Classroom", price="Rs.2,500",
                     duration="12 days", rating=4.9, icon="fas fa-chalkboard-teacher", bg_class="bg-8", featured=True),
+            Project(title="Vision X - Smart Cap",
+                    description="Custom-built wearable smart cap with integrated camera and haptic feedback sensors for real-time obstacle detection and navigation assistance.",
+                    category="hardware", tags="Hardware,IoT,Wearable,Arduino", price="Rs.2,900",
+                    duration="14 days", rating=5.0, icon="fas fa-low-vision", bg_class="bg-3", featured=True),
+            Project(title="Newspaper Flux",
+                    description="Automated digital newspaper aggregation and layout system that fetches, categorises, and presents real-time news content with a dynamic flux-based UI.",
+                    category="software", tags="Software,Python,Automation,News", price="Rs.1,800",
+                    duration="7 days", rating=4.9, icon="fas fa-newspaper", bg_class="bg-2", featured=True),
         ])
 
     if Testimonial.query.count() == 0:
@@ -644,11 +738,18 @@ def login():
             if is_ajax: return jsonify({"success": False, "error": error})
             tab   = login_type
         elif login_type == 'admin' and normalize_role(user.role) != 'admin':
-            error = "You don't have admin privileges."
-            if is_ajax: return jsonify({"success": False, "error": error})
-            tab   = 'admin'
+            # Auto-recover role when the email is a managed admin identity.
+            if is_admin_identity(email, existing_user=user):
+                user.role = 'admin'
+                db.session.commit()
+            else:
+                error = "You don't have admin privileges."
+                if is_ajax: return jsonify({"success": False, "error": error})
+                tab   = 'admin'
         else:
             normalized_role = normalize_role(user.role)
+            if is_admin_identity(email, existing_user=user):
+                normalized_role = 'admin'
             if normalize_email(user.email) == normalize_email(SUPERADMIN_EMAIL):
                 normalized_role = 'admin'
             if user.role != normalized_role:
@@ -696,6 +797,7 @@ def register():
         password = request.form.get('password', '').strip()
         confirm  = request.form.get('confirm', '').strip()
 
+        
         # Detection for AJAX
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
                   request.headers.get('Accept') == 'application/json'
@@ -706,6 +808,12 @@ def register():
             error = "Please enter a valid email address."
         elif len(password) < 6:
             error = "Password must be at least 6 characters."
+        elif not any(c.isupper() for c in password):
+            error = "Password must contain at least one uppercase letter (e.g. A, B, C...)."
+        elif not any(c.isdigit() for c in password):
+            error = "Password must contain at least one number (e.g. 1, 2, 3...)."
+        elif not any(c in "@%#$!&*_-+=" for c in password):
+            error = "Password must contain at least one symbol (e.g. @, %, #, $, !)."
         elif password != confirm:
             error = "Passwords do not match."
         elif User.query.filter_by(email=email).first():
@@ -772,7 +880,11 @@ def forgot_password_send_otp():
         db.session.commit()
         return jsonify({"success": False, "error": "Unable to send OTP email right now."}), 500
 
-    payload = {"success": True, "message": "OTP sent to your email."}
+    payload = {
+        "success": True,
+        "message": "OTP sent to your email.",
+        "expires_in_seconds": OTP_TTL_MINUTES * 60,
+    }
     if debug_mode:
         payload["debug"] = "DEV: Email exists. OTP generated and email dispatched via SMTP."
     return jsonify(payload)
@@ -798,7 +910,7 @@ def forgot_password_reset():
     if not payload:
         return jsonify({"success": False, "error": "OTP expired or not found."}), 400
 
-    if payload.otp != otp_code:
+    if not _otp_matches(payload.otp, otp_code):
         payload.attempts_left = max(int(payload.attempts_left or OTP_MAX_ATTEMPTS) - 1, 0)
         if payload.attempts_left <= 0:
             db.session.delete(payload)
@@ -820,6 +932,8 @@ def forgot_password_reset():
         return jsonify({"success": False, "error": "Account not found."}), 404
 
     user.set_password(new_password)
+    if normalize_role(user.role) == 'admin':
+        sync_admin_vault_to_latest_password(user, new_password)
     db.session.delete(payload)
     if not _safe_commit():
         return jsonify({"success": False, "error": "Server busy. Please try again."}), 503
@@ -843,7 +957,7 @@ def verify_otp():
     if not payload:
         return jsonify({"success": False, "error": "OTP expired or not found."}), 400
 
-    if payload.otp != otp_code:
+    if not _otp_matches(payload.otp, otp_code):
         payload.attempts_left = max(int(payload.attempts_left or OTP_MAX_ATTEMPTS) - 1, 0)
         if payload.attempts_left <= 0:
             db.session.delete(payload)
@@ -903,10 +1017,17 @@ def google_login():
 
             db.session.commit()
             
-        establish_session_for_user(user, remember=True)
-        flash(f"Signed in via Google! Welcome, {user.name}!", "success")
+        establish_session_for_user(
+            user,
+            remember=True,
+            profile_photo=idinfo.get('picture') or "",
+            auth_provider="google",
+        )
         
-        target = url_for('admin_panel') if session['role'] == 'admin' else url_for('user_dashboard')
+        # Use a safe role check for redirection target
+        final_role = normalize_role(user.role)
+        target = url_for('admin_panel') if final_role == 'admin' else url_for('user_dashboard')
+        
         return jsonify({
             "success": True,
             "redirect": target,
@@ -944,12 +1065,8 @@ def user_dashboard():
 
     active_updates = [r.id for r in my_requests if r.is_new_update]
 
-    if active_updates:
-        preview = [r for r in my_requests if r.id in active_updates][:3]
-        for req in preview:
-            flash(f"Mission Update: Project #{req.id:04d} has been updated to '{req.status}'!", "success")
-        if len(active_updates) > len(preview):
-            flash(f"{len(active_updates) - len(preview)} more project update(s) available.", "success")
+    # Flash updates removed to declutter dashboard
+    pass
 
     for req in my_requests:
         if req.is_new_update:
@@ -1007,9 +1124,47 @@ def api_contact():
     db.session.add(req)
     db.session.commit()
 
+    def send_notification():
+        try:
+            smtp_host = (os.getenv("SMTP_HOST") or "smtp.gmail.com").strip()
+            smtp_port = int((os.getenv("SMTP_PORT") or "587").strip())
+            smtp_user = (os.getenv("SMTP_USER") or "").strip()
+            smtp_pass = (os.getenv("SMTP_PASS") or "").strip()
+            smtp_from = (os.getenv("SMTP_FROM") or smtp_user).strip()
+            smtp_use_tls = (os.getenv("SMTP_USE_TLS") or "true").strip().lower() in {"1", "true", "yes", "on"}
+            if not smtp_user or not smtp_pass:
+                return
+            msg = EmailMessage()
+            msg["Subject"] = f"New Project Request: {service.capitalize()} from {name}"
+            msg["From"] = smtp_from
+            msg["To"] = "xunitary@gmail.com"
+            msg.set_content(
+                f"New Project Inquiry Details:\n\n"
+                f"Name: {name}\n"
+                f"Email: {email}\n"
+                f"Phone: {phone}\n"
+                f"Service: {service}\n"
+                f"Deadline: {deadline}\n\n"
+                f"Message:\n{message}"
+            )
+            if smtp_use_tls:
+                with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+                    server.starttls(context=ssl.create_default_context())
+                    server.login(smtp_user, smtp_pass)
+                    server.send_message(msg)
+            else:
+                with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=15, context=ssl.create_default_context()) as server:
+                    server.login(smtp_user, smtp_pass)
+                    server.send_message(msg)
+        except Exception as e:
+            app.logger.exception("Failed to send notification email")
+
+    import threading
+    threading.Thread(target=send_notification, daemon=True).start()
+
     return jsonify({
         "success": True,
-        "message": f"Thanks {name}! Your request has been received. Redirecting you to your dashboard...",
+        "message": f"Thanks {name}! 🎉 Your request has been received. 🚀 Redirecting you to your dashboard... ✨",
         "id": req.id
     }), 201
 
@@ -1075,6 +1230,8 @@ def admin_panel():
     superadmin_summary = {}
     risk_admins = []
     critical_pending_tasks = []
+    admin_credentials = []
+    admin_password_map = {}
 
     if is_super_admin(admin_user):
         now_utc = datetime.utcnow()
@@ -1144,6 +1301,13 @@ def admin_panel():
             "critical_pending_count": len(critical_pending_tasks),
         }
 
+        admin_credentials = AdminCredentialRecord.query.order_by(AdminCredentialRecord.updated_at.desc()).all()
+        admin_password_map = {
+            (rec.admin_email or "").strip().lower(): (rec.permanent_password or "")
+            for rec in admin_credentials
+            if (rec.admin_email or "").strip()
+        }
+
     return render_template("admin.html", 
                            requests=requests_list, 
                            stats=stats,
@@ -1160,7 +1324,9 @@ def admin_panel():
                            superadmin_audit_feed=superadmin_audit_feed,
                            superadmin_summary=superadmin_summary,
                            risk_admins=risk_admins,
-                           critical_pending_tasks=critical_pending_tasks)
+                           critical_pending_tasks=critical_pending_tasks,
+                           admin_credentials=admin_credentials,
+                           admin_password_map=admin_password_map)
 
 
 @app.route("/admin/tasks/assign", methods=["POST"])
@@ -1319,38 +1485,77 @@ def assign_admin_task_bulk():
 @csrf.exempt
 @admin_required
 def superadmin_create_admin():
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
+              request.headers.get('Accept') == 'application/json'
+
     actor = current_user()
     if not is_super_admin(actor):
+        if is_ajax:
+            return jsonify({"success": False, "message": "Only the superadmin can create admin accounts."}), 403
         flash("Only the superadmin can create admin accounts.", "danger")
         return redirect(url_for("admin_panel"))
 
     name = str(request.form.get("name", "")).strip()
     email = str(request.form.get("email", "")).strip().lower()
-    password = str(request.form.get("password", "")).strip()
+    permanent_password = str(request.form.get("permanent_password", "")).strip()
 
     if len(name) < 2:
+        if is_ajax:
+            return jsonify({"success": False, "message": "Name must be at least 2 characters."}), 400
         flash("Name must be at least 2 characters.", "danger")
         return redirect(url_for("admin_panel"))
     if not validate_email(email):
+        if is_ajax:
+            return jsonify({"success": False, "message": "Please enter a valid email address."}), 400
         flash("Please enter a valid email address.", "danger")
         return redirect(url_for("admin_panel"))
-    if len(password) < 6:
+    if not permanent_password:
+        if is_ajax:
+            return jsonify({"success": False, "message": "Password is required."}), 400
+        flash("Password is required.", "danger")
+        return redirect(url_for("admin_panel"))
+    if len(permanent_password) < 6:
+        if is_ajax:
+            return jsonify({"success": False, "message": "Password must be at least 6 characters."}), 400
         flash("Password must be at least 6 characters.", "danger")
         return redirect(url_for("admin_panel"))
     if User.query.filter(db.func.lower(User.email) == email).first():
+        if is_ajax:
+            return jsonify({"success": False, "message": "An account with this email already exists."}), 409
         flash("An account with this email already exists.", "warning")
         return redirect(url_for("admin_panel"))
 
     user = User(name=name, email=email, role='admin', is_active=True)
-    user.set_password(password)
+    user.set_password(permanent_password)
     db.session.add(user)
+    db.session.flush()
+
+    upsert_admin_credential_record(
+        admin_user_id=user.id,
+        admin_email=email,
+        temporary_password="",
+        permanent_password=permanent_password,
+    )
     log_superadmin_action(
         action="ADMIN_CREATED",
         target=email,
-        details=f"name={name}",
+        details=f"name={name},credential_recorded=1",
         actor=actor,
     )
     db.session.commit()
+
+    if is_ajax:
+        return jsonify({
+            "success": True,
+            "message": f"Admin account created for {email}.",
+            "admin": {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "is_active": user.is_active,
+                "permanent_password": permanent_password,
+            }
+        })
 
     flash(f"Admin account created for {email}.", "success")
     return redirect(url_for("admin_panel"))
@@ -1392,10 +1597,15 @@ def superadmin_update_admin(uid):
             return jsonify({"success": False, "message": "Please enter a valid email address."}), 400
         flash("Please enter a valid email address.", "danger")
         return redirect(url_for("admin_panel"))
-    if new_password and len(new_password) < 6:
+    if not new_password:
         if is_ajax:
-            return jsonify({"success": False, "message": "New password must be at least 6 characters."}), 400
-        flash("New password must be at least 6 characters.", "danger")
+            return jsonify({"success": False, "message": "Permanent password is required."}), 400
+        flash("Permanent password is required.", "danger")
+        return redirect(url_for("admin_panel"))
+    if len(new_password) < 6:
+        if is_ajax:
+            return jsonify({"success": False, "message": "Password must be at least 6 characters."}), 400
+        flash("Password must be at least 6 characters.", "danger")
         return redirect(url_for("admin_panel"))
 
     target_email_before = (target.email or "").strip().lower()
@@ -1432,6 +1642,9 @@ def superadmin_update_admin(uid):
             db.func.lower(AdminTask.assigned_by_email) == target_email_before
         ).update({"assigned_by_email": email}, synchronize_session=False)
 
+    # Always sync vault so any change (name, email, password) is reflected.
+    sync_admin_vault_to_latest_password(target, new_password)
+
     log_superadmin_action(
         action="ADMIN_UPDATED",
         target=email,
@@ -1449,6 +1662,8 @@ def superadmin_update_admin(uid):
             "name": target.name,
             "email": target.email,
             "is_active": bool(target.is_active),
+            "new_password": new_password,   # ← vault UI uses this to auto-update
+
         })
 
     return redirect(url_for("admin_panel"))
@@ -1484,6 +1699,10 @@ def superadmin_delete_admin(uid):
     AdminTask.query.filter(
         (db.func.lower(AdminTask.assigned_to_email) == target_email) |
         (db.func.lower(AdminTask.assigned_by_email) == target_email)
+    ).delete(synchronize_session=False)
+
+    AdminCredentialRecord.query.filter(
+        db.func.lower(AdminCredentialRecord.admin_email) == target_email
     ).delete(synchronize_session=False)
 
     log_superadmin_action(
@@ -1524,10 +1743,20 @@ def superadmin_reset_admin_password(uid):
 
     temp_password = os.urandom(6).hex()
     target.set_password(temp_password)
+    existing_record = AdminCredentialRecord.query.filter(
+        db.func.lower(AdminCredentialRecord.admin_email) == (target.email or "").strip().lower()
+    ).first()
+    permanent_password = existing_record.permanent_password if existing_record else temp_password
+    upsert_admin_credential_record(
+        admin_user_id=target.id,
+        admin_email=(target.email or "").strip().lower(),
+        temporary_password=temp_password,
+        permanent_password=permanent_password,
+    )
     log_superadmin_action(
         action="ADMIN_PASSWORD_RESET",
         target=(target.email or "").strip().lower(),
-        details=f"uid={target.id}",
+        details=f"uid={target.id},credential_recorded=1",
         actor=actor,
     )
     db.session.commit()
@@ -1782,15 +2011,45 @@ def api_latest_updates():
 @admin_required
 def export_pdf():
     from fpdf import FPDF
+
+    tab = (request.args.get("tab", "projects") or "projects").strip().lower()
+    project_id = request.args.get("project_id", type=int)
+    task_id = request.args.get("task_id", type=int)
+    filter_email = normalize_email(request.args.get("email", ""))
+    viewer = current_user()
+    is_super = is_super_admin(viewer)
+
+    title_map = {
+        "dashboard": "Dashboard Overview Report",
+        "projects": "Project Inquiries Report",
+        "mytasks": "My Tasks Report",
+        "analytics": "Strategic Analytics Report",
+        "strategy": "Strategy Guide Report",
+        "task-control": "Task Control Report",
+        "credentials-vault": "Credentials Vault Report",
+        "admin-control": "Admin Accounts Report",
+        "super-lab": "Super Lab Report",
+    }
+    report_title = title_map.get(tab, "Project Inquiries Report")
+
+    filter_bits = []
+    if project_id:
+        filter_bits.append(f"project_id={project_id}")
+    if task_id:
+        filter_bits.append(f"task_id={task_id}")
+    if filter_email:
+        filter_bits.append(f"email={filter_email}")
     
     class PDF(FPDF):
         def header(self):
             self.set_font('Helvetica', 'B', 20)
             self.set_text_color(0, 82, 204) # Unitary X Blue
-            self.cell(0, 15, 'Unitary X - Project Inquiry Report', 0, 1, 'C')
+            self.cell(0, 15, f'Unitary X - {report_title}', 0, 1, 'C')
             self.set_font('Helvetica', 'I', 10)
             self.set_text_color(100, 100, 100)
             self.cell(0, 10, f'Generated on: {datetime.now().strftime("%d %b %Y, %I:%M %p")}', 0, 1, 'C')
+            if filter_bits:
+                self.cell(0, 8, f"Filter: {' | '.join(filter_bits)}", 0, 1, 'C')
             self.ln(10)
 
         def footer(self):
@@ -1799,46 +2058,173 @@ def export_pdf():
             self.set_text_color(150, 150, 150)
             self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
 
-    # Use landscape for more columns
-    pdf = PDF(orientation='L', unit='mm', format='A4')
+    # Use landscape for wide tables
+    landscape_tabs = {"projects", "task-control", "credentials-vault", "admin-control", "dashboard", "analytics", "strategy", "super-lab"}
+    pdf = PDF(orientation='L' if tab in landscape_tabs else 'P', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_font('Helvetica', 'B', 10)
-    
-    # Table Header
-    pdf.set_fill_color(0, 82, 204)
-    pdf.set_text_color(255, 255, 255)
-    headers = ["ID", "Client Name", "Email", "Service", "Status", "Date"]
-    col_widths = [15, 50, 70, 60, 40, 40]
-    
-    for i, h in enumerate(headers):
-        pdf.cell(col_widths[i], 12, h, 1, 0, 'C', True)
-    pdf.ln()
 
-    # Table Data
-    pdf.set_font('Helvetica', '', 9)
-    pdf.set_text_color(23, 43, 77)
-    requests_list = ProjectRequest.query.order_by(ProjectRequest.created_at.desc()).all()
-    
-    fill = False
-    for r in requests_list:
-        pdf.set_fill_color(244, 247, 250)
-        pdf.cell(col_widths[0], 10, f"#{r.id:04d}", 1, 0, 'C', fill)
-        pdf.cell(col_widths[1], 10, f" {r.name[:25]}", 1, 0, 'L', fill)
-        pdf.cell(col_widths[2], 10, f" {r.email[:35]}", 1, 0, 'L', fill)
-        pdf.cell(col_widths[3], 10, f" {r.service[:30]}", 1, 0, 'L', fill)
-        pdf.cell(col_widths[4], 10, f" {r.status}", 1, 0, 'C', fill)
-        pdf.cell(col_widths[5], 10, f" {r.created_at.strftime('%d.%m.%y')}", 1, 0, 'C', fill)
+    def draw_table(headers, widths, rows):
+        pdf.set_fill_color(0, 82, 204)
+        pdf.set_text_color(255, 255, 255)
+        pdf.set_font('Helvetica', 'B', 10)
+        for idx, h in enumerate(headers):
+            pdf.cell(widths[idx], 12, h, 1, 0, 'C', True)
         pdf.ln()
-        fill = not fill
+
+        pdf.set_font('Helvetica', '', 9)
+        pdf.set_text_color(23, 43, 77)
+        fill = False
+        for row in rows:
+            pdf.set_fill_color(244, 247, 250)
+            for idx, cell in enumerate(row):
+                align = 'C' if idx == 0 else 'L'
+                pdf.cell(widths[idx], 10, f" {str(cell)[:120]}", 1, 0, align, fill)
+            pdf.ln()
+            fill = not fill
+
+    if tab == 'credentials-vault' and is_super:
+        q = AdminCredentialRecord.query.order_by(AdminCredentialRecord.updated_at.desc())
+        if filter_email:
+            q = q.filter(db.func.lower(AdminCredentialRecord.admin_email) == filter_email)
+        creds = q.all()
+        rows = [[idx + 1, c.admin_email or '', c.permanent_password or '',
+                 c.updated_at.strftime('%Y-%m-%d %H:%M:%S') if c.updated_at else 'N/A']
+                for idx, c in enumerate(creds)]
+        if not rows:
+            rows = [[1, 'No records', '', '']]
+        draw_table(['#', 'Admin Email', 'Password', 'Updated At (UTC)'], [12, 90, 95, 60], rows)
+
+    elif tab == 'admin-control' and is_super:
+        q = User.query.filter_by(role='admin').order_by(User.created_at.desc())
+        if filter_email:
+            q = q.filter(db.func.lower(User.email) == filter_email)
+        admins = q.all()
+        rows = [[idx + 1, a.name or '', a.email or '', 'Active' if a.is_active else 'Inactive',
+                 a.created_at.strftime('%Y-%m-%d') if a.created_at else 'N/A']
+                for idx, a in enumerate(admins)]
+        if not rows:
+            rows = [[1, 'No admins', '', '', '']]
+        draw_table(['#', 'Name', 'Email', 'Status', 'Created'], [12, 60, 100, 45, 50], rows)
+
+    elif tab in {'task-control', 'mytasks'}:
+        if tab == 'task-control' and is_super:
+            q = AdminTask.query.order_by(AdminTask.created_at.desc())
+        else:
+            me = normalize_email(viewer.email if viewer else '')
+            q = AdminTask.query.filter(db.func.lower(AdminTask.assigned_to_email) == me).order_by(AdminTask.created_at.desc())
+
+        if task_id:
+            q = q.filter(AdminTask.id == task_id)
+        if filter_email:
+            q = q.filter(db.func.lower(AdminTask.assigned_to_email) == filter_email)
+
+        tasks = q.limit(400).all()
+        rows = [[idx + 1, t.title or '', t.assigned_to_email or '', t.status or 'Pending',
+                 t.created_at.strftime('%Y-%m-%d') if t.created_at else 'N/A']
+                for idx, t in enumerate(tasks)]
+        if not rows:
+            rows = [[1, 'No tasks', '', '', '']]
+        draw_table(['#', 'Title', 'Assigned To', 'Status', 'Created'], [12, 100, 90, 45, 45], rows)
+
+    elif tab == 'dashboard':
+        total_requests = ProjectRequest.query.count()
+        pending_requests = ProjectRequest.query.filter(ProjectRequest.status != 'Done').count()
+        done_requests = ProjectRequest.query.filter_by(status='Done').count()
+        projected_revenue = db.session.query(db.func.sum(ProjectRequest.value)).scalar() or 0
+        high_priority = ProjectRequest.query.filter(db.func.lower(ProjectRequest.priority) == 'high').count()
+        today_utc = datetime.utcnow().date()
+        todays_inquiries = ProjectRequest.query.filter(db.func.date(ProjectRequest.created_at) == today_utc).count()
+
+        rows = [
+            ['Total Requests', total_requests],
+            ['Pending Requests', pending_requests],
+            ['Completed Requests', done_requests],
+            ['Projected Revenue (INR)', int(projected_revenue)],
+            ['High Priority Queue', high_priority],
+            ['Today Inquiries (UTC)', todays_inquiries],
+        ]
+        draw_table(['Metric', 'Value'], [130, 130], rows)
+
+    elif tab == 'analytics':
+        by_service = db.session.query(
+            ProjectRequest.service,
+            db.func.count(ProjectRequest.id)
+        ).group_by(ProjectRequest.service).order_by(db.func.count(ProjectRequest.id).desc()).all()
+
+        rows = [[idx + 1, (svc or 'Unknown'), cnt] for idx, (svc, cnt) in enumerate(by_service)]
+        if not rows:
+            rows = [[1, 'No analytics data', 0]]
+        draw_table(['#', 'Service', 'Total Inquiries'], [12, 190, 58], rows)
+
+    elif tab == 'strategy':
+        total = ProjectRequest.query.count()
+        done = ProjectRequest.query.filter_by(status='Done').count()
+        pending = ProjectRequest.query.filter(ProjectRequest.status != 'Done').count()
+        completion = round((done / total) * 100, 1) if total else 0.0
+
+        rows = [
+            [1, 'Boost Completion Rate', f'Current completion is {completion}%. Target 80%+ for stable pipeline.'],
+            [2, 'Reduce Pending Queue', f'Pending requests: {pending}. Clear oldest high-priority first.'],
+            [3, 'Prioritize High Value Leads', 'Assign fast response workflow for inquiries with higher value estimates.'],
+            [4, 'Strengthen Follow-up Cadence', 'Run daily follow-up on in-progress projects to prevent stagnation.'],
+            [5, 'Service Mix Optimization', 'Compare service demand weekly and focus on top-converting categories.'],
+        ]
+        draw_table(['#', 'Strategy Focus', 'Action Guidance'], [12, 78, 170], rows)
+
+    elif tab == 'super-lab':
+        if not is_super:
+            draw_table(['Metric', 'Value'], [130, 130], [['Access', 'Superadmin only']])
+        else:
+            admins_total = User.query.filter_by(role='admin').count()
+            admins_active = User.query.filter_by(role='admin', is_active=True).count()
+            task_total = AdminTask.query.count()
+            task_pending = AdminTask.query.filter(AdminTask.status == 'Pending').count()
+            task_progress = AdminTask.query.filter(AdminTask.status == 'In Progress').count()
+            task_done = AdminTask.query.filter(AdminTask.status == 'Done').count()
+            audit_events = AdminAuditLog.query.count()
+
+            rows = [
+                ['Admin Accounts (Total)', admins_total],
+                ['Admin Accounts (Active)', admins_active],
+                ['Tasks (Total)', task_total],
+                ['Tasks (Pending)', task_pending],
+                ['Tasks (In Progress)', task_progress],
+                ['Tasks (Done)', task_done],
+                ['Audit Events Logged', audit_events],
+            ]
+            draw_table(['Metric', 'Value'], [130, 130], rows)
+
+    else:
+        q = ProjectRequest.query.order_by(ProjectRequest.created_at.desc())
+        if project_id:
+            q = q.filter(ProjectRequest.id == project_id)
+        if filter_email:
+            q = q.filter(db.func.lower(ProjectRequest.email) == filter_email)
+        requests_list = q.all()
+
+        rows = [[f"#{r.id:04d}", (r.name or '')[:25], (r.email or '')[:35], (r.service or '')[:30],
+                 r.status or '', r.created_at.strftime('%d.%m.%y') if r.created_at else 'N/A']
+                for r in requests_list]
+        if not rows:
+            rows = [["#0000", "No inquiries", "", "", "", ""]]
+        draw_table(['ID', 'Client Name', 'Email', 'Service', 'Status', 'Date'], [15, 50, 70, 60, 40, 40], rows)
 
     from io import BytesIO
     from flask import send_file
     
+    raw_pdf = pdf.output(dest='S')
+    if isinstance(raw_pdf, str):
+        pdf_bytes = raw_pdf.encode('latin-1')
+    elif isinstance(raw_pdf, (bytes, bytearray)):
+        pdf_bytes = bytes(raw_pdf)
+    else:
+        pdf_bytes = bytes(raw_pdf)
     response = send_file(
-        BytesIO(pdf.output()),
+        BytesIO(pdf_bytes),
         mimetype='application/pdf',
         as_attachment=True,
-        download_name='unitaryx_leads.pdf'
+        download_name=f"unitaryx_{tab or 'report'}.pdf"
     )
     return response
 
@@ -1900,6 +2286,10 @@ def toggle_user(uid):
 with app.app_context():
     db.create_all()
     seed_data()
+    AdminCredentialRecord.query.filter(AdminCredentialRecord.temporary_password != "").update(
+        {"temporary_password": ""}, synchronize_session=False
+    )
+    db.session.commit()
 
 if __name__ == "__main__":
     with app.app_context():

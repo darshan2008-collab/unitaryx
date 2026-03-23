@@ -18,50 +18,211 @@
 </head>
 
 <body class="ux-body">
+    <div class="ux-bg-orbs" aria-hidden="true">
+        <div class="ux-orb ux-orb-1"></div>
+        <div class="ux-orb ux-orb-2"></div>
+        <div class="ux-orb ux-orb-3"></div>
+    </div>
     <canvas id="ux-bg-canvas" class="ux-bg-canvas" aria-hidden="true"></canvas>
-    <div class="ux-grid-overlay" aria-hidden="true"></div>
-
-    <div class="ux-loader" id="ux-loader" aria-hidden="true">
-        <div class="ux-loader-logo">UX</div>
+    <div class="ux-grid-overlay" aria-hidden="true">
+        <div class="ux-grid-floor"></div>
+        <div class="ux-light-beam"></div>
+        <div class="ux-light-beam"></div>
+        <div class="ux-light-beam"></div>
+        <div class="ux-light-beam"></div>
     </div>
 
-    <div class="ux-cursor" id="ux-cursor" aria-hidden="true"></div>
-    <div class="ux-cursor-trail" id="ux-cursor-trail" aria-hidden="true"></div>
 
-    <div class="ux-shell">
+    <!-- ══ CINEMATIC QUANTUM LOADER ══ -->
+    <div class="ux-loader" id="ux-loader" aria-hidden="true">
+
+        <!-- LAYER 1: full-screen canvas starfield + plasma nebula -->
+        <canvas class="ux-ldr-canvas" id="ux-ldr-canvas"></canvas>
+
+        <!-- LAYER 2: SVG energy ring system -->
+        <svg class="ux-ldr-svg-rings" viewBox="0 0 800 800" aria-hidden="true">
+            <defs>
+                <filter id="ldr-blur-sm"><feGaussianBlur stdDeviation="3"/></filter>
+                <filter id="ldr-blur-lg"><feGaussianBlur stdDeviation="8"/></filter>
+                <linearGradient id="ldr-g1" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#00f2ff" stop-opacity="0"/>
+                    <stop offset="50%" stop-color="#00f2ff" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
+                </linearGradient>
+                <linearGradient id="ldr-g2" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0"/>
+                    <stop offset="50%" stop-color="#ec4899" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+                </linearGradient>
+            </defs>
+            <!-- background rings -->
+            <circle cx="400" cy="400" r="370" fill="none" stroke="rgba(0,242,255,0.06)" stroke-width="1"/>
+            <circle cx="400" cy="400" r="330" fill="none" stroke="rgba(139,92,246,0.05)" stroke-width="0.5"/>
+            <circle cx="400" cy="400" r="290" fill="none" stroke="rgba(0,242,255,0.04)" stroke-width="0.5" stroke-dasharray="4 8"/>
+            <!-- spinning glow arcs -->
+            <g class="ux-ldr-arc-grp a1">
+                <path d="M 400 30 A 370 370 0 0 1 770 400" fill="none" stroke="url(#ldr-g1)" stroke-width="2" filter="url(#ldr-blur-sm)"/>
+                <path d="M 400 30 A 370 370 0 0 1 770 400" fill="none" stroke="rgba(0,242,255,0.8)" stroke-width="1"/>
+            </g>
+            <g class="ux-ldr-arc-grp a2">
+                <path d="M 770 400 A 370 370 0 0 1 400 770" fill="none" stroke="url(#ldr-g2)" stroke-width="2" filter="url(#ldr-blur-sm)"/>
+                <path d="M 770 400 A 370 370 0 0 1 400 770" fill="none" stroke="rgba(236,72,153,0.7)" stroke-width="1"/>
+            </g>
+            <g class="ux-ldr-arc-grp a3">
+                <path d="M 30 400 A 370 370 0 0 1 400 30" fill="none" stroke="rgba(139,92,246,0.6)" stroke-width="1.5" filter="url(#ldr-blur-sm)"/>
+            </g>
+            <!-- inner structural hex -->
+            <polygon points="400,130 620,265 620,535 400,670 180,535 180,265"
+                fill="none" stroke="rgba(0,242,255,0.12)" stroke-width="1" stroke-dasharray="6 10"
+                class="ux-ldr-hex-frame"/>
+            <!-- spinning inner triangles -->
+            <polygon points="400,180 600,480 200,480" fill="none" stroke="rgba(0,242,255,0.08)" stroke-width="0.8" class="ux-ldr-tri t1"/>
+            <polygon points="400,620 200,320 600,320" fill="none" stroke="rgba(139,92,246,0.1)" stroke-width="0.8" class="ux-ldr-tri t2"/>
+            <!-- core pulse rings -->
+            <circle cx="400" cy="400" r="100" fill="rgba(0,242,255,0.02)" stroke="rgba(0,242,255,0.25)" stroke-width="1.5" filter="url(#ldr-blur-lg)" class="ux-ldr-core-ring r1"/>
+            <circle cx="400" cy="400" r="72" fill="rgba(139,92,246,0.03)" stroke="rgba(139,92,246,0.2)" stroke-width="1" class="ux-ldr-core-ring r2"/>
+        </svg>
+
+        <!-- LAYER 3: CSS 3D orbit rings with glowing nodes -->
+        <div class="ux-ldr-orbits">
+            <div class="ux-ldr-orbit o1"><div class="ux-ldr-orb-node"></div></div>
+            <div class="ux-ldr-orbit o2"><div class="ux-ldr-orb-node n2"></div></div>
+            <div class="ux-ldr-orbit o3"><div class="ux-ldr-orb-node n3"></div></div>
+            <div class="ux-ldr-orbit o4"><div class="ux-ldr-orb-node n4"></div></div>
+        </div>
+
+        <!-- LAYER 4: vertical data streams -->
+        <div class="ux-ldr-streams" aria-hidden="true">
+            <div class="ux-ldr-stream s1"></div>
+            <div class="ux-ldr-stream s2"></div>
+            <div class="ux-ldr-stream s3"></div>
+            <div class="ux-ldr-stream s4"></div>
+            <div class="ux-ldr-stream s5"></div>
+            <div class="ux-ldr-stream s6"></div>
+            <div class="ux-ldr-stream s7"></div>
+            <div class="ux-ldr-stream s8"></div>
+        </div>
+
+        <!-- LAYER 5: horizontal scan sweep -->
+        <div class="ux-ldr-scan-sweep"></div>
+
+        <!-- LAYER 6: central logo core -->
+        <div class="ux-ldr-core">
+            <div class="ux-ldr-core-glow"></div>
+            <div class="ux-ldr-hex-badge">
+                <svg viewBox="0 0 120 104" class="ux-ldr-hex-svg" aria-hidden="true">
+                    <polygon points="60,2 118,28 118,76 60,102 2,76 2,28"
+                        fill="rgba(0,242,255,0.04)" stroke="rgba(0,242,255,0.6)" stroke-width="1.5"/>
+                    <polygon points="60,12 108,34 108,70 60,92 12,70 12,34"
+                        fill="none" stroke="rgba(139,92,246,0.4)" stroke-width="0.8"/>
+                    <circle cx="60" cy="2"   r="3" fill="#00f2ff"/>
+                    <circle cx="118" cy="28" r="3" fill="#8b5cf6"/>
+                    <circle cx="118" cy="76" r="3" fill="#ec4899"/>
+                    <circle cx="60" cy="102" r="3" fill="#00f2ff"/>
+                    <circle cx="2" cy="76"  r="3" fill="#8b5cf6"/>
+                    <circle cx="2" cy="28"  r="3" fill="#f59e0b"/>
+                </svg>
+            </div>
+            <div class="ux-ldr-logo-text">
+                <span class="ux-ldr-glitch" data-text="UNITARY X">UNITARY X</span>
+                <span class="ux-ldr-tagline">QUANTUM CORE INITIALIZING</span>
+            </div>
+            <div class="ux-ldr-scan-beam"></div>
+        </div>
+
+        <!-- LAYER 7: particle field -->
+        <div class="ux-ldr-particles" id="ux-ldr-particles" aria-hidden="true"></div>
+
+        <!-- LAYER 8: tactical HUD -->
+        <div class="ux-ldr-hud">
+            <div class="ux-ldr-status">
+                <div class="ux-ldr-dot"></div>
+                <span id="ux-ldr-status-text">QUANTUM CORE COLD-BOOT...</span>
+            </div>
+            <div class="ux-ldr-bar-wrap">
+                <span class="ux-ldr-bar-label">SYSTEM LOAD</span>
+                <div class="ux-ldr-bar-track">
+                    <div class="ux-ldr-bar-fill" id="ux-ldr-bar"></div>
+                    <div class="ux-ldr-bar-segments">
+                        <span></span><span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                </div>
+                <span class="ux-ldr-bar-pct" id="ux-ldr-pct">0%</span>
+            </div>
+        </div>
+
+        <!-- corner HUD brackets -->
+        <div class="ux-ldr-bracket tl"></div>
+        <div class="ux-ldr-bracket tr"></div>
+        <div class="ux-ldr-bracket bl"></div>
+        <div class="ux-ldr-bracket br"></div>
+
+        <div class="ux-ldr-wipe" id="ux-ldr-wipe"></div>
+    </div>
+
+    ```` <div class="ux-shell">
         <nav class="ux-nav" id="ux-nav">
             <div class="ux-nav-inner">
                 <a href="#home" class="ux-brand">
                     <span class="ux-brand-mark">U</span>
-                    <span>Unitary X</span>
+                    <span class="ux-brand-text">Unitary X</span>
                 </a>
 
                 <ul class="ux-links">
                     <li><a href="#home" class="active">Home</a></li>
                     <li><a href="#projects">Projects</a></li>
-                    <li><a href="#lab">Lab</a></li>
+                    <li><a href="#about">About</a></li>
                     <li><a href="#process">Process</a></li>
                     <li><a href="#services">Services</a></li>
-                    <li><a href="#pricing">Pricing</a></li>
                     <li><a href="#contact">Contact</a></li>
                 </ul>
 
-                <a href="#contact" class="ux-nav-cta ux-ripple ux-magnetic">Hire Me</a>
+                <div class="ux-nav-actions">
+                    {% if user %}
+                    {% set profile_name = session.get('user_name') or user.name or user.email %}
+                    {% set profile_photo = (session.get('user_profile_photo') or '')|trim %}
+                    {% set profile_initial = (profile_name[:1] if profile_name else 'U')|upper %}
+                    {% set role_label = 'SUPERADMIN' if session.get('is_superadmin') else ('ADMIN' if
+                    session.get('role') == 'admin' else 'USER') %}
+                    <a href="{{ '/admin' if session.get('role') == 'admin' else '/dashboard' }}"
+                        class="ux-user-chip ux-ripple ux-magnetic" title="Signed in as {{ profile_name }}">
+                        <span class="ux-user-avatar">
+                            <img src="{{ profile_photo }}" alt="{{ profile_name }}"
+                                class="ux-user-photo{% if not profile_photo %} is-hidden{% endif %}"
+                                referrerpolicy="no-referrer"
+                                onerror="this.classList.add('is-hidden'); if(this.nextElementSibling){ this.nextElementSibling.classList.remove('is-hidden'); }" />
+                            <span class="ux-user-initial{% if profile_photo %} is-hidden{% endif %}">{{ profile_initial
+                                }}</span>
+                        </span>
+                        <span class="ux-user-meta">
+                            <strong>{{ profile_name }}</strong>
+                            <small>{{ role_label }}</small>
+                        </span>
+                    </a>
+                    <a href="/logout" class="ux-nav-ghost ux-ripple ux-magnetic">Logout</a>
+                    {% else %}
+                    <a href="/login" class="ux-nav-ghost ux-ripple ux-magnetic">Login</a>
+                    {% endif %}
+                    <a href="#contact" class="ux-nav-cta ux-ripple ux-magnetic">Hire Us</a>
+                </div>
             </div>
         </nav>
 
         <section class="ux-section ux-hero" id="home">
             <div class="ux-hero-wrap">
                 <div class="ux-hero-main ux-reveal">
-                    <span class="ux-kicker"><i class="fas fa-briefcase"></i> Premium Conversion Design</span>
-                    <h1 class="ux-headline" id="ux-headline">I Build Digital Experiences That Convert</h1>
-                    <p class="ux-sub" id="ux-sub">Cinematic interfaces, software systems, and hardware-ready builds
-                        crafted for founders, students, and premium clients.</p>
+                    <h1 class="ux-headline" id="ux-headline">We Don't Just Build Projects. We Engineer Experiences.</h1>
+                    <p class="ux-sub" id="ux-sub">A new generation of digital and real-world solutions crafted with
+                        precision,
+                        powered by innovation, and designed to perform.</p>
+                    <p class="ux-muted ux-scramble-text" style="margin-top:10px;">From Code to Reality - Everything
+                        Connected.</p>
 
                     <div class="ux-cta-row">
-                        <a href="#contact" class="ux-btn ux-btn-primary ux-ripple ux-magnetic">Hire Me <span
+                        <a href="#contact" class="ux-btn ux-btn-primary ux-ripple ux-magnetic">Start Your Project <span
                                 class="sweep"></span></a>
-                        <a href="#projects" class="ux-btn ux-ripple ux-magnetic">View Projects <span
+                        <a href="#projects" class="ux-btn ux-ripple ux-magnetic">Explore Work <span
                                 class="sweep"></span></a>
                         <a href="/cinematic" class="ux-btn ux-ripple ux-magnetic">Portfolio <span
                                 class="sweep"></span></a>
@@ -70,20 +231,105 @@
 
                 <aside class="ux-hero-side ux-reveal">
                     <div class="ux-float">
-                        <h4><i class="fas fa-cube"></i> Live Product Thinking</h4>
-                        <p>Built like premium software products, not static pages.</p>
+                        <h4><i class="fas fa-globe"></i> Web</h4>
+                        <p>Modern, fast, and responsive digital identity platforms.</p>
                     </div>
                     <div class="ux-float">
-                        <h4><i class="fas fa-microchip"></i> AI + Automation</h4>
-                        <p>Intelligent workflows, APIs, and scalable architecture.</p>
+                        <h4><i class="fas fa-code"></i> Software</h4>
+                        <p>Intelligent systems that simplify operations and scale.</p>
                     </div>
                     <div class="ux-float">
-                        <h4><i class="fas fa-star"></i> Client WOW Delivery</h4>
-                        <p>Designed to impress in 3 seconds and retain attention.</p>
+                        <h4><i class="fas fa-microchip"></i> Hardware</h4>
+                        <p>Where embedded innovation bridges digital and physical worlds.</p>
                     </div>
                 </aside>
             </div>
             <div class="ux-scroll-indicator" aria-hidden="true"></div>
+        </section>
+
+        <!-- NEW: Infinite Tech Stack Marquee -->
+        <section class="ux-tech-marquee-bar" aria-hidden="true"
+            style="overflow: hidden; background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.03); padding: 15px 0; margin-bottom: 20px;">
+            <div class="ux-marquee-track"
+                style="display: flex; width: 200%; animation: scrollMarquee 25s linear infinite;">
+                <div class="ux-marquee-content"
+                    style="display: flex; justify-content: space-around; width: 100%; align-items: center; color: var(--text-dim); font-weight: 700; font-size: 0.9rem; letter-spacing: 2px;">
+                    <span><i class="fa-brands fa-react" style="color:#61dafb; margin-right:5px;"></i> REACT</span>
+                    <span style="color:var(--text-muted)">•</span>
+                    <span><i class="fa-brands fa-python" style="color:#ffd43b; margin-right:5px;"></i> PYTHON /
+                        ML</span>
+                    <span style="color:var(--text-muted)">•</span>
+                    <span><i class="fa-brands fa-node-js" style="color:#3c873a; margin-right:5px;"></i> NODE.JS</span>
+                    <span style="color:var(--text-muted)">•</span>
+                    <span><i class="fa-brands fa-aws" style="color:#ff9900; margin-right:5px;"></i> CLOUD OPS</span>
+                    <span style="color:var(--text-muted)">•</span>
+                    <span><i class="fas fa-microchip" style="color:#f43f5e; margin-right:5px;"></i> EMBEDDED IoT</span>
+                    <span style="color:var(--text-muted)">•</span>
+                    <span><i class="fa-brands fa-figma" style="color:#a259ff; margin-right:5px;"></i> UI/UX
+                        DESIGN</span>
+                    <span style="color:var(--text-muted)">•</span>
+                </div>
+                <div class="ux-marquee-content"
+                    style="display: flex; justify-content: space-around; width: 100%; align-items: center; color: var(--text-dim); font-weight: 700; font-size: 0.9rem; letter-spacing: 2px;">
+                    <span><i class="fa-brands fa-react" style="color:#61dafb; margin-right:5px;"></i> REACT</span>
+                    <span style="color:var(--text-muted)">•</span>
+                    <span><i class="fa-brands fa-python" style="color:#ffd43b; margin-right:5px;"></i> PYTHON /
+                        ML</span>
+                    <span style="color:var(--text-muted)">•</span>
+                    <span><i class="fa-brands fa-node-js" style="color:#3c873a; margin-right:5px;"></i> NODE.JS</span>
+                    <span style="color:var(--text-muted)">•</span>
+                    <span><i class="fa-brands fa-aws" style="color:#ff9900; margin-right:5px;"></i> CLOUD OPS</span>
+                    <span style="color:var(--text-muted)">•</span>
+                    <span><i class="fas fa-microchip" style="color:#f43f5e; margin-right:5px;"></i> EMBEDDED IoT</span>
+                    <span style="color:var(--text-muted)">•</span>
+                    <span><i class="fa-brands fa-figma" style="color:#a259ff; margin-right:5px;"></i> UI/UX
+                        DESIGN</span>
+                    <span style="color:var(--text-muted)">•</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- NEW: Core Web Offerings -->
+        <section class="ux-section ux-reveal" style="padding-top: 30px; padding-bottom: 30px;">
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; text-align: left;">
+                <div class="ux-tilt-element"
+                    style="padding: 30px; background: rgba(255,255,255,0.02); border: 1px solid var(--ux-glass-border); border-radius: 12px; backdrop-filter: blur(10px); position: relative; overflow: hidden;">
+                    <div
+                        style="position: absolute; right: -20px; top: -20px; font-size: 8rem; color: rgba(34, 211, 238, 0.05); pointer-events:none;">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <i class="fas fa-layer-group" style="font-size: 2rem; color: #22d3ee; margin-bottom: 15px;"></i>
+                    <h3 style="font-size: 1.2rem; font-weight: 800; color: #f8fafc; margin-bottom: 8px;">Frontend
+                        Architecture</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.6;">Immersive, high-FPS user
+                        interfaces built with modern web frameworks for cinematic, scalable digital delivery.</p>
+                </div>
+                <div class="ux-tilt-element"
+                    style="padding: 30px; background: rgba(255,255,255,0.02); border: 1px solid var(--ux-glass-border); border-radius: 12px; backdrop-filter: blur(10px); position: relative; overflow: hidden;">
+                    <div
+                        style="position: absolute; right: -20px; top: -20px; font-size: 8rem; color: rgba(168, 85, 247, 0.05); pointer-events:none;">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <i class="fas fa-server" style="font-size: 2rem; color: #a855f7; margin-bottom: 15px;"></i>
+                    <h3 style="font-size: 1.2rem; font-weight: 800; color: #f8fafc; margin-bottom: 8px;">Backend
+                        Intelligence</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.6;">Robust microservices and
+                        secure database clusters powering highly functional, scalable, data-driven web applications.</p>
+                </div>
+                <div class="ux-tilt-element"
+                    style="padding: 30px; background: rgba(255,255,255,0.02); border: 1px solid var(--ux-glass-border); border-radius: 12px; backdrop-filter: blur(10px); position: relative; overflow: hidden;">
+                    <div
+                        style="position: absolute; right: -20px; top: -20px; font-size: 8rem; color: rgba(236, 72, 153, 0.05); pointer-events:none;">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <i class="fas fa-bolt" style="font-size: 2rem; color: #ec4899; margin-bottom: 15px;"></i>
+                    <h3 style="font-size: 1.2rem; font-weight: 800; color: #f8fafc; margin-bottom: 8px;">Global Edge
+                        Delivery</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.6;">Ultra-low latency content
+                        deployment networks ensuring 99.9% uptime and lightning-fast worldwide performance.</p>
+                </div>
+            </div>
         </section>
 
         <section class="ux-section ux-reveal" id="projects">
@@ -114,11 +360,9 @@
                     data-category="{{ 'web' if cat not in ['web','app','ui','branding'] else cat }}">
                     <div class="ux-project-thumb">
                         <i class="{{ p.icon or 'fas fa-cube' }}"></i>
+                        <div class="ux-icon-platform"></div>
                     </div>
-                    <div class="ux-project-overlay">
-                        <a href="#contact" class="ux-btn ux-btn-primary ux-ripple">View Case Study <span
-                                class="sweep"></span></a>
-                    </div>
+
                     <div class="ux-project-info">
                         <h4>{{ p.title }}</h4>
                         <p>{{ p.description or 'Premium execution pipeline with measurable outcomes.' }}</p>
@@ -126,27 +370,21 @@
                 </article>
                 {% else %}
                 <article class="ux-project-card" data-category="web">
-                    <div class="ux-project-thumb"><i class="fas fa-laptop-code"></i></div>
-                    <div class="ux-project-overlay"><a href="#contact" class="ux-btn ux-btn-primary ux-ripple">View Case
-                            Study <span class="sweep"></span></a></div>
+                    <div class="ux-project-thumb"><i class="fas fa-laptop-code"></i><div class="ux-icon-platform"></div></div>
                     <div class="ux-project-info">
                         <h4>Next-Gen Product Site</h4>
                         <p>High-conversion product storytelling and premium UI system.</p>
                     </div>
                 </article>
                 <article class="ux-project-card" data-category="app">
-                    <div class="ux-project-thumb"><i class="fas fa-mobile-screen-button"></i></div>
-                    <div class="ux-project-overlay"><a href="#contact" class="ux-btn ux-btn-primary ux-ripple">View Case
-                            Study <span class="sweep"></span></a></div>
+                    <div class="ux-project-thumb"><i class="fas fa-mobile-screen-button"></i><div class="ux-icon-platform"></div></div>
                     <div class="ux-project-info">
                         <h4>Client Dashboard App</h4>
                         <p>Realtime insights with futuristic design language and smooth interactions.</p>
                     </div>
                 </article>
                 <article class="ux-project-card" data-category="branding">
-                    <div class="ux-project-thumb"><i class="fas fa-palette"></i></div>
-                    <div class="ux-project-overlay"><a href="#contact" class="ux-btn ux-btn-primary ux-ripple">View Case
-                            Study <span class="sweep"></span></a></div>
+                    <div class="ux-project-thumb"><i class="fas fa-palette"></i><div class="ux-icon-platform"></div></div>
                     <div class="ux-project-info">
                         <h4>Brand Identity Suite</h4>
                         <p>Visual system, tone, and interface styling aligned for premium market appeal.</p>
@@ -156,40 +394,35 @@
             </div>
         </section>
 
-        <section class="ux-section ux-reveal" id="lab">
-            <h2 class="ux-title">Special Feature Lab</h2>
-            <p class="ux-muted">Live signals, premium tooling, and intelligent production workflows in one command
-                deck.</p>
+        <section class="ux-section ux-reveal" id="about">
+            <h2 class="ux-title">About UNITARY X</h2>
+            <p class="ux-muted">Technology should be powerful, simple, and impactful.</p>
 
             <div class="ux-lab-grid">
                 <article class="ux-lab-card">
-                    <h4><i class="fas fa-satellite-dish"></i> Live Availability</h4>
-                    <p class="ux-muted">Current sprint capacity based on active delivery pipeline.</p>
+                    <h4><i class="fas fa-satellite-dish"></i> Next-Gen Freelancer Brand</h4>
+                    <p class="ux-muted">UNITARY X builds smart, scalable, and efficient solutions across websites,
+                        software systems, and hardware innovations.</p>
                     <div class="ux-availability">
                         <span class="ux-dot-live"></span>
-                        <strong id="ux-live-status">Accepting 2 premium projects this week</strong>
+                        <strong id="ux-live-status">Driven by creativity, precision, and performance.</strong>
                     </div>
                 </article>
 
                 <article class="ux-lab-card">
-                    <h4><i class="fas fa-wave-square"></i> Active Stack Pulse</h4>
-                    <div class="ux-marquee" aria-hidden="true">
-                        <div class="ux-marquee-track">
-                            <span>Flask</span><span>React</span><span>Figma</span><span>Docker</span><span>PostgreSQL</span><span>Stripe</span><span>OpenAI
-                                APIs</span><span>Framer Motion</span>
-                            <span>Flask</span><span>React</span><span>Figma</span><span>Docker</span><span>PostgreSQL</span><span>Stripe</span><span>OpenAI
-                                APIs</span><span>Framer Motion</span>
-                        </div>
-                    </div>
+                    <h4><i class="fas fa-wave-square"></i> Mission</h4>
+                    <p class="ux-muted">Deliver high quality outcomes at affordable cost without compromise in
+                        reliability, speed, and user experience.</p>
                 </article>
 
                 <article class="ux-lab-card ux-lab-log">
-                    <h4><i class="fas fa-terminal"></i> Delivery Feed</h4>
+                    <h4><i class="fas fa-terminal"></i> Why Choose UNITARY X</h4>
                     <ul>
-                        <li><span>09:40</span> Hero animation system tuned for smoothness.</li>
-                        <li><span>11:15</span> API latency budget reduced by 23 percent.</li>
-                        <li><span>13:30</span> Mobile conversion CTA updated and deployed.</li>
-                        <li><span>16:05</span> Accessibility contrast pass completed.</li>
+                        <li><span>01</span> Minimal yet powerful design approach.</li>
+                        <li><span>02</span> High-performance and optimized builds.</li>
+                        <li><span>03</span> Affordable solutions without compromise.</li>
+                        <li><span>04</span> Fast delivery with precision.</li>
+                        <li><span>05</span> Future-ready technology mindset.</li>
                     </ul>
                 </article>
             </div>
@@ -197,63 +430,107 @@
 
         <section class="ux-section ux-reveal" id="services">
             <h2 class="ux-title">Services</h2>
-            <p class="ux-muted">Hyper-premium deliverables designed with business impact and polished user experience.
-            </p>
+            <p class="ux-muted">Modern, startup-level execution across web, software, and hardware development.</p>
 
             <div class="ux-services">
                 <article class="ux-service-card"><i class="fas fa-globe"></i>
-                    <h4>Web Systems</h4>
-                    <p class="ux-muted">High-end web experiences with conversion-first architecture.</p>
+                    <h4>Web Development Projects</h4>
+                    <p class="ux-muted">Custom business websites, portfolio/personal branding sites, eCommerce
+                        platforms, advanced UI/UX, and mobile-first responsive design.</p>
                 </article>
-                <article class="ux-service-card"><i class="fas fa-mobile-alt"></i>
-                    <h4>App Products</h4>
-                    <p class="ux-muted">Smooth mobile interfaces with practical backend intelligence.</p>
+                <article class="ux-service-card"><i class="fas fa-code"></i>
+                    <h4>Software Development Projects</h4>
+                    <p class="ux-muted">Custom applications, automation tools and workflows, API integrations, and
+                        scalable backend systems for real impact.</p>
                 </article>
-                <article class="ux-service-card"><i class="fas fa-robot"></i>
-                    <h4>AI Interfaces</h4>
-                    <p class="ux-muted">Assistants, workflows, and smart automation layers.</p>
-                </article>
-                <article class="ux-service-card"><i class="fas fa-paint-brush"></i>
-                    <h4>UI/Branding</h4>
-                    <p class="ux-muted">Visual systems that communicate trust and premium value.</p>
-                </article>
-                <article class="ux-service-card"><i class="fas fa-chart-line"></i>
-                    <h4>Optimization</h4>
-                    <p class="ux-muted">Performance tuning for speed, UX, and conversion lift.</p>
-                </article>
-                <article class="ux-service-card"><i class="fas fa-headset"></i>
-                    <h4>Support</h4>
-                    <p class="ux-muted">Active post-delivery support with rapid revision cycles.</p>
+                <article class="ux-service-card"><i class="fas fa-microchip"></i>
+                    <h4>Hardware Projects</h4>
+                    <p class="ux-muted">IoT smart solutions, embedded system development, automation hardware builds,
+                        and real-world tech innovations.</p>
                 </article>
             </div>
         </section>
 
         <section class="ux-section ux-reveal" id="process">
-            <h2 class="ux-title">Freelancer Workflow</h2>
-            <p class="ux-muted">A transparent process designed for students, founders, and teams who need delivery
-                confidence.</p>
+            <h2 class="ux-title">Project Experience</h2>
+            <p class="ux-muted">Timeline-driven execution from discovery to launch.</p>
 
-            <div class="ux-process-grid">
-                <article class="ux-process-step">
-                    <span class="ux-step-no">01</span>
-                    <h4><i class="fas fa-comments"></i> Requirement Discussion</h4>
-                    <p class="ux-muted">Share goals, tech stack, deadline, and expected outcomes.</p>
-                </article>
-                <article class="ux-process-step">
-                    <span class="ux-step-no">02</span>
-                    <h4><i class="fas fa-file-signature"></i> Scope + Quote</h4>
-                    <p class="ux-muted">Get clear pricing, timeline, and delivery milestones before kickoff.</p>
-                </article>
-                <article class="ux-process-step">
-                    <span class="ux-step-no">03</span>
-                    <h4><i class="fas fa-code"></i> Build + Review</h4>
-                    <p class="ux-muted">Development with progress updates, demos, and feedback loops.</p>
-                </article>
-                <article class="ux-process-step">
-                    <span class="ux-step-no">04</span>
-                    <h4><i class="fas fa-check-double"></i> Delivery + Support</h4>
-                    <p class="ux-muted">Source code, docs, walkthrough, and post-delivery support.</p>
-                </article>
+            <div class="ux-tl-wrap">
+
+                <div class="ux-tl-item">
+                    <div class="ux-tl-side left">
+                        <div class="ux-tl-card">
+                            <div class="ux-tl-icon"><i class="fas fa-compass"></i></div>
+                            <h4>Discover</h4>
+                            <p class="ux-muted">Understanding your vision, goals, and requirements to define the project
+                                scope.</p>
+                        </div>
+                    </div>
+                    <div class="ux-tl-center">
+                        <div class="ux-tl-dot"><span>01</span></div>
+                    </div>
+                    <div class="ux-tl-side right"></div>
+                </div>
+
+                <div class="ux-tl-item">
+                    <div class="ux-tl-side left"></div>
+                    <div class="ux-tl-center">
+                        <div class="ux-tl-dot"><span>02</span></div>
+                    </div>
+                    <div class="ux-tl-side right">
+                        <div class="ux-tl-card">
+                            <div class="ux-tl-icon"><i class="fas fa-pen-ruler"></i></div>
+                            <h4>Design</h4>
+                            <p class="ux-muted">Planning structure, UI wireframes, and full system architecture flow.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ux-tl-item">
+                    <div class="ux-tl-side left">
+                        <div class="ux-tl-card">
+                            <div class="ux-tl-icon"><i class="fas fa-code"></i></div>
+                            <h4>Build</h4>
+                            <p class="ux-muted">Developing with clean, efficient, and scalable production-grade code.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="ux-tl-center">
+                        <div class="ux-tl-dot"><span>03</span></div>
+                    </div>
+                    <div class="ux-tl-side right"></div>
+                </div>
+
+                <div class="ux-tl-item">
+                    <div class="ux-tl-side left"></div>
+                    <div class="ux-tl-center">
+                        <div class="ux-tl-dot"><span>04</span></div>
+                    </div>
+                    <div class="ux-tl-side right">
+                        <div class="ux-tl-card">
+                            <div class="ux-tl-icon"><i class="fas fa-gauge"></i></div>
+                            <h4>Optimize</h4>
+                            <p class="ux-muted">Testing, refining, and tuning performance to meet delivery standards.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ux-tl-item">
+                    <div class="ux-tl-side left">
+                        <div class="ux-tl-card">
+                            <div class="ux-tl-icon"><i class="fas fa-rocket"></i></div>
+                            <h4>Launch</h4>
+                            <p class="ux-muted">Delivering a complete, polished solution with post-launch support.</p>
+                        </div>
+                    </div>
+                    <div class="ux-tl-center">
+                        <div class="ux-tl-dot"><span>05</span></div>
+                    </div>
+                    <div class="ux-tl-side right"></div>
+                </div>
+
             </div>
         </section>
 
@@ -286,85 +563,176 @@
             </div>
         </section>
 
-        <section class="ux-section ux-reveal" id="pricing">
-            <div class="ux-pricing-head">
-                <div>
-                    <h2 class="ux-title">Flexible Freelancer Packages</h2>
-                    <p class="ux-muted">Switch between Student Mode and Professional Mode pricing guidance.</p>
-                </div>
-                <div class="ux-price-toggle" id="ux-price-toggle" role="group" aria-label="Pricing mode">
-                    <button type="button" class="active" data-mode="student">Student Mode</button>
-                    <button type="button" data-mode="pro">Professional Mode</button>
-                </div>
-            </div>
 
-            <div class="ux-pricing-grid">
-                <article class="ux-price-card">
-                    <h4>Starter Build</h4>
-                    <p class="ux-price-value" data-student="INR 12,000" data-pro="INR 24,000">INR 12,000</p>
-                    <ul>
-                        <li>Single module or mini project</li>
-                        <li>Basic documentation</li>
-                        <li>2 revision rounds</li>
-                    </ul>
-                    <a href="#contact" class="ux-btn ux-ripple">Choose Starter <span class="sweep"></span></a>
-                </article>
-                <article class="ux-price-card featured">
-                    <h4>Growth Build</h4>
-                    <p class="ux-price-value" data-student="INR 28,000" data-pro="INR 52,000">INR 28,000</p>
-                    <ul>
-                        <li>End-to-end application flow</li>
-                        <li>Deployment-ready architecture</li>
-                        <li>Priority support window</li>
-                    </ul>
-                    <a href="#contact" class="ux-btn ux-btn-primary ux-ripple">Choose Growth <span
-                            class="sweep"></span></a>
-                </article>
-                <article class="ux-price-card">
-                    <h4>Signature Build</h4>
-                    <p class="ux-price-value" data-student="INR 45,000" data-pro="INR 95,000">INR 45,000</p>
-                    <ul>
-                        <li>Advanced custom requirements</li>
-                        <li>AI/Hardware integration options</li>
-                        <li>Extended post-launch support</li>
-                    </ul>
-                    <a href="#contact" class="ux-btn ux-ripple">Choose Signature <span class="sweep"></span></a>
-                </article>
+
+
+        <!-- ══════════════════════════════════════════════════
+             SECTION: SKILL PROFICIENCY BARS
+        ══════════════════════════════════════════════════ -->
+        <section class="ux-section ux-reveal" id="skills" style="padding: 50px 0;">
+            <h2 class="ux-title">Skill Proficiency</h2>
+            <p class="ux-muted">Core competencies powering every build.</p>
+            <div class="ux-skills-wrap">
+                <div class="ux-skill-col">
+                    <div class="ux-skill-bar" data-pct="95">
+                        <div class="ux-skill-meta"><span>Python / Flask</span><span class="ux-skill-pct">0%</span></div>
+                        <div class="ux-skill-track">
+                            <div class="ux-skill-fill"
+                                style="--pct:95%; background:linear-gradient(90deg,#22d3ee,#3b82f6);"></div>
+                        </div>
+                    </div>
+                    <div class="ux-skill-bar" data-pct="92">
+                        <div class="ux-skill-meta"><span>JavaScript / React</span><span class="ux-skill-pct">0%</span>
+                        </div>
+                        <div class="ux-skill-track">
+                            <div class="ux-skill-fill"
+                                style="--pct:92%; background:linear-gradient(90deg,#f59e0b,#ef4444);"></div>
+                        </div>
+                    </div>
+                    <div class="ux-skill-bar" data-pct="88">
+                        <div class="ux-skill-meta"><span>UI/UX Design</span><span class="ux-skill-pct">0%</span></div>
+                        <div class="ux-skill-track">
+                            <div class="ux-skill-fill"
+                                style="--pct:88%; background:linear-gradient(90deg,#a855f7,#ec4899);"></div>
+                        </div>
+                    </div>
+                    <div class="ux-skill-bar" data-pct="85">
+                        <div class="ux-skill-meta"><span>Database / PostgreSQL</span><span
+                                class="ux-skill-pct">0%</span></div>
+                        <div class="ux-skill-track">
+                            <div class="ux-skill-fill"
+                                style="--pct:85%; background:linear-gradient(90deg,#34d399,#059669);"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ux-skill-col">
+                    <div class="ux-skill-bar" data-pct="90">
+                        <div class="ux-skill-meta"><span>Arduino / ESP32 / IoT</span><span
+                                class="ux-skill-pct">0%</span></div>
+                        <div class="ux-skill-track">
+                            <div class="ux-skill-fill"
+                                style="--pct:90%; background:linear-gradient(90deg,#f43f5e,#fb923c);"></div>
+                        </div>
+                    </div>
+                    <div class="ux-skill-bar" data-pct="80">
+                        <div class="ux-skill-meta"><span>AI / Machine Learning</span><span
+                                class="ux-skill-pct">0%</span></div>
+                        <div class="ux-skill-track">
+                            <div class="ux-skill-fill"
+                                style="--pct:80%; background:linear-gradient(90deg,#818cf8,#38bdf8);"></div>
+                        </div>
+                    </div>
+                    <div class="ux-skill-bar" data-pct="93">
+                        <div class="ux-skill-meta"><span>Cloud / Deployment</span><span class="ux-skill-pct">0%</span>
+                        </div>
+                        <div class="ux-skill-track">
+                            <div class="ux-skill-fill"
+                                style="--pct:93%; background:linear-gradient(90deg,#22d3ee,#6366f1);"></div>
+                        </div>
+                    </div>
+                    <div class="ux-skill-bar" data-pct="87">
+                        <div class="ux-skill-meta"><span>Mobile-First / Responsive</span><span
+                                class="ux-skill-pct">0%</span></div>
+                        <div class="ux-skill-track">
+                            <div class="ux-skill-fill"
+                                style="--pct:87%; background:linear-gradient(90deg,#fb7185,#fbbf24);"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <section class="ux-section ux-reveal" id="testimonials">
-            <h2 class="ux-title">Testimonials</h2>
-            <p class="ux-muted">Auto-sliding feedback from clients who experienced the premium workflow.</p>
 
-            <div class="ux-testi-shell">
-                <div class="ux-testi-track" id="ux-testi-track">
-                    <article class="ux-testi-card">
-                        <p>"Everything felt premium. The design quality and smooth interactions made our demo stand out
-                            immediately."</p>
-                        <h4>- Product Founder</h4>
-                    </article>
-                    <article class="ux-testi-card">
-                        <p>"Delivered on time with crystal-clear architecture and polished documentation. Zero chaos."
-                        </p>
-                        <h4>- Final Year Team Lead</h4>
-                    </article>
-                    <article class="ux-testi-card">
-                        <p>"The website felt like a luxury product. Clients noticed the difference in seconds."</p>
-                        <h4>- Freelance Partner</h4>
-                    </article>
-                </div>
-                <div class="ux-testi-dots">
-                    <button class="ux-dot active"></button>
-                    <button class="ux-dot"></button>
-                    <button class="ux-dot"></button>
-                </div>
+
+
+
+        <!-- ══════════════════════════════════════════════════
+             SECTION: WHY US — COMPARISON TABLE
+        ══════════════════════════════════════════════════ -->
+        <section class="ux-section ux-reveal" id="compare" style="padding: 50px 0;">
+            <h2 class="ux-title">Why UNITARY X vs Others</h2>
+            <p class="ux-muted">See the difference in approach, speed, and quality.</p>
+            <div class="ux-compare-wrap">
+                <table class="ux-compare-table" role="table">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th class="ux-col-us"><i class="fas fa-bolt"></i> UNITARY X</th>
+                            <th>Typical Freelancer</th>
+                            <th>Agency</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Turnaround Time</td>
+                            <td class="ux-col-us"><span class="ux-yes">⚡ 10 – 15 days</span></td>
+                            <td><span class="ux-neutral">2 – 6 weeks</span></td>
+                            <td><span class="ux-no">4 – 12 weeks</span></td>
+                        </tr>
+                        <tr>
+                            <td>Dedicated Communication</td>
+                            <td class="ux-col-us"><span class="ux-yes">✅ Always</span></td>
+                            <td><span class="ux-neutral">Sometimes</span></td>
+                            <td><span class="ux-neutral">Account Manager</span></td>
+                        </tr>
+                        <tr>
+                            <td>Pricing</td>
+                            <td class="ux-col-us"><span class="ux-yes">✅ Affordable</span></td>
+                            <td><span class="ux-neutral">Variable</span></td>
+                            <td><span class="ux-no">❌ Premium / Hidden fees</span></td>
+                        </tr>
+                        <tr>
+                            <td>Revision Rounds</td>
+                            <td class="ux-col-us"><span class="ux-yes">✅ Included</span></td>
+                            <td><span class="ux-neutral">1 – 2</span></td>
+                            <td><span class="ux-no">❌ Charged extra</span></td>
+                        </tr>
+                        <tr>
+                            <td>Full Source Code</td>
+                            <td class="ux-col-us"><span class="ux-yes">✅ Always handed over</span></td>
+                            <td><span class="ux-neutral">Mostly</span></td>
+                            <td><span class="ux-no">❌ Locked-in</span></td>
+                        </tr>
+                        <tr>
+                            <td>Post-Delivery Support</td>
+                            <td class="ux-col-us"><span class="ux-yes">✅ 7 days included</span></td>
+                            <td><span class="ux-neutral">Rare</span></td>
+                            <td><span class="ux-no">❌ Extra contract</span></td>
+                        </tr>
+                        <tr>
+                            <td>Modern Tech Stack</td>
+                            <td class="ux-col-us"><span class="ux-yes">✅ Always latest</span></td>
+                            <td><span class="ux-neutral">Varies</span></td>
+                            <td><span class="ux-neutral">Often legacy</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════
+             SECTION: TRUSTED TECHNOLOGIES (LOGOS)
+        ══════════════════════════════════════════════════ -->
+        <section class="ux-section ux-reveal" id="trusted" style="padding: 30px 0 50px;">
+            <h2 class="ux-title" style="font-size:1.3rem; margin-bottom:10px; opacity:0.7;">Trusted Technologies &
+                Platforms</h2>
+            <div class="ux-logo-belt">
+                <div class="ux-logo-item"><i class="fa-brands fa-python"></i><span>Python</span></div>
+                <div class="ux-logo-item"><i class="fa-brands fa-react"></i><span>React</span></div>
+                <div class="ux-logo-item"><i class="fa-brands fa-node-js"></i><span>Node.js</span></div>
+                <div class="ux-logo-item"><i class="fa-brands fa-aws"></i><span>AWS</span></div>
+                <div class="ux-logo-item"><i class="fa-brands fa-figma"></i><span>Figma</span></div>
+                <div class="ux-logo-item"><i class="fa-brands fa-git-alt"></i><span>Git</span></div>
+                <div class="ux-logo-item"><i class="fa-brands fa-docker"></i><span>Docker</span></div>
+                <div class="ux-logo-item"><i class="fas fa-database"></i><span>PostgreSQL</span></div>
+                <div class="ux-logo-item"><i class="fas fa-microchip"></i><span>Arduino</span></div>
+                <div class="ux-logo-item"><i class="fas fa-brain"></i><span>TensorFlow</span></div>
             </div>
         </section>
 
         <section class="ux-section ux-reveal" id="contact">
-            <h2 class="ux-title">Start Your Project</h2>
-            <p class="ux-muted">Submit your scope and get a premium execution plan tailored to your objective.</p>
+            <h2 class="ux-title">Your Idea Deserves More Than Development. It Deserves Perfection.</h2>
+            <p class="ux-muted">Let's create something futuristic, powerful, and unforgettable.</p>
 
             <div class="ux-contact-wrap">
                 <aside class="ux-contact-panel">
@@ -373,37 +741,33 @@
                     <div class="ux-list">
                         <a href="https://wa.me/919363734565" target="_blank"><i class="fab fa-whatsapp"></i> +91 93637
                             34565</a>
-                        <span class="ux-email-row"><i class="fas fa-envelope"></i> <span
-                                id="ux-email-text">unitaryx@gmail.com</span> <button type="button" class="ux-mini-btn"
-                                id="ux-copy-email">Copy</button></span>
+                        <a class="ux-email-row" href="mailto:xunitary@gmail.com"><i class="fas fa-envelope"></i>
+                            xunitary@gmail.com</a>
                         <span><i class="fab fa-instagram"></i> @unitaryx__official</span>
                         <span><i class="fab fa-telegram"></i> @unitaryx</span>
                     </div>
                 </aside>
 
                 <div class="ux-contact-panel">
-                    {% if not user %}
-                    <div class="ux-feedback err" style="display:block; margin-bottom:10px;">Login required to submit
-                        project request. <a href="/login" style="color:#93c5fd;">Go to login</a>.</div>
-                    {% endif %}
-
-                    <form class="ux-form" id="ux-contact-form" data-logged-in="{{ '1' if user else '0' }}">
+                    {% if user %}
+                    <form class="ux-form" id="ux-contact-form" data-logged-in="1" autocomplete="off">
                         <div class="ux-row">
                             <div class="ux-field">
                                 <label for="ux-name">Name</label>
-                                <input id="ux-name" name="name" type="text" placeholder="Your name" required />
+                                <input id="ux-name" name="name" type="text" placeholder="Your name" required
+                                    autocomplete="off" />
                             </div>
                             <div class="ux-field">
                                 <label for="ux-email">Email</label>
-                                <input id="ux-email" name="email" type="email" placeholder="name@example.com"
-                                    required />
+                                <input id="ux-email" name="email" type="email" placeholder="name@example.com" required
+                                    autocomplete="off" />
                             </div>
                         </div>
-
                         <div class="ux-row">
                             <div class="ux-field">
                                 <label for="ux-phone">Phone</label>
-                                <input id="ux-phone" name="phone" type="text" placeholder="+91 XXXXX XXXXX" />
+                                <input id="ux-phone" name="phone" type="text" placeholder="+91 XXXXX XXXXX"
+                                    autocomplete="off" />
                             </div>
                             <div class="ux-field">
                                 <label for="ux-service">Service</label>
@@ -419,7 +783,6 @@
                                 </select>
                             </div>
                         </div>
-
                         <div class="ux-service-quick" id="ux-service-quick">
                             <span>Quick pick:</span>
                             <button type="button" data-service="software">Software</button>
@@ -427,12 +790,10 @@
                             <button type="button" data-service="hardware">Hardware</button>
                             <button type="button" data-service="ai">AI</button>
                         </div>
-
                         <div class="ux-field">
                             <label for="ux-deadline">Deadline</label>
                             <input id="ux-deadline" name="deadline" type="date" />
                         </div>
-
                         <div class="ux-field">
                             <label for="ux-message">Project Details</label>
                             <textarea id="ux-message" name="message" rows="5"
@@ -440,11 +801,45 @@
                                 required></textarea>
                             <small class="ux-char-count" id="ux-char-count">0 characters</small>
                         </div>
-
-                        <button class="ux-submit ux-ripple ux-magnetic" id="ux-submit-btn" type="submit">Submit Project
-                            Request</button>
+                        <button class="ux-submit ux-ripple ux-magnetic" id="ux-submit-btn" type="submit">Work With
+                            UNITARY X</button>
                         <div id="ux-feedback" class="ux-feedback"></div>
                     </form>
+                    {% else %}
+                    <div class="ux-contact-lock-wrap">
+                        <form class="ux-form ux-form-locked" aria-hidden="true">
+                            <div class="ux-row">
+                                <div class="ux-field"><label>Name</label><input type="text" placeholder="Your name"
+                                        disabled /></div>
+                                <div class="ux-field"><label>Email</label><input type="email"
+                                        placeholder="name@example.com" disabled /></div>
+                            </div>
+                            <div class="ux-row">
+                                <div class="ux-field"><label>Phone</label><input type="text"
+                                        placeholder="+91 XXXXX XXXXX" disabled /></div>
+                                <div class="ux-field"><label>Service</label><select disabled>
+                                        <option>Select service</option>
+                                    </select></div>
+                            </div>
+                            <div class="ux-field"><label>Deadline</label><input type="text" placeholder="dd-mm-yyyy"
+                                    disabled /></div>
+                            <div class="ux-field"><label>Project Details</label><textarea rows="4"
+                                    placeholder="Describe your requirement..." disabled></textarea></div>
+                            <button class="ux-submit" type="button" disabled>Let's Build the Future</button>
+                        </form>
+                        <div class="ux-contact-lock-overlay">
+                            <div class="ux-lock-anim" aria-hidden="true">
+                                <span class="ux-lock-pulse"></span>
+                                <span class="ux-lock-shackle"></span>
+                                <span class="ux-lock-body"><i class="fas fa-lock"></i></span>
+                            </div>
+                            <div class="ux-feedback err">Project request is locked. Please log in to unlock and submit.
+                            </div>
+                            <a href="/login" class="ux-btn ux-btn-primary ux-ripple ux-lock-login-btn">Go to login <span
+                                    class="sweep"></span></a>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </section>
@@ -474,24 +869,55 @@
                         <p>Yes. Builds are structured for maintainability, performance, and growth.</p>
                     </div>
                 </article>
+                <article class="ux-faq-item">
+                    <button class="ux-faq-btn" type="button"><span>What payment methods do you accept?</span><i
+                            class="fas fa-plus"></i></button>
+                    <div class="ux-faq-a">
+                        <p>UPI, bank transfer, and other digital payment methods are all accepted.</p>
+                    </div>
+                </article>
+                <article class="ux-faq-item">
+                    <button class="ux-faq-btn" type="button"><span>Do you provide college/academic projects?</span><i
+                            class="fas fa-plus"></i></button>
+                    <div class="ux-faq-a">
+                        <p>Yes — B.Tech, MCA, Diploma, and school-level projects across all relevant domains.</p>
+                    </div>
+                </article>
             </div>
         </section>
 
+
         <footer class="ux-footer">
-            <p>Unitary X - Hyper Premium Freelancer Experience</p>
+            <div class="ux-footer-inner">
+                <div class="ux-footer-brand">
+                    <span class="ux-brand-mark" style="font-size:1.4rem;">U</span>
+                    <span style="font-weight:800; letter-spacing:0.08em;" class="ux-brand-text">UNITARY X</span>
+                </div>
+                <p style="color:var(--text-dim); font-size:0.85rem; margin:10px 0;">Innovating the Digital &amp;
+                    Physical Future</p>
+                <div class="ux-footer-links">
+                    <a href="#home">Home</a>
+                    <a href="#projects">Projects</a>
+                    <a href="#services">Services</a>
+                    <a href="#estimator">Pricing</a>
+                    <a href="#testimonials">Reviews</a>
+                    <a href="#contact">Contact</a>
+                </div>
+                <div class="ux-footer-social">
+                    <a href="https://wa.me/919363734565" target="_blank" aria-label="WhatsApp"><i
+                            class="fab fa-whatsapp"></i></a>
+                    <a href="mailto:xunitary@gmail.com" aria-label="Email"><i class="fas fa-envelope"></i></a>
+                </div>
+                <p style="color:var(--text-dim); font-size:0.75rem; margin-top:20px;">© 2025 UNITARY X. All rights
+                    reserved.</p>
+            </div>
         </footer>
     </div>
 
-    <a class="ux-mobile-cta ux-ripple" href="#contact">Hire Me</a>
+    <a class="ux-mobile-cta ux-ripple" href="#contact">Hire Us</a>
     <button class="ux-progress" id="ux-progress" type="button" aria-label="Back to top">
         <span id="ux-progress-val">0%</span>
     </button>
-
-    <div class="ux-accent-switch" id="ux-accent-switch" aria-label="Accent switcher">
-        <button type="button" class="ux-accent-chip active" data-accent="neon">Neon</button>
-        <button type="button" class="ux-accent-chip" data-accent="ocean">Ocean</button>
-        <button type="button" class="ux-accent-chip" data-accent="ember">Ember</button>
-    </div>
 
     <div class="ux-command" id="ux-command" aria-hidden="true">
         <div class="ux-command-card">
@@ -502,7 +928,7 @@
             <div class="ux-command-list">
                 <button type="button" data-jump="#projects">Open Projects</button>
                 <button type="button" data-jump="#process">Open Process</button>
-                <button type="button" data-jump="#pricing">Open Pricing</button>
+                <button type="button" data-jump="#about">Open About</button>
                 <button type="button" data-jump="#stack">Open Tech Stack</button>
                 <button type="button" data-jump="#services">Open Services</button>
                 <button type="button" data-jump="#contact">Open Contact</button>

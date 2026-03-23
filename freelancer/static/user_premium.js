@@ -3,6 +3,17 @@
 
     const q = (s, p = document) => p.querySelector(s);
     const qa = (s, p = document) => Array.from(p.querySelectorAll(s));
+    const onRaf = (fn) => {
+        let queued = false;
+        return (...args) => {
+            if (queued) return;
+            queued = true;
+            requestAnimationFrame(() => {
+                queued = false;
+                fn(...args);
+            });
+        };
+    };
 
     const state = {
         mx: window.innerWidth / 2,
@@ -12,12 +23,19 @@
         sliderIndex: 0,
         sliderTimer: null,
         audioCtx: null,
+        lerp: (a, b, n) => (1 - n) * a + n * b,
     };
 
+    window.addEventListener("mousemove", (e) => {
+        state.mx = e.clientX;
+        state.my = e.clientY;
+    }, { passive: true });
+
     const loader = q("#ux-loader");
-    const cursor = q("#ux-cursor");
-    const trail = q("#ux-cursor-trail");
+    const loaderProgress = q("#ux-loader-progress-bar");
     const nav = q("#ux-nav");
+    const LOADER_DURATION_MS = 3000;
+    const LOADER_SOUND_URL = "https://actions.google.com/sounds/v1/science_fiction/robot_blip_2.ogg";
 
     const softClick = () => {
         try {
@@ -41,120 +59,345 @@
     };
 
     const initLoader = () => {
-        window.addEventListener("load", () => {
-            setTimeout(() => loader?.classList.add("hide"), 650);
-        });
-    };
+        const _ldrStart = performance.now();
+        const ldr = q("#ux-loader");
+        const bar = q("#ux-ldr-bar");
+        const pctEl = q("#ux-ldr-pct");
+        const statusEl = q("#ux-ldr-status-text");
+        const ptcWrap = q("#ux-ldr-particles");
+        const ldrCanvas = q("#ux-ldr-canvas");
+        if (!ldr) return;
 
-    const initCursor = () => {
-        if (!cursor || !trail || window.matchMedia("(max-width: 700px)").matches) return;
-        window.addEventListener("mousemove", (e) => {
-            state.mx = e.clientX;
-            state.my = e.clientY;
-        });
+        /* ── 0. canvas starfield + nebula ── */
+        if (ldrCanvas) {
+            const lctx = ldrCanvas.getContext("2d");
+            ldrCanvas.width = window.innerWidth;
+            ldrCanvas.height = window.innerHeight;
+            window.addEventListener("resize", () => {
+                ldrCanvas.width = window.innerWidth;
+                ldrCanvas.height = window.innerHeight;
+            });
+            const stars = Array.from({ length: 220 }, () => ({
+                x: Math.random() * ldrCanvas.width,
+                y: Math.random() * ldrCanvas.height,
+                r: Math.random() * 1.4 + 0.2,
+                a: Math.random(),
+                da: (Math.random() - 0.5) * 0.012,
+                vx: (Math.random() - 0.5) * 0.15,
+                vy: (Math.random() - 0.5) * 0.15,
+                color: ["34,211,238","139,92,246","236,72,153","245,158,11","96,165,250"][Math.floor(Math.random()*5)]
+            }));
+            let ldrRaf;
+            const drawCanvas = () => {
+                if (!ldrCanvas.isConnected) { cancelAnimationFrame(ldrRaf); return; }
+                lctx.clearRect(0, 0, ldrCanvas.width, ldrCanvas.height);
+                /* nebula blobs */
+                const cx = ldrCanvas.width / 2, cy = ldrCanvas.height / 2;
+                const g1 = lctx.createRadialGradient(cx - 120, cy - 80, 0, cx - 120, cy - 80, 340);
+                g1.addColorStop(0, "rgba(34,211,238,0.08)");
+                g1.addColorStop(1, "transparent");
+                lctx.fillStyle = g1; lctx.fillRect(0, 0, ldrCanvas.width, ldrCanvas.height);
+                const g2 = lctx.createRadialGradient(cx + 100, cy + 100, 0, cx + 100, cy + 100, 280);
+                g2.addColorStop(0, "rgba(139,92,246,0.07)");
+                g2.addColorStop(1, "transparent");
+                lctx.fillStyle = g2; lctx.fillRect(0, 0, ldrCanvas.width, ldrCanvas.height);
+                /* stars */
+                stars.forEach(s => {
+                    s.x += s.vx; s.y += s.vy; s.a += s.da;
+                    if (s.a < 0) s.da = Math.abs(s.da);
+                    if (s.a > 1) s.da = -Math.abs(s.da);
+                    if (s.x < 0) s.x = ldrCanvas.width;
+                    if (s.x > ldrCanvas.width) s.x = 0;
+                    if (s.y < 0) s.y = ldrCanvas.height;
+                    if (s.y > ldrCanvas.height) s.y = 0;
+                    lctx.beginPath();
+                    lctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                    lctx.fillStyle = `rgba(${s.color},${s.a.toFixed(2)})`;
+                    lctx.fill();
+                });
+                ldrRaf = requestAnimationFrame(drawCanvas);
+            };
+            ldrRaf = requestAnimationFrame(drawCanvas);
+        }
 
-        const tick = () => {
-            state.tx += (state.mx - state.tx) * 0.16;
-            state.ty += (state.my - state.ty) * 0.16;
-            cursor.style.left = `${state.mx}px`;
-            cursor.style.top = `${state.my}px`;
-            trail.style.left = `${state.tx}px`;
-            trail.style.top = `${state.ty}px`;
-            requestAnimationFrame(tick);
+        /* ── 1. seed particle field (more particles, with glow) ── */
+        if (ptcWrap) {
+            const COLORS = ["#22d3ee","#8b5cf6","#ec4899","#34d399","#f59e0b","#60a5fa","#f472b6"];
+            for (let i = 0; i < 90; i++) {
+                const s = document.createElement("span");
+                const ang = Math.random() * Math.PI * 2;
+                const dist = 100 + Math.random() * 260;
+                const size = (1 + Math.random() * 3).toFixed(1);
+                s.style.cssText = [
+                    `--c:${COLORS[i % COLORS.length]}`,
+                    `--dur:${(2 + Math.random() * 4).toFixed(1)}s`,
+                    `--delay:${(Math.random() * 4).toFixed(1)}s`,
+                    `--tx:${(46 + Math.random() * 8).toFixed(1)}%`,
+                    `--ty:${(44 + Math.random() * 12).toFixed(1)}%`,
+                    `--mx:${(Math.cos(ang) * dist).toFixed(0)}px`,
+                    `--my:${(Math.sin(ang) * dist).toFixed(0)}px`,
+                    `--glow:${(parseInt(size) * 3)}px`,
+                    `width:${size}px`,
+                    `height:${size}px`,
+                ].join(";");
+                ptcWrap.appendChild(s);
+            }
+        }
+
+        /* ── 2. status ticker ── */
+        const STATUSES = [
+            "QUANTUM CORE COLD-BOOT...",
+            "DECRYPTING SECURITY PROTOCOLS",
+            "SYNCING NEURAL NETWORKS",
+            "CALIBRATING OPTICAL SENSORS",
+            "INITIALIZING UNITARY X ENGINE",
+            "ESTABLISHING SECURE PIPELINE",
+            "CORE SYSTEMS OPERATIONAL"
+        ];
+        let si = 0;
+        const statusTick = setInterval(() => {
+            si = (si + 1) % STATUSES.length;
+            if (statusEl) statusEl.textContent = STATUSES[si];
+        }, 570);  /* 7 messages × 570ms ≈ 4.0s */
+
+        /* ── 3. animated progress bar ── */
+        let pct = 0;
+        const TOTAL_MS = 4000;
+        const TICK_MS = 28;          /* ~143 ticks across 4 s */
+        const increment = () => {
+            const remaining = 100 - pct;
+            pct += remaining * 0.025 + 0.22;
+            if (pct > 99) pct = 99;
+            if (bar) bar.style.width = pct.toFixed(1) + "%";
+            if (pctEl) pctEl.textContent = Math.floor(pct) + "%";
         };
-        tick();
+        const barTick = setInterval(increment, TICK_MS);
+
+        /* ── 4. on load → finish + exit ── */
+        const finish = () => {
+            clearInterval(statusTick);
+            clearInterval(barTick);
+            if (bar) bar.style.width = "100%";
+            if (pctEl) pctEl.textContent = "100%";
+            if (statusEl) statusEl.textContent = "READY";
+            /* short hold then cinematic exit */
+            setTimeout(() => {
+                ldr.classList.add("hide");
+                setTimeout(() => ldr.remove(), 750);
+            }, 280);
+        };
+
+        if (document.readyState === "complete") {
+            /* Page already loaded — still honour the full 5-second show */
+            setTimeout(finish, TOTAL_MS);
+        } else {
+            /* Wait for page load, but enforce a minimum of 5 s */
+            let loadFired = false;
+            const onLoaded = () => {
+                if (loadFired) return;
+                loadFired = true;
+                const elapsed = performance.now() - _ldrStart;
+                const remaining = Math.max(0, TOTAL_MS - elapsed);
+                setTimeout(finish, remaining);
+            };
+            window.addEventListener("load", onLoaded, { once: true });
+            /* Hard fallback at 4.5 s */
+            setTimeout(finish, TOTAL_MS + 500);
+        }
     };
+
 
     const initBackgroundParticles = () => {
         const canvas = q("#ux-bg-canvas");
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (prefersReduced) return;
+
+        const lowPower = (navigator.hardwareConcurrency || 8) <= 4 || window.matchMedia("(max-width: 900px)").matches;
+        /* Increased node count for heavy graphics */
+        const nodeCount = lowPower ? 55 : 120;
+        const repelRadius = lowPower ? 180 : 250;
+        const repelRadiusSq = repelRadius * repelRadius;
+        const lineDist = lowPower ? 130 : 170;
+        const lineDistSq = lineDist * lineDist;
+        const maxDpr = Math.min(window.devicePixelRatio || 1, 1.25);
         const nodes = [];
+        let rafId = 0;
+        let lastTs = 0;
+        const frameBudget = 1000 / 58;
+        let running = true;
 
         const resize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            canvas.style.width = `${w}px`;
+            canvas.style.height = `${h}px`;
+            canvas.width = Math.floor(w * maxDpr);
+            canvas.height = Math.floor(h * maxDpr);
+            ctx.setTransform(maxDpr, 0, 0, maxDpr, 0, 0);
         };
         resize();
         window.addEventListener("resize", resize);
 
-        for (let i = 0; i < 70; i += 1) {
+        for (let i = 0; i < nodeCount; i += 1) {
             nodes.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                vx: (Math.random() - 0.5) * 0.32,
-                vy: (Math.random() - 0.5) * 0.32,
-                r: Math.random() * 1.7 + 0.5,
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                /* Faster particle speeds */
+                vx: (Math.random() - 0.5) * (lowPower ? 0.6 : 1.2),
+                vy: (Math.random() - 0.5) * (lowPower ? 0.6 : 1.2),
+                r: Math.random() * 2.2 + 0.8,
+                /* Assign random vibrant colors to each particle */
+                color: Math.random() > 0.5 ? "34, 211, 238" : "139, 92, 246"
             });
         }
 
-        const draw = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const draw = (ts) => {
+            if (!running) return;
+            if (ts - lastTs < frameBudget) {
+                rafId = requestAnimationFrame(draw);
+                return;
+            }
+            lastTs = ts;
+
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            /* Add subtle global glow effect */
+            ctx.globalCompositeOperation = "lighter";
+
             nodes.forEach((n, i) => {
                 n.x += n.vx;
                 n.y += n.vy;
-                if (n.x < 0 || n.x > canvas.width) n.vx *= -1;
-                if (n.y < 0 || n.y > canvas.height) n.vy *= -1;
+                if (n.x < 0 || n.x > w) n.vx *= -1;
+                if (n.y < 0 || n.y > h) n.vy *= -1;
 
                 const dx = state.mx - n.x;
                 const dy = state.my - n.y;
-                const d = Math.sqrt(dx * dx + dy * dy);
-                if (d < 140 && d > 0) {
-                    n.x -= (dx / d) * 0.35;
-                    n.y -= (dy / d) * 0.35;
+                const d2 = dx * dx + dy * dy;
+                if (d2 < repelRadiusSq && d2 > 0.001) {
+                    const inv = 1 / Math.sqrt(d2);
+                    n.x -= dx * inv * 0.8; /* Stronger mouse repel */
+                    n.y -= dy * inv * 0.8;
                 }
 
                 ctx.beginPath();
                 ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-                ctx.fillStyle = "rgba(148,163,184,0.6)";
+                ctx.fillStyle = `rgba(${n.color}, 0.8)`;
                 ctx.fill();
 
                 for (let j = i + 1; j < nodes.length; j += 1) {
                     const m = nodes[j];
                     const lx = n.x - m.x;
                     const ly = n.y - m.y;
-                    const ld = Math.sqrt(lx * lx + ly * ly);
-                    if (ld < 110) {
+                    const ld2 = lx * lx + ly * ly;
+                    if (ld2 < lineDistSq) {
+                        const ld = Math.sqrt(ld2);
                         ctx.beginPath();
                         ctx.moveTo(n.x, n.y);
                         ctx.lineTo(m.x, m.y);
-                        ctx.strokeStyle = `rgba(34,211,238,${0.12 - ld / 1000})`;
-                        ctx.lineWidth = 1;
+                        /* Make connection lines glow brightly based on proximity */
+                        const opacity = 0.35 - (ld / lineDist) * 0.35;
+                        ctx.strokeStyle = `rgba(${n.color}, ${opacity})`;
+                        ctx.lineWidth = 1.2;
                         ctx.stroke();
                     }
                 }
             });
-            requestAnimationFrame(draw);
+
+            ctx.globalCompositeOperation = "source-over";
+            rafId = requestAnimationFrame(draw);
         };
-        draw();
+
+        const toggleRunState = () => {
+            running = document.visibilityState === "visible";
+            if (running && !rafId) {
+                rafId = requestAnimationFrame(draw);
+            } else if (!running && rafId) {
+                cancelAnimationFrame(rafId);
+                rafId = 0;
+            }
+        };
+
+        document.addEventListener("visibilitychange", toggleRunState);
+        rafId = requestAnimationFrame(draw);
     };
 
     const initHeadline = () => {
         const el = q("#ux-headline");
         if (!el) return;
-        const text = el.textContent || "";
+        const text = el.textContent.trim() || "";
         el.textContent = "";
-        [...text].forEach((ch, idx) => {
-            const span = document.createElement("span");
-            span.className = "char";
-            span.textContent = ch === " " ? "\u00A0" : ch;
-            span.style.transition = `opacity 0.45s ease ${idx * 22}ms, transform 0.45s ease ${idx * 22}ms, filter 0.45s ease ${idx * 22}ms`;
-            el.appendChild(span);
-            requestAnimationFrame(() => {
-                span.style.opacity = "1";
-                span.style.transform = "translateY(0)";
-                span.style.filter = "blur(0)";
+
+        const words = text.split(" ");
+        let totalIdx = 0;
+
+        words.forEach((word, wIdx) => {
+            const wordSpan = document.createElement("span");
+            wordSpan.style.display = "inline-block";
+            wordSpan.style.whiteSpace = "nowrap";
+
+            [...word].forEach((ch) => {
+                const span = document.createElement("span");
+                span.className = "char";
+                span.textContent = ch;
+                span.style.opacity = "0";
+                span.style.display = "inline-block";
+                span.style.transform = "translateY(50px) scale(0.4) rotateX(-70deg)";
+                span.style.filter = "blur(8px)";
+
+                /* Transition has NO delay — the setTimeout below controls timing */
+                span.style.transition = [
+                    "opacity 0.7s cubic-bezier(0.2,1.2,0.3,1)",
+                    "transform 0.8s cubic-bezier(0.2,1.2,0.3,1)",
+                    "filter 0.6s ease"
+                ].join(", ");
+
+                wordSpan.appendChild(span);
+
+                /* Fire each character in staggered sequence after loader */
+                const triggerAt = 4500 + totalIdx * 26;
+                setTimeout(() => {
+                    span.style.opacity = "1";
+                    span.style.transform = "translateY(0) scale(1) rotateX(0deg)";
+                    span.style.filter = "blur(0)";
+                }, triggerAt);
+
+                totalIdx++;
             });
+
+            el.appendChild(wordSpan);
+
+            if (wIdx < words.length - 1) {
+                const space = document.createElement("span");
+                space.textContent = "\u00A0";
+                space.style.display = "inline-block";
+                el.appendChild(space);
+            }
         });
-        setTimeout(() => q("#ux-sub")?.classList.add("show"), 480);
+
+        setTimeout(() => q("#ux-sub")?.classList.add("show"), 4500 + 600);
+        setTimeout(() => {
+            const ctaRow = q(".ux-cta-row");
+            if (ctaRow) {
+                ctaRow.style.opacity = "1";
+                ctaRow.style.transform = "translateY(0)";
+            }
+        }, 4500 + 900);
     };
+
 
     const initReveals = () => {
         const obs = new IntersectionObserver((entries) => {
             entries.forEach((e) => {
                 if (e.isIntersecting) {
                     e.target.classList.add("is-visible");
-                    obs.unobserve(e.target);
+                } else {
+                    e.target.classList.remove("is-visible");
                 }
             });
         }, { threshold: 0.14 });
@@ -224,15 +467,42 @@
 
     const initHeroParallax = () => {
         const floats = qa(".ux-float");
-        if (!floats.length) return;
-        window.addEventListener("mousemove", (e) => {
-            const nx = e.clientX / window.innerWidth - 0.5;
-            const ny = e.clientY / window.innerHeight - 0.5;
+        const orbs = qa(".ux-orb");
+        const floor = q(".ux-grid-floor");
+        if (!floats.length && !orbs.length && !floor) return;
+        
+        let tx = 0, ty = 0; // Target
+        let cx = 0, cy = 0; // Current
+        const lerp = (a, b, n) => (1 - n) * a + n * b;
+
+        const animate = () => {
+            cx = lerp(cx, tx, 0.08); // Smooth motion
+            cy = lerp(cy, ty, 0.08);
+
             floats.forEach((f, idx) => {
-                const d = (idx + 1) * 6;
-                f.style.transform = `translate(${nx * d}px, ${ny * d}px)`;
+                const move = (idx + 1) * 25;
+                f.style.transform = `translate3d(${cx * move}px, ${cy * move}px, 0)`;
             });
-        });
+
+            orbs.forEach((orb, idx) => {
+                const move = (idx + 1) * -45;
+                orb.style.transform = `translate3d(${cx * move}px, ${cy * move}px, 0) scale(${1 + Math.abs(cx * 0.1)})`;
+            });
+
+            if (floor) {
+                // Tilt the grid floor in 3D
+                floor.style.transform = `rotateX(75deg) rotateY(${cx * 15}deg) translateZ(${cy * -20}px) translateX(${cx * -30}px)`;
+            }
+
+            requestAnimationFrame(animate);
+        };
+
+        window.addEventListener("mousemove", (e) => {
+            tx = (e.clientX / window.innerWidth) - 0.5;
+            ty = (e.clientY / window.innerHeight) - 0.5;
+        }, { passive: true });
+
+        animate();
     };
 
     const initSkillTags = () => {
@@ -244,12 +514,17 @@
     const initMeters = () => {
         const obs = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
-                if (!entry.isIntersecting) return;
-                qa(".ux-meter-fill", entry.target).forEach((bar) => {
-                    const val = bar.getAttribute("data-value") || "0";
-                    bar.style.width = `${val}%`;
-                });
-                obs.unobserve(entry.target);
+                const bars = qa(".ux-meter-fill", entry.target);
+                if (entry.isIntersecting) {
+                    bars.forEach((bar) => {
+                        const val = bar.getAttribute("data-value") || "0";
+                        bar.style.width = `${val}%`;
+                    });
+                } else {
+                    bars.forEach((bar) => {
+                        bar.style.width = "0%";
+                    });
+                }
             });
         }, { threshold: 0.35 });
         const wrap = q("#ux-about");
@@ -342,29 +617,6 @@
         apply("student");
     };
 
-    const initAccentSwitch = () => {
-        const chips = qa(".ux-accent-chip");
-        if (!chips.length) return;
-        const root = document.documentElement;
-
-        const themes = {
-            neon: { blue: "#22d3ee", violet: "#8b5cf6", gold: "#f59e0b" },
-            ocean: { blue: "#38bdf8", violet: "#0ea5e9", gold: "#14b8a6" },
-            ember: { blue: "#fb7185", violet: "#f43f5e", gold: "#f97316" },
-        };
-
-        chips.forEach((chip) => {
-            chip.addEventListener("click", () => {
-                const key = chip.getAttribute("data-accent") || "neon";
-                const t = themes[key] || themes.neon;
-                root.style.setProperty("--ux-blue", t.blue);
-                root.style.setProperty("--ux-violet", t.violet);
-                root.style.setProperty("--ux-gold", t.gold);
-                chips.forEach((x) => x.classList.toggle("active", x === chip));
-            });
-        });
-    };
-
     const initScrollProgress = () => {
         const btn = q("#ux-progress");
         const val = q("#ux-progress-val");
@@ -419,19 +671,53 @@
         });
     };
 
-    const initServiceTilt = () => {
-        qa(".ux-service-card").forEach((card) => {
+    const initTiltAndCounters = () => {
+        qa(".ux-service-card, .ux-project-card, .ux-lab-card, .ux-tilt-element").forEach((card) => {
             card.addEventListener("mousemove", (e) => {
                 if (window.matchMedia("(max-width: 700px)").matches) return;
                 const r = card.getBoundingClientRect();
                 const x = (e.clientX - r.left) / r.width - 0.5;
                 const y = (e.clientY - r.top) / r.height - 0.5;
-                card.style.transform = `rotateY(${x * 10}deg) rotateX(${y * -10}deg) translateY(-4px)`;
+                card.style.transform = `rotateY(${x * 14}deg) rotateX(${y * -14}deg) translateY(-4px)`;
             });
             card.addEventListener("mouseleave", () => {
                 card.style.transform = "rotateY(0) rotateX(0) translateY(0)";
             });
         });
+
+        const wrap = q(".ux-stats-grid");
+        if (wrap) {
+            const obs = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        const counters = qa(".ux-stat-num", entry.target);
+                        counters.forEach((c) => {
+                            const target = parseInt(c.getAttribute("data-target")) || 0;
+                            let current = 0;
+                            const hasPlus = c.innerText.includes('+');
+                            const hasPct = c.innerText.includes('%');
+                            const hasK = c.innerText.includes('k');
+
+                            const stepTime = 16;
+                            const steps = 60; // 1s at 60fps
+                            let step = 0;
+
+                            const timer = setInterval(() => {
+                                step++;
+                                current = Math.floor((step / steps) * target);
+                                if (step >= steps) {
+                                    clearInterval(timer);
+                                    current = target;
+                                }
+                                c.innerText = current + (hasPlus ? '+' : hasPct ? '%' : hasK ? 'k' : '');
+                            }, stepTime);
+                        });
+                        obs.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+            obs.observe(wrap);
+        }
     };
 
     const initTestimonial = () => {
@@ -473,10 +759,9 @@
 
     const initContact = () => {
         const form = q("#ux-contact-form");
+
         if (!form) return;
         const feedback = q("#ux-feedback");
-        const copyBtn = q("#ux-copy-email");
-        const emailText = q("#ux-email-text");
         const charCount = q("#ux-char-count");
         const messageEl = q("#ux-message");
         const serviceSelect = q("#ux-service");
@@ -519,23 +804,6 @@
                 // Ignore parse errors.
             }
         };
-
-        copyBtn?.addEventListener("click", async () => {
-            const value = (emailText?.textContent || "").trim();
-            if (!value) return;
-            try {
-                await navigator.clipboard.writeText(value);
-                copyBtn.textContent = "Copied";
-                setTimeout(() => {
-                    copyBtn.textContent = "Copy";
-                }, 1200);
-            } catch (_err) {
-                copyBtn.textContent = "Failed";
-                setTimeout(() => {
-                    copyBtn.textContent = "Copy";
-                }, 1200);
-            }
-        });
 
         loadDraft();
         updateChars();
@@ -610,7 +878,7 @@
                 feedback.textContent = "Network error. Please try again.";
             } finally {
                 btn?.classList.remove("loading");
-                if (btn) btn.textContent = "Submit Project Request";
+                if (btn) btn.textContent = "Work With UNITARY X";
             }
         });
     };
@@ -627,9 +895,250 @@
         });
     };
 
+    /* ══════════════════════════════════════════════
+       NEW: ANIMATED STAT COUNTERS
+    ══════════════════════════════════════════════ */
+    const initStatCounters = () => {
+        const nums = qa('.ux-stat-num');
+        if (!nums.length) return;
+        const iob = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const el = entry.target;
+                if (!entry.isObserving && entry.isIntersecting) {
+                    entry.isObserving = true;
+                    const target = +el.dataset.target;
+                    const suffix = el.dataset.suffix || '';
+                    const dur = 1800;
+                    const start = performance.now();
+                    const tick = (now) => {
+                        if (!entry.isObserving) return; // Halt if out of view
+                        const pct = Math.min((now - start) / dur, 1);
+                        const ease = 1 - Math.pow(1 - pct, 3);
+                        el.textContent = Math.floor(ease * target) + suffix;
+                        if (pct < 1) requestAnimationFrame(tick);
+                    };
+                    requestAnimationFrame(tick);
+                } else if (!entry.isIntersecting) {
+                    entry.isObserving = false;
+                    el.textContent = "0" + (el.dataset.suffix || '');
+                }
+            });
+        }, { threshold: 0.5 });
+        nums.forEach(n => { n.isObserving = false; iob.observe(n); });
+    };
+
+    /* ══════════════════════════════════════════════
+       NEW: SKILL BARS ANIMATED FILL
+    ══════════════════════════════════════════════ */
+    const initSkillBars = () => {
+        const bars = qa('.ux-skill-bar');
+        if (!bars.length) return;
+        const iob = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const bar = entry.target;
+                const fill = bar.querySelector('.ux-skill-fill');
+                const label = bar.querySelector('.ux-skill-pct');
+
+                if (!entry.fired && entry.isIntersecting) {
+                    entry.fired = true;
+                    const pct = +bar.dataset.pct;
+                    if (!fill) return;
+                    fill.style.width = pct + '%';
+                    let cur = 0;
+                    const dur = 1400, start = performance.now();
+                    const tick = (now) => {
+                        if (!entry.fired) return; // Halt if out of view
+                        const t = Math.min((now - start) / dur, 1);
+                        cur = Math.floor((1 - Math.pow(1 - t, 3)) * pct);
+                        if (label) label.textContent = cur + '%';
+                        if (t < 1) requestAnimationFrame(tick);
+                    };
+                    requestAnimationFrame(tick);
+                } else if (!entry.isIntersecting) {
+                    entry.fired = false;
+                    if (fill) fill.style.width = '0%';
+                    if (label) label.textContent = '0%';
+                }
+            });
+        }, { threshold: 0.3 });
+        bars.forEach(b => { b.fired = false; iob.observe(b); });
+    };
+
+    /* ══════════════════════════════════════════════
+       NEW: TESTIMONIALS CAROUSEL
+    ══════════════════════════════════════════════ */
+    const initTestimonialCarousel = () => {
+        const track = q('#ux-testi-track');
+        const prev = q('#ux-testi-prev');
+        const next = q('#ux-testi-next');
+        const dotsEl = q('#ux-testi-dots');
+        if (!track) return;
+
+        const cards = Array.from(track.querySelectorAll('.ux-testi-card'));
+        if (!cards.length) return;
+
+        /* Figure out cards per slide based on viewport */
+        const perSlide = () => window.innerWidth < 600 ? 1 : window.innerWidth < 900 ? 2 : 3;
+        let cur = 0;
+        let auto;
+
+        const rebuild = () => {
+            const ps = perSlide();
+            const total = Math.ceil(cards.length / ps);
+            if (dotsEl) {
+                dotsEl.innerHTML = '';
+                for (let i = 0; i < total; i++) {
+                    const d = document.createElement('span');
+                    if (i === cur) d.classList.add('active');
+                    d.addEventListener('click', () => go(i));
+                    dotsEl.appendChild(d);
+                }
+            }
+        };
+
+        const go = (idx) => {
+            const ps = perSlide();
+            const total = Math.ceil(cards.length / ps);
+            cur = (idx + total) % total;
+            /* card width including gap */
+            const gap = 24;
+            const outer = q('#ux-testi-outer');
+            const tw = outer ? outer.offsetWidth - 88 : track.offsetWidth;
+            const cw = (tw + gap) / ps;
+            track.style.transform = `translateX(-${cur * cw * ps}px)`;
+            rebuild();
+        };
+
+        if (prev) prev.addEventListener('click', () => { go(cur - 1); resetAuto(); });
+        if (next) next.addEventListener('click', () => { go(cur + 1); resetAuto(); });
+
+        const resetAuto = () => { clearInterval(auto); auto = setInterval(() => go(cur + 1), 5000); };
+        resetAuto();
+        rebuild();
+        window.addEventListener('resize', () => go(cur));
+    };
+
+    /* ══════════════════════════════════════════════
+       NEW: PRICE ESTIMATOR
+    ══════════════════════════════════════════════ */
+    const initPriceEstimator = () => {
+        const priceEl = q('#est-price');
+        const timeline = q('#est-timeline');
+        const timeLabel = q('#est-timeline-val');
+        if (!priceEl) return;
+
+        const BASE = {
+            web: [2500, 5000], app: [5000, 12000], ai: [8000, 20000],
+            iot: [4000, 10000], design: [2000, 5000]
+        };
+        const MULT = { basic: 1, standard: 1.8, advanced: 3.2 };
+        const ADDONS = { 'add-seo': 800, 'add-auth': 1200, 'add-admin': 2000, 'add-api': 1500, 'add-deploy': 1000 };
+
+        let selType = 'web', selComplx = 'basic';
+
+        const calc = () => {
+            const [lo, hi] = BASE[selType] || [2500, 5000];
+            const m = MULT[selComplx] || 1;
+            const days = +(timeline ? timeline.value : 14);
+            /* urgency: <7 days → +30%, <14 → +15% */
+            const urgency = days < 7 ? 1.3 : days < 14 ? 1.15 : 1.0;
+            let addon = 0;
+            Object.entries(ADDONS).forEach(([id, cost]) => {
+                const cb = q('#' + id);
+                if (cb && cb.checked) addon += cost;
+            });
+            const low = Math.round((lo * m + addon) * urgency / 100) * 100;
+            const high = Math.round((hi * m + addon) * urgency / 100) * 100;
+            const fmt = n => '₹' + n.toLocaleString('en-IN');
+            priceEl.textContent = `${fmt(low)} – ${fmt(high)}`;
+        };
+
+        /* chip selectors */
+        [q('#est-type'), q('#est-complexity')].forEach(group => {
+            if (!group) return;
+            group.querySelectorAll('.ux-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    group.querySelectorAll('.ux-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    if (group.id === 'est-type') selType = chip.dataset.val;
+                    else selComplx = chip.dataset.val;
+                    calc();
+                });
+            });
+        });
+
+        if (timeline) {
+            timeline.addEventListener('input', () => {
+                if (timeLabel) timeLabel.textContent = timeline.value + ' days';
+                calc();
+            });
+        }
+
+        ['add-seo', 'add-auth', 'add-admin', 'add-api', 'add-deploy'].forEach(id => {
+            const cb = q('#' + id);
+            if (cb) cb.addEventListener('change', calc);
+        });
+
+        calc();
+    };
+
+    const initSpotlightCards = () => {
+        qa(".ux-project-card, .ux-service-card, .ux-lab-card, .ux-float, .ux-tilt-element").forEach((card) => {
+            card.addEventListener("mousemove", onRaf((e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty("--mouse-x", `${x}px`);
+                card.style.setProperty("--mouse-y", `${y}px`);
+            }));
+        });
+    };
+
+
+    const initScrambleText = () => {
+        const els = qa(".ux-scramble-text");
+        const chars = "!<>-_\\/[]{}—=+*^?#_";
+
+        /* Cache the true text FIRST, before any observer fires */
+        els.forEach(el => {
+            el.dataset.text = el.textContent.trim();
+        });
+
+        const obs = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                const el = entry.target;
+                const final = el.dataset.text || "";
+                if (!final) return;
+
+                if (entry.isIntersecting && !el.dataset.scrambling) {
+                    el.dataset.scrambling = "true";
+                    let iteration = 0;
+                    const len = final.length;
+
+                    const scrambler = setInterval(() => {
+                        el.textContent = final.split("").map((letter, index) => {
+                            if (index < iteration) return final[index];
+                            return chars[Math.floor(Math.random() * chars.length)];
+                        }).join("");
+
+                        iteration += 0.5;
+                        if (iteration >= len) {
+                            clearInterval(scrambler);
+                            el.textContent = final; /* restore exact text */
+                            el.dataset.scrambling = "";
+                        }
+                    }, 35);
+                } else if (!entry.isIntersecting) {
+                    el.dataset.scrambling = "";
+                    el.textContent = final; /* reset to real text when out of view */
+                }
+            });
+        }, { threshold: 0.3 });
+        els.forEach(el => obs.observe(el));
+    };
+
     const init = () => {
         initLoader();
-        initCursor();
         initBackgroundParticles();
         initHeadline();
         initReveals();
@@ -642,14 +1151,20 @@
         initProjectFilter();
         initLiveStatus();
         initPricingMode();
-        initServiceTilt();
+        initTiltAndCounters();
         initTestimonial();
         initFaq();
         initContact();
-        initAccentSwitch();
         initScrollProgress();
         initCommandPalette();
         initEasterEgg();
+        /* ── NEW FEATURES ── */
+        initStatCounters();
+        initSkillBars();
+        initTestimonialCarousel();
+        initPriceEstimator();
+        initSpotlightCards();
+        initScrambleText();
     };
 
     init();

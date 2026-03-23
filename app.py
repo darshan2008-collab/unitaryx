@@ -11,4 +11,4 @@ from freelancer.app import app
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", os.getenv("FLASK_RUN_PORT", "5005")))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=False)

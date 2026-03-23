@@ -9,8 +9,40 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap"
         rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}?v=20260320gapfix1" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}?v=20260320premium3" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* EXTRAORDINARY DASHBOARD OVERLAYS */
+        .ai-pulse-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border: 2px solid var(--status-new);
+            border-radius: 50%;
+            animation: pulse-ring 2s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+        }
+
+        /* Glassmorphism Mesh Background */
+        body.dash-body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                radial-gradient(circle at 10% 10%, rgba(98, 219, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(126, 255, 188, 0.05) 0%, transparent 40%);
+            z-index: -1;
+            pointer-events: none;
+        }
+    </style>
     <style>
         /* Force all dashboard text to be visible - overrides any conflicting global CSS */
         body.dash-body,
@@ -91,11 +123,14 @@
                 <div class="greeting-avatar">{{ user.name[0].upper() }}</div>
                 <div>
                     <h1>Welcome back, {{ user.name.split()[0] }}!</h1>
-                    <p>{{ user.email }}</p>
+                    <p id="dynamicQuote" class="muted">Syncing with Unitary X Intelligence...</p>
                 </div>
             </div>
-            <div class="topbar-actions">
+            <div class="topbar-actions" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                 <a href="/#contact" class="btn-primary"><i class="fas fa-plus"></i> New Request</a>
+                <a href="/logout" class="btn-primary"
+                    style="background:linear-gradient(130deg, #ef4444, #f97316); color:#fff;"><i
+                        class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </header>
 
@@ -131,6 +166,44 @@
                 <p class="kpi-label">Live Updates</p>
                 <p class="kpi-value">{{ active_updates|length }}</p>
                 <p class="kpi-sub">Recently updated requests</p>
+            </article>
+        </section>
+
+        <section class="extraordinary-grid">
+            <article class="extra-card analytics-card">
+                <div class="card-head">
+                    <h3><i class="fas fa-chart-line"></i> Project Analytics</h3>
+                    <span class="badge-live">Live</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="projectChart"></canvas>
+                </div>
+            </article>
+
+            <article class="extra-card intel-card">
+                <div class="card-head">
+                    <h3><i class="fas fa-brain"></i> System Intelligence</h3>
+                    <div class="ai-status">
+                        <span class="dot pulse"></span> Active
+                    </div>
+                </div>
+                <div class="intel-content">
+                    <div class="intel-stat">
+                        <label>Threat Level</label>
+                        <div class="intel-bar"><div class="fill" style="width: 12%"></div></div>
+                        <span>Low / Secure</span>
+                    </div>
+                    <div class="intel-stat">
+                        <label>AI Confidence</label>
+                        <div class="intel-bar"><div class="fill" style="width: 98%"></div></div>
+                        <span>High / Optimize</span>
+                    </div>
+                    <div class="intel-stat">
+                        <label>Sync Rate</label>
+                        <div class="intel-bar"><div class="fill" style="width: 100%"></div></div>
+                        <span>100% / Real-time</span>
+                    </div>
+                </div>
             </article>
         </section>
 
@@ -185,7 +258,9 @@
                     data-value="{{ r.value or 0 }}" data-date="{{ r.created_at.strftime('%Y%m%d%H%M%S') }}"
                     data-date-label="{{ r.created_at.strftime('%d %b %Y %H:%M') }}"
                     data-updated="{{ '1' if r.id in active_updates else '0' }}"
-                    data-message="{{ (r.message or '')|lower }}">
+                    data-message="{{ (r.message or '')|lower }}"
+                    onclick="showRoadmap(this.dataset.id)"
+                    style="cursor: pointer;">
 
                     <div class="req-card-top">
                         <span class="req-service-badge">{{ r.service|capitalize }}</span>
@@ -385,6 +460,67 @@
             });
 
             applyFilters();
+
+            // --- EXTRAORDINARY FEATURES: DYNAMIC QUOTES ---
+            const quotes = [
+                "Your vision, our code. Let's build the future.",
+                "Mission intelligence is optimized for your projects.",
+                "Unitary X: Precision Engineering in every request.",
+                "Syncing creativity with technical perfection.",
+                "Your project roadmap is clear and ready for deployment."
+            ];
+            const quoteEl = document.getElementById('dynamicQuote');
+            if(quoteEl) quoteEl.textContent = quotes[Math.floor(Math.random()*quotes.length)];
+
+            // --- EXTRAORDINARY FEATURES: CHART.JS ---
+            const ctx = document.getElementById('projectChart');
+            if(ctx) {
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['New', 'In Progress', 'Done'],
+                        datasets: [{
+                            data: [{{ new_count }}, {{ progress_count }}, {{ done_count }}],
+                            backgroundColor: ['#62dbff', '#ffd77b', '#7effbc'],
+                            borderWidth: 0,
+                            hoverOffset: 15
+                        }]
+                    },
+                    options: {
+                        cutout: '75%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: '#aec2d9', font: { family: 'Outfit', size: 12 }, padding: 20 }
+                            }
+                        },
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+
+            // --- EXTRAORDINARY FEATURES: ROADMAP INTERFACE ---
+            window.showRoadmap = function(reqId) {
+                const roadmapModal = document.createElement('div');
+                roadmapModal.className = 'roadmap-modal-overlay active';
+                roadmapModal.innerHTML = `
+                    <div class="roadmap-modal">
+                        <div class="roadmap-head">
+                            <h3>Project #${reqId} Roadmap</h3>
+                            <button onclick="this.closest('.roadmap-modal-overlay').remove()">&times;</button>
+                        </div>
+                        <div class="roadmap-steps">
+                            <div class="step active"><i class="fas fa-file-signature"></i> <span>Requirement</span></div>
+                            <div class="step active"><i class="fas fa-drafting-pencil"></i> <span>Planning</span></div>
+                            <div class="step"><i class="fas fa-code"></i> <span>Development</span></div>
+                            <div class="step"><i class="fas fa-vial"></i> <span>Quality Assurance</span></div>
+                            <div class="step"><i class="fas fa-rocket"></i> <span>Deployment</span></div>
+                        </div>
+                        <p class="roadmap-note">Mission intelligence is optimizing your development path. Expect 100% precision.</p>
+                    </div>
+                `;
+                document.body.appendChild(roadmapModal);
+            }
         })();
     </script>
 </body>

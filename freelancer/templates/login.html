@@ -19,12 +19,9 @@
 </head>
 
 <body class="lux-auth-body">
-    <video class="lux-bg-video" autoplay muted loop playsinline preload="metadata" aria-hidden="true">
-        <source src="{{ url_for('static', filename='img/tech_working.mp4') }}?v={{ range(1000, 9999) | random }}"
-            type="video/mp4" />
-        <source src="{{ url_for('static', filename='img/login-video.mp4') }}?v={{ range(1000, 9999) | random }}"
-            type="video/mp4" />
-    </video>
+    <!-- ═══ HYPERCHARGED BACKGROUND SYSTEM ═══ -->
+    <div class="lux-pro-bg" aria-hidden="true"></div>
+
     <div class="lux-atmosphere" aria-hidden="true">
         <div class="atm-orb atm-orb-a"></div>
         <div class="atm-orb atm-orb-b"></div>
@@ -33,6 +30,42 @@
         <div class="atm-beam atm-beam-b"></div>
         <div class="atm-grid"></div>
     </div>
+
+    <!-- ═══ NEW: METEOR SHOWER LAYER ═══ -->
+    <div class="meteor-field" aria-hidden="true">
+        <span class="meteor m1"></span><span class="meteor m2"></span>
+        <span class="meteor m3"></span><span class="meteor m4"></span>
+        <span class="meteor m5"></span><span class="meteor m6"></span>
+        <span class="meteor m7"></span><span class="meteor m8"></span>
+        <span class="meteor m9"></span><span class="meteor m10"></span>
+    </div>
+
+    <!-- ═══ NEW: FLOATING GEOMETRIC SHAPES ═══ -->
+    <div class="geo-field" aria-hidden="true">
+        <div class="geo-shape geo-hex g1"></div>
+        <div class="geo-shape geo-ring g2"></div>
+        <div class="geo-shape geo-tri g3"></div>
+        <div class="geo-shape geo-sq g4"></div>
+        <div class="geo-shape geo-ring g5"></div>
+        <div class="geo-shape geo-hex g6"></div>
+        <div class="geo-shape geo-tri g7"></div>
+        <div class="geo-shape geo-sq g8"></div>
+    </div>
+
+    <!-- ═══ NEW: ENERGY PULSE RINGS ═══ -->
+    <div class="energy-field" aria-hidden="true">
+        <div class="energy-ring er1"></div>
+        <div class="energy-ring er2"></div>
+        <div class="energy-ring er3"></div>
+    </div>
+
+    <!-- ═══ NEW: AURORA SCANLINES ═══ -->
+    <div class="aurora-field" aria-hidden="true">
+        <div class="aurora-line al1"></div>
+        <div class="aurora-line al2"></div>
+        <div class="aurora-line al3"></div>
+    </div>
+
     <a href="/" class="back-site-btn" aria-label="Back to main site" title="Back to main site">
         <i class="fas fa-arrow-left"></i>
         <span>Back To Site</span>
@@ -79,20 +112,20 @@
             <section id="panel-user" class="auth-panel active">
                 <h3>Welcome Back</h3>
                 <p>Sign in to continue to your dashboard.</p>
-                <form id="user-form" method="POST" action="/login" class="auth-form" novalidate>
+                <form id="user-form" method="POST" action="/login" class="auth-form" novalidate autocomplete="off">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
                     <input type="hidden" name="login_type" value="user" />
 
                     <label class="field">
                         <span>Email</span>
-                        <input type="email" name="email" placeholder="you@example.com" required autocomplete="email" />
+                        <input type="email" name="email" placeholder="you@example.com" required autocomplete="off" />
                     </label>
 
                     <label class="field">
                         <span>Password</span>
                         <div class="password-field">
                             <input id="user-pass" type="password" name="password" placeholder="Enter password" required
-                                autocomplete="current-password" />
+                                autocomplete="new-password" />
                             <button type="button" class="password-toggle" data-target="user-pass"
                                 aria-label="Show password" aria-pressed="false">
                                 <i class="fas fa-eye"></i>
@@ -131,12 +164,12 @@
             <section id="panel-register" class="auth-panel" style="display:none">
                 <h3>Create Account</h3>
                 <p>Join Unitary X and launch faster.</p>
-                <form id="register-form" method="POST" action="/register" class="auth-form" novalidate>
+                <form id="register-form" method="POST" action="/register" class="auth-form" novalidate autocomplete="off">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}" />
 
                     <label class="field">
                         <span>Full Name</span>
-                        <input type="text" name="name" placeholder="Your full name" required />
+                        <input type="text" name="name" placeholder="Your full name" required autocomplete="off" />
                     </label>
 
                     <label class="field">
@@ -148,12 +181,19 @@
                         <span>Password</span>
                         <div class="password-field">
                             <input id="reg-pass" type="password" name="password" placeholder="Create password"
-                                required />
+                                required autocomplete="new-password" />
                             <button type="button" class="password-toggle" data-target="reg-pass"
                                 aria-label="Show password" aria-pressed="false">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
+                        <!-- Live password rules checklist -->
+                        <ul id="pass-rules" style="list-style:none; padding:8px 0 0; margin:0; font-size:0.8rem; display:flex; flex-direction:column; gap:4px;">
+                            <li id="rule-len"    style="color:#94a3b8; display:flex; align-items:center; gap:6px;"><i class="fas fa-circle-xmark" style="font-size:0.75rem;"></i> At least 6 characters</li>
+                            <li id="rule-upper"  style="color:#94a3b8; display:flex; align-items:center; gap:6px;"><i class="fas fa-circle-xmark" style="font-size:0.75rem;"></i> At least one uppercase letter (A–Z)</li>
+                            <li id="rule-num"    style="color:#94a3b8; display:flex; align-items:center; gap:6px;"><i class="fas fa-circle-xmark" style="font-size:0.75rem;"></i> At least one number (0–9)</li>
+                            <li id="rule-symbol" style="color:#94a3b8; display:flex; align-items:center; gap:6px;"><i class="fas fa-circle-xmark" style="font-size:0.75rem;"></i> At least one symbol (@, %, #, $, !)</li>
+                        </ul>
                     </label>
 
                     <label class="field">
@@ -175,7 +215,7 @@
                         <div id="strength-label" class="strength-label"></div>
                     </div>
 
-                    <button type="submit" class="btn-auth">
+                    <button type="submit" class="btn-auth" id="reg-submit-btn">
                         <i class="fas fa-user-plus"></i>
                         <span>Create Account</span>
                     </button>
@@ -228,6 +268,14 @@
                         <input id="forgot-otp" type="text" placeholder="6-digit OTP" maxlength="6" required />
                     </label>
 
+                    <div class="otp-meta-row">
+                        <span id="otp-countdown" class="otp-countdown">OTP expires in 01:00</span>
+                        <button type="button" id="forgot-resend-otp" class="otp-resend-btn" style="display:none">
+                            <i class="fas fa-rotate"></i>
+                            <span>Resend OTP</span>
+                        </button>
+                    </div>
+
                     <div class="otp-actions">
                         <button type="button" id="forgot-verify-otp" class="btn-auth otp-verify-btn">
                             <i class="fas fa-shield-check"></i>
@@ -275,6 +323,62 @@
     <script src="{{ url_for('static', filename='login_pro.js') }}?v={{ range(1000, 9999) | random }}"></script>
     <script>
         let forgotResetController = null;
+        let otpTimerIntervalId = null;
+
+        function clearOtpTimer() {
+            if (otpTimerIntervalId) {
+                window.clearInterval(otpTimerIntervalId);
+                otpTimerIntervalId = null;
+            }
+        }
+
+        function formatCountdown(totalSeconds) {
+            const seconds = Math.max(0, Number(totalSeconds) || 0);
+            const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+            const ss = String(seconds % 60).padStart(2, "0");
+            return mm + ":" + ss;
+        }
+
+        function setOtpTimerText(secondsLeft, expired) {
+            const otpCountdown = document.getElementById("otp-countdown");
+            if (!otpCountdown) return;
+            otpCountdown.textContent = expired
+                ? "OTP expired. Please resend OTP"
+                : ("OTP expires in " + formatCountdown(secondsLeft));
+            otpCountdown.classList.toggle("is-expired", !!expired);
+        }
+
+        function setResendVisibility(show) {
+            const resendBtn = document.getElementById("forgot-resend-otp");
+            if (!resendBtn) return;
+            resendBtn.style.display = show ? "inline-flex" : "none";
+        }
+
+        function startOtpTimer(ttlSeconds) {
+            clearOtpTimer();
+            const form = document.getElementById("forgot-form");
+            const validSeconds = Math.max(1, Number(ttlSeconds) || 60);
+            let remaining = validSeconds;
+
+            setResendVisibility(false);
+            setOtpTimerText(remaining, false);
+
+            otpTimerIntervalId = window.setInterval(function () {
+                remaining -= 1;
+                if (remaining <= 0) {
+                    clearOtpTimer();
+                    setOtpTimerText(0, true);
+                    setResendVisibility(true);
+                    if (form) {
+                        form.dataset.otpVerified = "0";
+                        form.dataset.verifiedOtp = "";
+                    }
+                    setOtpAlert("OTP expired. Click Resend OTP to get a new code.", "error");
+                    return;
+                }
+                setOtpTimerText(remaining, false);
+            }, 1000);
+        }
 
         function switchTab(tab) {
             const tabs = ["user", "register"];
@@ -333,6 +437,9 @@
             const step3 = document.getElementById("otp-step-3");
             const stepHint = document.getElementById("otp-step-hint");
             const form = document.getElementById("forgot-form");
+            clearOtpTimer();
+            setResendVisibility(false);
+            setOtpTimerText(60, false);
             if (alertEl) alertEl.style.display = "none";
             if (step1) step1.style.display = "block";
             if (step2) step2.style.display = "none";
@@ -405,17 +512,24 @@
             }
         }
 
-        async function sendOtpFromModal() {
+        async function sendOtpFromModal(isResend) {
             const emailEl = document.getElementById("forgot-email");
             const sendBtn = document.getElementById("forgot-send-otp");
             const sendLabel = sendBtn ? sendBtn.querySelector("span") : null;
+            const resendBtn = document.getElementById("forgot-resend-otp");
+            const resendLabel = resendBtn ? resendBtn.querySelector("span") : null;
             const email = emailEl ? emailEl.value.trim() : "";
             if (!email) {
                 setOtpAlert("Please enter your registered email.", "error");
                 return;
             }
-            if (sendBtn) sendBtn.disabled = true;
-            if (sendLabel) sendLabel.textContent = "Sending...";
+            if (isResend) {
+                if (resendBtn) resendBtn.disabled = true;
+                if (resendLabel) resendLabel.textContent = "Resending...";
+            } else {
+                if (sendBtn) sendBtn.disabled = true;
+                if (sendLabel) sendLabel.textContent = "Sending...";
+            }
             try {
                 const result = await fetchJsonWithTimeout('/send-otp', {
                     method: 'POST',
@@ -446,6 +560,7 @@
                 if (step1) step1.style.display = "none";
                 if (step2) step2.style.display = "block";
                 if (stepHint) stepHint.textContent = "Step 2 of 3: Verify OTP";
+                startOtpTimer((sendJson && sendJson.expires_in_seconds) ? sendJson.expires_in_seconds : 60);
                 if (otpInput) otpInput.focus();
             } catch (err) {
                 if (err && err.name === "AbortError") {
@@ -456,15 +571,22 @@
             } finally {
                 if (sendBtn) sendBtn.disabled = false;
                 if (sendLabel) sendLabel.textContent = "Send OTP";
+                if (resendBtn) resendBtn.disabled = false;
+                if (resendLabel) resendLabel.textContent = "Resend OTP";
             }
         }
 
         async function verifyOtpFromModal() {
             const email = (document.getElementById("forgot-email") || {}).value || "";
             const otp = (document.getElementById("forgot-otp") || {}).value || "";
+            const otpCountdown = document.getElementById("otp-countdown");
             const verifyBtn = document.getElementById("forgot-verify-otp");
             const verifyLabel = verifyBtn ? verifyBtn.querySelector("span") : null;
             const form = document.getElementById("forgot-form");
+            if (otpCountdown && otpCountdown.classList.contains("is-expired")) {
+                setOtpAlert("OTP expired. Please click Resend OTP.", "error");
+                return;
+            }
             if (!email.trim() || !otp.trim()) {
                 setOtpAlert("Enter email and OTP to continue.", "error");
                 return;
@@ -493,6 +615,7 @@
                 if (form) form.dataset.otpVerified = "1";
                 if (form) form.dataset.verifiedEmail = email.trim();
                 if (form) form.dataset.verifiedOtp = otp.trim();
+                clearOtpTimer();
                 const step3 = document.getElementById("otp-step-3");
                 const step2 = document.getElementById("otp-step-2");
                 const stepHint = document.getElementById("otp-step-hint");
@@ -743,7 +866,12 @@
 
             const sendOtpBtn = document.getElementById("forgot-send-otp");
             if (sendOtpBtn) {
-                sendOtpBtn.addEventListener("click", sendOtpFromModal);
+                sendOtpBtn.addEventListener("click", function () { sendOtpFromModal(false); });
+            }
+
+            const resendOtpBtn = document.getElementById("forgot-resend-otp");
+            if (resendOtpBtn) {
+                resendOtpBtn.addEventListener("click", function () { sendOtpFromModal(true); });
             }
 
             const verifyOtpBtn = document.getElementById("forgot-verify-otp");
@@ -777,15 +905,41 @@
             const bar = document.getElementById("strength-bar");
             const label = document.getElementById("strength-label");
 
+            // Live password rule checker
+            function checkRule(ruleId, passes) {
+                const li = document.getElementById(ruleId);
+                if (!li) return;
+                const icon = li.querySelector("i");
+                if (passes) {
+                    li.style.color = "#22c55e";
+                    if (icon) { icon.className = "fas fa-circle-check"; icon.style.fontSize = "0.75rem"; }
+                } else {
+                    li.style.color = "#94a3b8";
+                    if (icon) { icon.className = "fas fa-circle-xmark"; icon.style.fontSize = "0.75rem"; }
+                }
+            }
+
+            function allRulesPass(value) {
+                return value.length >= 6
+                    && /[A-Z]/.test(value)
+                    && /[0-9]/.test(value)
+                    && /[@%#$!&*_\-+=]/.test(value);
+            }
+
             if (pass && bar && label) {
                 pass.addEventListener("input", function () {
-                    const value = pass.value || "";
+                    const v = pass.value || "";
+                    checkRule("rule-len",    v.length >= 6);
+                    checkRule("rule-upper",  /[A-Z]/.test(v));
+                    checkRule("rule-num",    /[0-9]/.test(v));
+                    checkRule("rule-symbol", /[@%#$!&*_\-+=]/.test(v));
+
                     let score = 0;
-                    if (value.length >= 6) score++;
-                    if (value.length >= 10) score++;
-                    if (/[A-Z]/.test(value)) score++;
-                    if (/[0-9]/.test(value)) score++;
-                    if (/[^A-Za-z0-9]/.test(value)) score++;
+                    if (v.length >= 6) score++;
+                    if (v.length >= 10) score++;
+                    if (/[A-Z]/.test(v)) score++;
+                    if (/[0-9]/.test(v)) score++;
+                    if (/[^A-Za-z0-9]/.test(v)) score++;
                     const levels = ["", "Weak", "Fair", "Good", "Strong", "Elite"];
                     bar.style.width = String((score / 5) * 100) + "%";
                     label.textContent = levels[score] || "";
@@ -797,6 +951,26 @@
                     const ok = confirm.value && confirm.value === pass.value;
                     confirm.style.borderColor = ok ? "rgba(16,185,129,.7)" : "rgba(255,255,255,.2)";
                 });
+            }
+
+            // Block submit if rules not met
+            const registerForm = document.getElementById("register-form");
+            if (registerForm && pass) {
+                registerForm.addEventListener("submit", function (e) {
+                    const v = pass.value || "";
+                    if (!allRulesPass(v)) {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        const alertEl = document.getElementById("auth-alert");
+                        if (alertEl) {
+                            alertEl.innerHTML = '<i class="fas fa-circle-exclamation"></i> Password must have: 6+ chars, one uppercase letter, one number, and one symbol (@, %, #, $, !).';
+                            alertEl.style.display = "flex";
+                            alertEl.classList.remove("shake");
+                            void alertEl.offsetWidth;
+                            alertEl.classList.add("shake");
+                        }
+                    }
+                }, true);
             }
         });
 
@@ -815,7 +989,12 @@
                         if (window.luxFX && typeof window.luxFX.success === "function") {
                             window.luxFX.success();
                         }
-                        window.location.href = res.redirect;
+                        const card = document.getElementById("auth-card");
+                        if (card) card.classList.add("exit");
+                        
+                        setTimeout(function() {
+                            window.location.href = res.redirect;
+                        }, 640);
                         return;
                     }
                     showAuthError((res && res.error) ? res.error : 'Google sign-in failed.');

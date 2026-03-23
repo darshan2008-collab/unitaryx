@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Command Center | Unitary X</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}?v=1.1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}?v=20260321modesright2">
     <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
@@ -25,6 +25,23 @@
             }
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
+        .admin-tab-content {
+            display: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s ease;
+        }
+
+        .admin-tab-content.active {
+            display: block;
+            opacity: 1 !important;
+            transform: translateY(0);
+        }
+
         .pulse-dot {
             width: 8px;
             height: 8px;
@@ -35,6 +52,45 @@
             box-shadow: 0 0 10px #10b981;
             animation: pulse-glow 2s infinite;
         }
+
+        .super-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+        }
+
+        .super-kpi {
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(0, 82, 204, 0.08), rgba(15, 118, 110, 0.08));
+            padding: 12px;
+        }
+
+        .super-kpi .meta {
+            font-size: 0.76rem;
+            color: var(--text-dim);
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+
+        .super-kpi .val {
+            margin-top: 8px;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .super-split {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 980px) {
+            .super-split {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 
@@ -43,24 +99,44 @@
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
     </div>
+    <div class="ai-cosmos" aria-hidden="true">
+        <div class="ai-parallax ai-parallax-deep"></div>
+        <div class="ai-parallax ai-parallax-mid"></div>
+        <div class="ai-parallax ai-parallax-front"></div>
+        <div class="ai-neural-grid"></div>
+        <canvas id="ai-particle-field" class="ai-particle-field"></canvas>
+        <div id="ai-cursor-beam" class="ai-cursor-beam"></div>
+    </div>
 
     <!-- Top Global Actions -->
     <div class="top-actions">
-        <a href="/admin/export/pdf" class="top-action-btn" data-tooltip="Download Detailed PDF Report">
-            <i class="fa-solid fa-list-ul"></i>
+        <a id="top-pdf-download-btn" href="/admin/export/pdf?tab=dashboard" class="top-action-btn"
+            data-tooltip="Download PDF Report" title="Download PDF Report">
+            <i class="fa-solid fa-file-pdf"></i>
         </a>
+        <div class="mode-switch" role="group" aria-label="Theme mode switch">
+            <button id="theme-light-btn" type="button" class="theme-mode-btn" data-theme="light"
+                aria-label="Enable light mode" title="Light mode">
+                <i class="fa-solid fa-sun"></i> Light
+            </button>
+            <button id="theme-dark-btn" type="button" class="theme-mode-btn" data-theme="dark"
+                aria-label="Enable dark mode" title="Dark mode">
+                <i class="fa-solid fa-moon"></i> Dark
+            </button>
+        </div>
     </div>
 
     <!-- Layout Wrapper -->
-    <div style="display: flex; min-height: 100vh; width: 100%;">
+    <div class="admin-layout" style="display: flex; min-height: 100vh; width: 100%;">
         <aside class="admin-sidebar">
             <div class="sidebar-logo-container"
                 style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; width: 100%;">
                 <div class="sidebar-logo"
                     style="font-size: 1.5rem; font-weight: 800; color: var(--sidebar-text); display: flex; align-items: center; gap: 12px; white-space: nowrap;">
-                    <img src="{{ url_for('static', filename='img/logo_x.png') }}" alt="Unitary X"
-                        style="height: 36px; width: auto; max-width: 36px; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0, 82, 204, 0.4));">
-                    <span class="logo-text">Unitary<span style="color:var(--primary)">X</span></span>
+                    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Unitary X"
+                        style="height: 30px; width: auto; max-width: 120px; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0, 82, 204, 0.4));"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                    <span class="logo-fallback-inline" style="display:none;">Unitary X</span>
                 </div>
                 <button id="sidebar-toggle" class="menu-toggle-btn"
                     style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted); display: flex;">
@@ -71,14 +147,36 @@
             <nav class="sidebar-menu">
                 <div class="menu-label">Operations Console</div>
                 <ul class="adm-nav">
-                    <li><a href="/admin" class="adm-nav-link active"><i class="fas fa-th-large"></i>
-                            <span>Dashboard</span></a></li>
-                    <li><a href="#projects" class="adm-nav-link"><i class="fas fa-project-diagram"></i> <span>Project
+                    <li><a href="#" class="adm-nav-link active" data-tab="dashboard"><i class="fas fa-th-large"></i>
+                            <span>Dashboard Overview</span></a></li>
+                    <li><a href="#" class="adm-nav-link" data-tab="mytasks"><i class="fas fa-list-check"></i>
+                            <span>My Tasks</span></a></li>
+                    <li><a href="#" class="adm-nav-link" data-tab="projects"><i class="fas fa-project-diagram"></i>
+                            <span>Project
                                 Inquiries</span></a></li>
-                    <li><a href="#analytics" class="adm-nav-link"><i class="fas fa-chart-pie"></i> <span>Strategic
+                    <li><a href="#" class="adm-nav-link" data-tab="analytics"><i class="fas fa-chart-pie"></i>
+                            <span>Strategic
                                 Analytics</span></a>
                     </li>
+                    <li><a href="#" class="adm-nav-link" data-tab="strategy"><i class="fas fa-lightbulb"></i>
+                            <span>Strategy
+                                Guide</span></a>
+                    </li>
                 </ul>
+
+                {% if is_superadmin %}
+                <div class="menu-label" style="margin-top:20px;">Superadmin Control</div>
+                <ul class="adm-nav">
+                    <li><a href="#" class="adm-nav-link" data-tab="admin-control"><i class="fas fa-user-shield"></i>
+                            <span>Admin Accounts</span></a></li>
+                    <li><a href="#" class="adm-nav-link" data-tab="credentials-vault"><i class="fas fa-key"></i>
+                            <span>Credentials Vault</span></a></li>
+                    <li><a href="#" class="adm-nav-link" data-tab="task-control"><i class="fas fa-clipboard-check"></i>
+                            <span>Task Control Desk</span></a></li>
+                    <li><a href="#" class="adm-nav-link" data-tab="super-lab"><i class="fas fa-bolt"></i>
+                            <span>Super Lab</span></a></li>
+                </ul>
+                {% endif %}
 
                 <div class="menu-label" style="margin-top:20px;">External Links</div>
                 <ul class="adm-nav">
@@ -101,9 +199,18 @@
 
         <main class="admin-main">
             <header class="admin-header">
-                <div>
-                    <h1 class="admin-title" style="color: var(--text);">{{ admin.name if admin else 'Admin' }}'s Command
-                        Center
+                <div class="admin-header-title-block">
+                    <h1 class="admin-title" style="color: var(--text);">
+                        <span class="superadmin-elite-badge" aria-label="Super Admin">
+                            <i class="fas fa-crown superadmin-elite-icon" aria-hidden="true"></i>
+                            <span class="superadmin-elite-text" data-text="SUPER ADMIN">SUPER ADMIN</span>
+                        </span>
+                        {% if is_superadmin %}
+                        {{ admin.name if admin else 'Super Admin' }}'s
+                        {% else %}
+                        {{ admin.name if admin else 'Admin' }}'s
+                        {% endif %}
+                        Command Center
                     </h1>
                     <div
                         style="color: var(--text-dim); font-size: 0.95rem; margin-top: 8px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
@@ -122,258 +229,1034 @@
             {% if messages %}
             <div class="flash-messages" style="margin-bottom: 20px;">
                 {% for category, message in messages %}
+                {% if category != 'success' %}
                 <div class="alert alert-{{ category }}"
                     style="padding: 15px; border-radius: 12px; background: rgba(0, 82, 204, 0.05); border: 1px solid var(--primary); color: var(--text);">
                     {{ message }}
                 </div>
+                {% endif %}
                 {% endfor %}
             </div>
             {% endif %}
             {% endwith %}
 
-            <!-- 📊 Live Vitality Grid -->
-            <section class="admin-stats">
-                <div class="adm-stat">
-                    <div class="adm-stat-icon-wrap"><i class="fas fa-inbox"></i></div>
-                    <div class="adm-stat-num">{{ stats.total_requests }}</div>
-                    <div class="adm-stat-label">Total Submissions</div>
-                    <div style="font-size: 0.75rem; color:var(--primary); margin-top: 5px;"><i
-                            class="fas fa-arrow-up"></i>
-                        +12.5%</div>
-                </div>
-                <div class="adm-stat">
-                    <div class="adm-stat-icon-wrap"
-                        style="color:var(--secondary); background: rgba(79, 172, 254, 0.15);"><i
-                            class="fas fa-satellite"></i></div>
-                    <div class="adm-stat-num">{{ stats.pending_requests }}</div>
-                    <div class="adm-stat-label">Active Projects</div>
-                    <div style="font-size: 0.75rem; color:var(--text-dim); margin-top: 5px;">Phase: Developing</div>
-                </div>
-                <div class="adm-stat">
-                    <div class="adm-stat-icon-wrap" style="color:var(--accent); background: rgba(0, 242, 254, 0.15);"><i
-                            class="fas fa-check-circle"></i></div>
-                    <div class="adm-stat-num">{{ stats.done_requests }}</div>
-                    <div class="adm-stat-label">Finalized Projects</div>
-                    <div style="font-size: 0.75rem; color:var(--primary); margin-top: 5px;">Integrity Optimized</div>
-                </div>
-
-                <!-- Financial Intelligence -->
-                <div class="adm-stat financial-hub">
-                    <div class="adm-stat-icon-wrap" style="color: #fbbf24; background: rgba(251, 191, 36, 0.15);"><i
-                            class="fas fa-wallet"></i></div>
-                    <div class="adm-stat-num">₹{{ "{:,}".format(stats.projected_revenue) }}</div>
-                    <div class="adm-stat-label">Projected Revenue</div>
-                    <div style="font-size: 0.75rem; color:var(--text-dim); margin-top: 5px;">Based on active valuations
+            <!-- 📊 Tabbed Content Containers -->
+            <div id="tab-dashboard" class="admin-tab-content active">
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-compass"
+                            style="color:var(--primary); margin-right:8px;"></i>Menu Driven Workspace</h3>
+                    <p style="margin:0; color:var(--text-dim); line-height:1.7;">This dashboard now focuses on insights.
+                        Use the left menu to manage specific operations:</p>
+                    <div
+                        style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:10px; margin-top:12px;">
+                        <div
+                            style="border:1px solid var(--glass-border); border-radius:10px; padding:10px; background:rgba(0,82,204,0.04);">
+                            <div style="font-weight:700; color:var(--text);">My Tasks</div>
+                            <div style="font-size:0.84rem; color:var(--text-dim);">Track and update your assigned todo
+                                items.</div>
+                        </div>
+                        <div
+                            style="border:1px solid var(--glass-border); border-radius:10px; padding:10px; background:rgba(0,82,204,0.04);">
+                            <div style="font-weight:700; color:var(--text);">Project Inquiries</div>
+                            <div style="font-size:0.84rem; color:var(--text-dim);">Process, prioritize and update
+                                project leads.</div>
+                        </div>
+                        {% if is_superadmin %}
+                        <div
+                            style="border:1px solid var(--glass-border); border-radius:10px; padding:10px; background:rgba(0,82,204,0.04);">
+                            <div style="font-weight:700; color:var(--text);">Admin Accounts</div>
+                            <div style="font-size:0.84rem; color:var(--text-dim);">Create, edit, deactivate, reset
+                                password and remove admins.</div>
+                        </div>
+                        <div
+                            style="border:1px solid var(--glass-border); border-radius:10px; padding:10px; background:rgba(0,82,204,0.04);">
+                            <div style="font-weight:700; color:var(--text);">Task Control Desk</div>
+                            <div style="font-size:0.84rem; color:var(--text-dim);">Assign, reassign and clean up admin
+                                tasks quickly.</div>
+                        </div>
+                        {% endif %}
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <!-- Enhanced Features Row -->
-            <div class="admin-grid">
-                <div class="dash-card">
-                    <h3 class="card-title"><i class="fas fa-stream" style="color:var(--primary); margin-right:8px;"></i>
-                        Mission Chronology</h3>
-                    <div class="activity-log">
-                        {% for r in requests[:5] %}
-                        <div class="log-item">
-                            <div class="log-time">{{ r.created_at.strftime('%H:%M') }}</div>
-                            <div class="log-desc">
-                                <strong>{{ r.name }}</strong> submitted new inquiry for
-                                <span style="color:var(--primary)">{{ r.service }}</span>
+                <!-- 📊 Live Vitality Grid -->
+                <section class="admin-stats">
+                    <div class="adm-stat">
+                        <div class="adm-stat-icon-wrap"><i class="fas fa-inbox"></i></div>
+                        <div class="adm-stat-num">{{ stats.total_requests }}</div>
+                        <div class="adm-stat-label">Total Submissions</div>
+                        <div style="font-size: 0.75rem; color:var(--primary); margin-top: 5px;"><i
+                                class="fas fa-arrow-up"></i>
+                            +12.5%</div>
+                    </div>
+                    <div class="adm-stat">
+                        <div class="adm-stat-icon-wrap"
+                            style="color:var(--secondary); background: rgba(79, 172, 254, 0.15);"><i
+                                class="fas fa-satellite"></i></div>
+                        <div class="adm-stat-num">{{ stats.pending_requests }}</div>
+                        <div class="adm-stat-label">Active Projects</div>
+                        <div style="font-size: 0.75rem; color:var(--text-dim); margin-top: 5px;">Phase: Developing</div>
+                    </div>
+                    <div class="adm-stat">
+                        <div class="adm-stat-icon-wrap"
+                            style="color:var(--accent); background: rgba(0, 242, 254, 0.15);"><i
+                                class="fas fa-check-circle"></i></div>
+                        <div class="adm-stat-num">{{ stats.done_requests }}</div>
+                        <div class="adm-stat-label">Finalized Projects</div>
+                        <div style="font-size: 0.75rem; color:var(--primary); margin-top: 5px;">Integrity Optimized
+                        </div>
+                    </div>
+
+                    <!-- Financial Intelligence -->
+                    <div class="adm-stat financial-hub">
+                        <div class="adm-stat-icon-wrap" style="color: #fbbf24; background: rgba(251, 191, 36, 0.15);"><i
+                                class="fas fa-wallet"></i></div>
+                        <div class="adm-stat-num">₹{{ "{:,}".format(stats.projected_revenue) }}</div>
+                        <div class="adm-stat-label">Projected Revenue</div>
+                        <div style="font-size: 0.75rem; color:var(--text-dim); margin-top: 5px;">Based on active
+                            valuations
+                        </div>
+                    </div>
+                </section>
+
+                <section class="dash-card advanced-console" style="margin-bottom: 18px;">
+                    <div class="advanced-console-head">
+                        <h3 class="card-title" style="margin-bottom: 14px;"><i class="fas fa-gauge-high"
+                                style="color:var(--primary);"></i> Advanced Mission Console</h3>
+                        <p style="color: var(--text-dim); font-size: 0.92rem;">Live command metrics for operational
+                            quality and conversion velocity.</p>
+                    </div>
+                    <div class="kpi-grid">
+                        <div class="kpi-chip">
+                            <div class="kpi-chip-head">
+                                <span>Completion Rate</span>
+                                <strong>{{ admin_metrics.completion_rate }}%</strong>
                             </div>
+                            <div class="kpi-progress">
+                                <span style="width: {{ admin_metrics.completion_rate }}%;"></span>
+                            </div>
+                        </div>
+                        <div class="kpi-chip">
+                            <div class="kpi-chip-head">
+                                <span>High Priority Queue</span>
+                                <strong>{{ admin_metrics.high_priority_count }}</strong>
+                            </div>
+                            <div class="kpi-sub">Requires immediate admin action</div>
+                        </div>
+                        <div class="kpi-chip">
+                            <div class="kpi-chip-head">
+                                <span>Average Deal Value</span>
+                                <strong>₹{{ "{:,}".format(admin_metrics.avg_value) }}</strong>
+                            </div>
+                            <div class="kpi-sub">Average valuation per lead</div>
+                        </div>
+                        <div class="kpi-chip">
+                            <div class="kpi-chip-head">
+                                <span>Today Inquiries (UTC)</span>
+                                <strong>{{ admin_metrics.todays_inquiries }}</strong>
+                            </div>
+                            <div class="kpi-sub">Fresh opportunities in current cycle</div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div id="tab-mytasks" class="admin-tab-content">
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-list-check"
+                            style="color:var(--primary); margin-right:8px;"></i>My Admin To-Do List</h3>
+                    {% if my_tasks %}
+                    <div style="display:grid; gap:10px;">
+                        {% for task in my_tasks %}
+                        <div
+                            style="background:rgba(0,82,204,0.04); border:1px solid var(--glass-border); border-radius:12px; padding:12px;">
+                            <div
+                                style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+                                <div>
+                                    <div style="font-weight:700; color:var(--text);">#{{ '%04d' % task.id }} - {{
+                                        task.title }}</div>
+                                    <div style="font-size:0.84rem; color:var(--text-dim);">Assigned by {{
+                                        task.assigned_by_email }} on {{ task.created_at.strftime('%d %b %Y %H:%M') }}
+                                    </div>
+                                </div>
+                                <div
+                                    style="font-size:0.8rem; padding:4px 10px; border-radius:999px; background:rgba(0,82,204,0.1); color:var(--primary); border:1px solid var(--glass-border);">
+                                    {{ task.status }}
+                                </div>
+                            </div>
+                            {% if task.details %}
+                            <div style="margin-top:8px; color:var(--text-dim);">{{ task.details }}</div>
+                            {% endif %}
+                            <form method="POST" action="/admin/tasks/{{ task.id }}/status"
+                                style="margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                <select name="status"
+                                    style="padding:8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
+                                    <option value="Pending" {{ 'selected' if task.status=='Pending' else '' }}>Pending
+                                    </option>
+                                    <option value="In Progress" {{ 'selected' if task.status=='In Progress' else '' }}>
+                                        In Progress</option>
+                                    <option value="Done" {{ 'selected' if task.status=='Done' else '' }}>Done</option>
+                                </select>
+                                <button type="submit"
+                                    style="padding:8px 12px; border:none; border-radius:8px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer;">Update
+                                    Status</button>
+                            </form>
                         </div>
                         {% endfor %}
                     </div>
-                </div>
-
-                <div class="dash-card">
-                    <h3 class="card-title"><i class="fas fa-chart-line"
-                            style="color:var(--secondary); margin-right:8px;"></i>
-                        Sector Momentum</h3>
-                    <div style="height: 250px; position: relative;">
-                        <canvas id="sectorChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="dashboard-grid">
-                <div class="dash-card" id="distributionAnalysis">
-                    <h3 class="card-title"><i class="fa-solid fa-chart-pie" style="color: var(--primary);"></i>
-                        Distribution
-                        Analysis</h3>
-                    <div class="chart-container">
-                        <canvas id="serviceChart"></canvas>
-                    </div>
-                </div>
-                <div class="dash-card">
-                    <h3 class="card-title"><i class="fa-solid fa-server" style="color: var(--primary);"></i> Core System
-                        Integrity</h3>
-                    <div class="health-item">
-                        <span>Mainframe Core</span>
-                        <span class="status-indicator"><i class="fa-solid fa-circle"></i> Operational</span>
-                    </div>
-                    <div class="health-item">
-                        <span>Database Cluster</span>
-                        <span class="status-indicator"><i class="fa-solid fa-circle"></i> Connected</span>
-                    </div>
-                    <div class="health-item">
-                        <span>Cloud Sync</span>
-                        <span class="status-indicator"><i class="fa-solid fa-circle"></i> Enabled</span>
-                    </div>
-                    <div class="health-item">
-                        <span>Identity Proxy</span>
-                        <span class="status-indicator"><i class="fa-solid fa-circle"></i> Secured</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="table-card">
-                <div class="table-header">
-                    <h3 class="card-title"><i class="fa-solid fa-list-ul" style="color: var(--primary);"></i> Project
-                        Inquiry Logs</h3>
-                    <div class="search-wrap">
-                        <i class="fa-solid fa-search"></i>
-                        <input type="text" id="tableSearch" placeholder="Search inquiries..." onkeyup="filterTable()">
-                    </div>
-                </div>
-
-                <div class="admin-table-wrap">
-                    {% if requests %}
-                    <table class="adm-table" id="requestsTable">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Strategic Client</th>
-                                <th>Operational Tier</th>
-                                <th>Projected Value</th>
-                                <th>Status</th>
-                                <th>Timeline</th>
-                                <th>Control</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for r in requests %}
-                            <tr class="main-row" id="row-{{ r.id }}">
-                                <td style="font-family:'JetBrains Mono'; color:var(--primary);">#{{ r.id|format_id }}
-                                </td>
-                                <td>
-                                    <div style="font-weight:600;">{{ r.name }}</div>
-                                    <div style="font-size:0.75rem; color:var(--text-muted);">{{ r.service }}</div>
-                                </td>
-                                <td>
-                                    <span class="prio-badge prio-{{ r.priority|lower }}">{{ r.priority }}</span>
-                                </td>
-                                <td style="font-family:'JetBrains Mono';">₹{{ "{:,}".format(r.value) }}</td>
-                                <td class="control-cell">
-                                    <form method="POST" action="/admin/update-project" class="control-form">
-                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                                        <input type="hidden" name="req_id" value="{{ r.id }}">
-
-                                        <div class="control-group">
-                                            <label>Status</label>
-                                            <select name="status" class="adm-select">
-                                                <option value="New" {% if r.status=='New' %}selected{% endif %}>New
-                                                </option>
-                                                <option value="In Progress" {% if r.status=='In Progress' %}selected{%
-                                                    endif %}>
-                                                    In Progress</option>
-                                                <option value="Done" {% if r.status=='Done' %}selected{% endif %}>Done
-                                                </option>
-                                            </select>
-                                        </div>
-
-                                        <div class="control-group">
-                                            <label>Priority</label>
-                                            <select name="priority" class="adm-select">
-                                                <option value="High" {% if r.priority=='High' %}selected{% endif %}>High
-                                                </option>
-                                                <option value="Medium" {% if r.priority=='Medium' %}selected{% endif %}>
-                                                    Medium</option>
-                                                <option value="Low" {% if r.priority=='Low' %}selected{% endif %}>Low
-                                                </option>
-                                            </select>
-                                        </div>
-
-                                        <div class="control-group">
-                                            <label>Valuation (₹)</label>
-                                            <input type="number" name="value" value="{{ r.value }}" class="adm-input">
-                                        </div>
-
-                                        <button type="submit" class="btn-update-cmd">Update Mission</button>
-                                    </form>
-                                </td>
-                                <td style="color: var(--text-dim); font-weight: 500;">{{
-                                    r.created_at.strftime('%d.%m.%y')
-                                    }}</td>
-                                <td>
-                                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                                        <button class="action-btn btn-msg" onclick="openMessageModal('{{ r.id }}')"
-                                            title="Read Description">
-                                            <i class="fa-solid fa-align-left"></i>
-                                        </button>
-                                        <button class="action-btn btn-info" onclick="toggleDetail('{{ r.id }}')"
-                                            title="View Full Project Info">
-                                            <i class="fa-solid fa-file-invoice"></i>
-                                        </button>
-                                        <form method="POST" action="/admin/delete/{{ r.id }}" class="delete-form">
-                                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="action-btn btn-delete" title="Remove Record">
-                                                <i class="fa-solid fa-trash-alt"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr class="detail-row" id="detail-{{ r.id }}">
-                                <td colspan="7">
-                                    <div class="detail-pnl">
-                                        <div class="detail-grid">
-                                            <div class="dtl-card">
-                                                <span class="dtl-title"><i class="fas fa-user"></i> Client
-                                                    Profile</span>
-                                                <p class="dtl-txt"><strong>Name:</strong> {{ r.name }}</p>
-                                                <p class="dtl-txt"><strong>Phone:</strong> <a
-                                                        href="https://wa.me/91{{ r.phone }}" target="_blank"
-                                                        style="color:var(--primary); text-decoration:none;">{{ r.phone
-                                                        }}</a></p>
-                                                <p class="dtl-txt"><strong>Email:</strong> {{ r.email }}</p>
-                                            </div>
-                                            <div class="dtl-card">
-                                                <span class="dtl-title"><i class="fas fa-bullseye"></i> Goal &
-                                                    Scope</span>
-                                                <p class="dtl-txt"><strong>Project ID:</strong> #{{ r.id|format_id }}
-                                                </p>
-                                                <p class="dtl-txt"><strong>Requested Service:</strong> {{ r.service }}
-                                                </p>
-                                                <p class="dtl-txt"><strong>Deadline:</strong> {{ r.deadline or 'ASAP' }}
-                                                </p>
-                                            </div>
-                                            <div class="dtl-card">
-                                                <span class="dtl-title"><i class="fas fa-clock"></i> Timestamps</span>
-                                                <p class="dtl-txt"><strong>Submitted:</strong><br>{{
-                                                    r.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
-                                            </div>
-                                            <div class="dtl-card full-width">
-                                                <span class="dtl-title"><i class="fas fa-align-left"></i> Full
-                                                    Requirements / Message</span>
-                                                <p class="dtl-txt" id="msg-text-{{ r.id }}"
-                                                    style="white-space: pre-wrap;">{{
-                                                    r.message }}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
                     {% else %}
-                    <div style="text-align: center; padding: 80px 0;">
-                        <i class="fas fa-inbox"
-                            style="font-size: 4rem; opacity: 0.1; display: block; margin-bottom: 20px;"></i>
-                        <h3 style="color: var(--text-dim);">No Logs Found</h3>
-                    </div>
+                    <p style="margin:0; color:var(--text-dim);">No tasks assigned yet. Superadmin can assign work using
+                        admin email.</p>
                     {% endif %}
+                </section>
+            </div>
+
+            {% if is_superadmin %}
+            <div id="tab-admin-control" class="admin-tab-content">
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-user-shield"
+                            style="color:var(--primary); margin-right:8px;"></i>Admin Account Control Desk</h3>
+
+                    <form method="POST" action="/admin/admins/create" class="admin-create-account-form"
+                        style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; align-items:end; margin-bottom:12px;">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <div>
+                            <label
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Admin
+                                Name</label>
+                            <input type="text" name="name" required minlength="2" placeholder="Admin full name"
+                                style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);">
+                        </div>
+                        <div>
+                            <label
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Admin
+                                Email</label>
+                            <input type="email" name="email" required placeholder="admin@example.com"
+                                style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);">
+                        </div>
+                        <div>
+                            <label
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Password
+                                (Permanent)</label>
+                            <div class="admin-pass-wrap">
+                                <input type="password" name="permanent_password" required minlength="6"
+                                    placeholder="Password (min 6 chars)" class="admin-pass-input"
+                                    style="width:100%; padding:10px 42px 10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);">
+                                <button type="button" class="admin-pass-toggle" aria-label="Show password"
+                                    title="Show/Hide password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <button type="submit"
+                                style="width:100%; padding:10px 12px; border:none; border-radius:10px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer;">Create
+                                Admin</button>
+                        </div>
+                    </form>
+
+                    <div id="admin-accounts-list" style="display:grid; gap:10px;">
+                        {% if managed_admins %}
+                        {% for row in managed_admins %}
+                        <div id="admin-account-{{ row.id }}" class="admin-account-card"
+                            style="padding:10px; border:1px solid var(--glass-border); border-radius:12px; background:rgba(0,82,204,0.04);">
+                            <form method="POST" action="/admin/admins/{{ row.id }}/update"
+                                class="admin-update-account-form" data-target-card="admin-account-{{ row.id }}"
+                                data-current-email="{{ row.email|lower }}"
+                                style="display:grid; grid-template-columns: 1.1fr 1.4fr 1fr auto auto; gap:8px; align-items:center;">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                <input type="text" name="name" value="{{ row.name }}" required minlength="2"
+                                    style="padding:8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
+                                <input type="email" name="email" value="{{ row.email }}" required
+                                    style="padding:8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
+                                <div class="admin-pass-wrap">
+                                    <input type="password" name="password" required minlength="6"
+                                        placeholder="Permanent password (min 6 chars)" class="admin-pass-input"
+                                        value="{{ admin_password_map.get((row.email or '')|lower, '') }}"
+                                        style="padding:8px 38px 8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text); width:100%;">
+                                    <button type="button" class="admin-pass-toggle" aria-label="Show password"
+                                        title="Show/Hide password">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <label
+                                    style="display:flex; align-items:center; gap:6px; font-size:0.84rem; color:var(--text-dim); white-space:nowrap;">
+                                    <input type="checkbox" name="is_active" value="1" {{ 'checked' if row.is_active
+                                        else '' }}>
+                                    Active
+                                </label>
+                                <button type="submit"
+                                    style="padding:8px 10px; border:none; border-radius:8px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer;">Save</button>
+                            </form>
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px; flex-wrap:wrap;">
+                                <div style="font-size:0.8rem; color:var(--text-dim);">
+                                    {{ 'Superadmin account' if row.email|lower == 'harikavi1301@gmail.com' else 'Admin
+                                    account' }}
+                                    | Created: {{ row.created_at.strftime('%d %b %Y') if row.created_at else 'N/A' }}
+                                </div>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    {% if row.email|lower != 'harikavi1301@gmail.com' %}
+                                    <form method="POST" action="/admin/admins/{{ row.id }}/delete"
+                                        class="admin-delete-account-form" data-target-card="admin-account-{{ row.id }}"
+                                        onsubmit="return confirm('Delete admin account {{ row.email }}? This cannot be undone.');">
+                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit"
+                                            style="padding:7px 10px; border:none; border-radius:8px; background:#dc2626; color:#fff; font-weight:700; cursor:pointer;">Delete
+                                            Admin</button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                    <p id="no-admin-accounts-msg" style="margin:0; color:var(--text-dim);" {% if managed_admins
+                        %}hidden{% endif %}>No admin accounts found.</p>
+                </section>
+            </div>
+
+            <div id="tab-credentials-vault" class="admin-tab-content">
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <h3 class="card-title" style="margin:0;"><i class="fas fa-key"
+                                style="color:var(--primary); margin-right:8px;"></i>Saved Admin Credentials Vault</h3>
+                        <a href="{{ url_for('export_pdf', tab='credentials-vault') }}"
+                            style="padding:8px 12px; border:1px solid var(--glass-border); border-radius:9px; text-decoration:none; color:var(--text); font-weight:700; background:#fff;">
+                            <i class="fas fa-file-pdf" style="color:#dc2626; margin-right:6px;"></i>Download Vault PDF
+                        </a>
+                    </div>
+                    <div id="credentials-vault-table-wrap" style="overflow:auto; margin-top:12px;" {% if not
+                        admin_credentials %}hidden{% endif %}>
+                        <table style="width:100%; border-collapse:collapse; min-width:680px;">
+                            <thead>
+                                <tr>
+                                    <th
+                                        style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim); font-weight:700; background:rgba(0,82,204,0.06);">
+                                        Admin
+                                        Email</th>
+                                    <th
+                                        style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim); font-weight:700; background:rgba(0,82,204,0.06);">
+                                        Password</th>
+                                    <th
+                                        style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim); font-weight:700; background:rgba(0,82,204,0.06);">
+                                        Updated At (UTC)</th>
+                                    <th
+                                        style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim); font-weight:700; background:rgba(0,82,204,0.06);">
+                                        PDF</th>
+                                </tr>
+                            </thead>
+                            <tbody id="credentials-vault-body">
+                                {% for cred in admin_credentials %}
+                                <tr data-admin-email="{{ cred.admin_email|lower }}">
+                                    <td class="cred-email"
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text); font-weight:600;">
+                                        {{ cred.admin_email }}</td>
+                                    <td class="cred-password"
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text); font-family:'JetBrains Mono', monospace; font-size:0.9rem; background:rgba(34,197,94,0.08);">
+                                        {{ cred.permanent_password }}</td>
+                                    <td class="cred-updated"
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text-dim); font-size:0.85rem;">
+                                        {{ cred.updated_at.strftime('%Y-%m-%d %H:%M:%S') if cred.updated_at else 'N/A'
+                                        }}
+                                    </td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">
+                                        <a href="{{ url_for('export_pdf', tab='credentials-vault', email=cred.admin_email) }}"
+                                            style="display:inline-flex; align-items:center; gap:6px; padding:6px 9px; border-radius:8px; text-decoration:none; border:1px solid var(--glass-border); background:#fff; color:var(--text); font-weight:700;">
+                                            <i class="fas fa-file-pdf" style="color:#dc2626;"></i>PDF
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="credentials-vault-empty" style="padding:12px; text-align:center; color:var(--text-dim);" {%
+                        if admin_credentials %}hidden{% endif %}>No admin credentials saved yet.
+                        Create admins in the Admin Accounts tab.</div>
+                </section>
+            </div>
+
+            <div id="tab-task-control" class="admin-tab-content">
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-clipboard-check"
+                            style="color:var(--primary); margin-right:8px;"></i>Task Control Desk</h3>
+                    <form method="POST" action="/admin/tasks/assign"
+                        style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; align-items:end;">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <div>
+                            <label
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Task
+                                Title</label>
+                            <input type="text" name="title" required minlength="3" maxlength="160"
+                                placeholder="Prepare weekly status report"
+                                style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);">
+                        </div>
+                        <div>
+                            <label
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Assign
+                                To (Admin Email)</label>
+                            <input type="email" name="assigned_to_email" required list="admin-email-list"
+                                placeholder="admin@example.com"
+                                style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);">
+                            <datalist id="admin-email-list">
+                                {% for row in admin_users %}
+                                <option value="{{ row.email }}"></option>
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Task
+                                Notes (Optional)</label>
+                            <textarea name="details" rows="3" placeholder="Add clear deliverables for this admin"
+                                style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);"></textarea>
+                        </div>
+                        <div>
+                            <button type="submit"
+                                style="width:100%; padding:10px 12px; border:none; border-radius:10px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer;">Assign
+                                Task</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-list"
+                            style="color:var(--primary); margin-right:8px;"></i>All Admin Tasks</h3>
+                    {% if all_admin_tasks %}
+                    <div style="display:grid; gap:10px;">
+                        {% for t in all_admin_tasks %}
+                        <div
+                            style="padding:10px; border:1px solid var(--glass-border); border-radius:12px; background:rgba(0,82,204,0.04);">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;">
+                                <div>
+                                    <div style="font-weight:700; color:var(--text);">#{{ '%04d' % t.id }} - {{ t.title
+                                        }}</div>
+                                    <div style="font-size:0.84rem; color:var(--text-dim);">To: {{ t.assigned_to_email }}
+                                        | By: {{ t.assigned_by_email }} | Status: {{ t.status }}</div>
+                                </div>
+                                <form method="POST" action="/admin/tasks/{{ t.id }}/delete"
+                                    onsubmit="return confirm('Delete task #{{ t.id }}?');">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit"
+                                        style="padding:7px 10px; border:none; border-radius:8px; background:#dc2626; color:#fff; font-weight:700; cursor:pointer;">Delete</button>
+                                </form>
+                            </div>
+                            {% if t.details %}
+                            <div style="margin-top:7px; color:var(--text-dim);">{{ t.details }}</div>
+                            {% endif %}
+                            <form method="POST" action="/admin/tasks/{{ t.id }}/reassign"
+                                style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                <input type="email" name="assigned_to_email" required list="admin-email-list"
+                                    value="{{ t.assigned_to_email }}"
+                                    style="padding:8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text); min-width:260px;">
+                                <button type="submit"
+                                    style="padding:8px 12px; border:none; border-radius:8px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer;">Reassign</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p style="margin:0; color:var(--text-dim);">No admin tasks found.</p>
+                    {% endif %}
+                </section>
+            </div>
+
+            <div id="tab-super-lab" class="admin-tab-content">
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-satellite-dish"
+                            style="color:var(--primary); margin-right:8px;"></i>Superadmin Real-Time Ops Matrix</h3>
+                    <div class="super-kpi-grid" style="margin-top:10px;">
+                        <div class="super-kpi">
+                            <div class="meta">Admin Fleet</div>
+                            <div class="val">{{ superadmin_summary.total_admin_accounts or 0 }}</div>
+                            <div style="font-size:0.82rem; color:var(--text-dim);">Active {{
+                                superadmin_summary.active_admin_accounts or 0 }} | Inactive {{
+                                superadmin_summary.inactive_admin_accounts or 0 }}</div>
+                        </div>
+                        <div class="super-kpi">
+                            <div class="meta">Task Throughput</div>
+                            <div class="val">{{ superadmin_summary.done_task_count or 0 }}/{{
+                                superadmin_summary.total_task_count or 0 }}</div>
+                            <div style="font-size:0.82rem; color:var(--text-dim);">Completion {{
+                                superadmin_summary.completion_ratio or 0 }}%</div>
+                        </div>
+                        <div class="super-kpi">
+                            <div class="meta">Backlog Pressure</div>
+                            <div class="val">{{ superadmin_summary.pending_task_count or 0 }}</div>
+                            <div style="font-size:0.82rem; color:var(--text-dim);">In Progress {{
+                                superadmin_summary.in_progress_task_count or 0 }}</div>
+                        </div>
+                        <div class="super-kpi">
+                            <div class="meta">Critical Queue (2d+)</div>
+                            <div class="val">{{ superadmin_summary.critical_pending_count or 0 }}</div>
+                            <div style="font-size:0.82rem; color:var(--text-dim);">Prioritize in Task Control Desk</div>
+                        </div>
+                        <div class="super-kpi">
+                            <div class="meta">Actions Today</div>
+                            <div class="val">{{ superadmin_summary.today_actions or 0 }}</div>
+                            <div style="font-size:0.82rem; color:var(--text-dim);">Audit-tracked superadmin events</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="super-split" style="margin-bottom: 18px;">
+                    <div class="dash-card" style="margin-bottom:0;">
+                        <h3 class="card-title"><i class="fas fa-triangle-exclamation"
+                                style="color:#d97706; margin-right:8px;"></i>At-Risk Admin Watchlist</h3>
+                        {% if risk_admins %}
+                        <div style="display:grid; gap:8px; margin-top:10px;">
+                            {% for row in risk_admins %}
+                            <div
+                                style="padding:10px; border:1px solid rgba(217,119,6,0.25); border-radius:10px; background:rgba(217,119,6,0.06);">
+                                <div style="font-weight:700; color:var(--text);">{{ row.email }}</div>
+                                <div style="margin-top:3px; font-size:0.82rem; color:var(--text-dim);">Pending {{
+                                    row.pending }} | Done {{ row.done }} | In Progress {{ row.in_progress }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p style="margin:10px 0 0; color:var(--text-dim);">No risk admins detected. Current load is
+                            balanced.</p>
+                        {% endif %}
+                    </div>
+                    <div class="dash-card" style="margin-bottom:0;">
+                        <h3 class="card-title"><i class="fas fa-hourglass-half"
+                                style="color:#0f766e; margin-right:8px;"></i>Critical Pending Tasks</h3>
+                        {% if critical_pending_tasks %}
+                        <div style="display:grid; gap:8px; margin-top:10px; max-height:280px; overflow:auto;">
+                            {% for t in critical_pending_tasks %}
+                            <div
+                                style="padding:10px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(15,118,110,0.06);">
+                                <div style="font-weight:700; color:var(--text);">#{{ '%04d' % t.id }} - {{ t.title }}
+                                </div>
+                                <div style="font-size:0.82rem; color:var(--text-dim);">To: {{ t.assigned_to_email }} |
+                                    Since {{ t.created_at.strftime('%d %b %Y') if t.created_at else 'N/A' }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p style="margin:10px 0 0; color:var(--text-dim);">No critical pending tasks. SLA posture looks
+                            healthy.</p>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-rocket"
+                            style="color:var(--primary); margin-right:8px;"></i>Bulk Task Launcher</h3>
+                    <form method="POST" action="/admin/tasks/assign-bulk"
+                        style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; align-items:end; margin-top:10px;">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <div>
+                            <label
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Task
+                                Title</label>
+                            <input type="text" name="title" required minlength="3" maxlength="160"
+                                placeholder="Publish weekly admin report"
+                                style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);">
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Admin
+                                Emails (comma/new line separated)</label>
+                            <textarea name="admin_emails" rows="3" required
+                                placeholder="admin1@example.com, admin2@example.com"
+                                style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);"></textarea>
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Task
+                                Notes</label>
+                            <textarea name="details" rows="3"
+                                placeholder="Include deliverables, due timeline, and links"
+                                style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);"></textarea>
+                        </div>
+                        <div>
+                            <button type="submit"
+                                style="width:100%; padding:10px 12px; border:none; border-radius:10px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer;">Launch
+                                Bulk Assignment</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-key"
+                            style="color:var(--primary); margin-right:8px;"></i>Saved Admin Credentials Registry</h3>
+                    {% if admin_credentials %}
+                    <div style="overflow:auto; margin-top:8px;">
+                        <table style="width:100%; border-collapse:collapse; min-width:680px;">
+                            <thead>
+                                <tr>
+                                    <th
+                                        style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);font-weight:700;background:rgba(0,82,204,0.06);">
+                                        Admin
+                                        Email</th>
+                                    <th
+                                        style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);font-weight:700;background:rgba(0,82,204,0.06);">
+                                        Temporary
+                                        Password</th>
+                                    <th
+                                        style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);font-weight:700;background:rgba(0,82,204,0.06);">
+                                        Permanent
+                                        Password</th>
+                                    <th
+                                        style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);font-weight:700;background:rgba(0,82,204,0.06);">
+                                        Updated
+                                        At (UTC)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cred in admin_credentials %}
+                                <tr>
+                                    <td
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text); font-weight:600;">
+                                        {{ cred.admin_email }}</td>
+                                    <td
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text); font-family:'JetBrains Mono', monospace; font-size:0.9rem; background:rgba(2,132,199,0.08);">
+                                        {{ cred.temporary_password }}</td>
+                                    <td
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text); font-family:'JetBrains Mono', monospace; font-size:0.9rem; background:rgba(34,197,94,0.08);">
+                                        {{ cred.permanent_password }}</td>
+                                    <td
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text-dim); font-size:0.85rem;">
+                                        {{ cred.updated_at.strftime('%Y-%m-%d %H:%M:%S') if cred.updated_at else 'N/A'
+                                        }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div style="padding:12px; text-align:center; color:var(--text-dim);">No admin credentials saved yet.
+                        Create admins in the Admin Accounts tab.</div>
+                    {% endif %}
+                </section>
+
+                <section class="super-split" style="margin-bottom: 18px;">
+                    <div class="dash-card" style="margin-bottom:0;">
+                        <h3 class="card-title"><i class="fas fa-trophy"
+                                style="color:var(--primary); margin-right:8px;"></i>Admin Performance Leaderboard</h3>
+                        {% if admin_task_leaderboard %}
+                        <div style="overflow:auto; margin-top:8px;">
+                            <table style="width:100%; border-collapse:collapse; min-width:540px;">
+                                <thead>
+                                    <tr>
+                                        <th
+                                            style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">
+                                            Admin Email</th>
+                                        <th
+                                            style="text-align:right; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">
+                                            Total</th>
+                                        <th
+                                            style="text-align:right; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">
+                                            Done</th>
+                                        <th
+                                            style="text-align:right; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">
+                                            In Progress</th>
+                                        <th
+                                            style="text-align:right; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">
+                                            Pending</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in admin_task_leaderboard %}
+                                    <tr>
+                                        <td
+                                            style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text);">
+                                            {{ row.email }}</td>
+                                        <td
+                                            style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); text-align:right;">
+                                            {{ row.total }}</td>
+                                        <td
+                                            style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); text-align:right; color:#059669; font-weight:700;">
+                                            {{ row.done }}</td>
+                                        <td
+                                            style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); text-align:right; color:#2563eb; font-weight:700;">
+                                            {{ row.in_progress }}</td>
+                                        <td
+                                            style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); text-align:right; color:#b45309; font-weight:700;">
+                                            {{ row.pending }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p style="margin:10px 0 0; color:var(--text-dim);">No task activity yet to rank admins.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="dash-card" style="margin-bottom:0;">
+                        <h3 class="card-title"><i class="fas fa-clock-rotate-left"
+                                style="color:var(--primary); margin-right:8px;"></i>Superadmin Audit Timeline</h3>
+                        {% if superadmin_audit_feed %}
+                        <div
+                            style="display:grid; gap:8px; max-height:360px; overflow:auto; padding-right:4px; margin-top:8px;">
+                            {% for ev in superadmin_audit_feed %}
+                            <div
+                                style="padding:10px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(0,82,204,0.04);">
+                                <div style="font-weight:700; color:var(--text);">{{ ev.action }} <span
+                                        style="font-weight:500; color:var(--text-dim);">- {{ ev.target or 'N/A'
+                                        }}</span></div>
+                                <div style="font-size:0.82rem; color:var(--text-dim); margin-top:4px;">{{
+                                    ev.created_at.strftime('%d %b %Y %H:%M:%S') }} | {{ ev.actor_email }}</div>
+                                {% if ev.details %}
+                                <div style="font-size:0.82rem; color:var(--text-dim); margin-top:4px;">{{ ev.details }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p style="margin:10px 0 0; color:var(--text-dim);">No superadmin actions logged yet.</p>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+            {% endif %}
+
+            <div id="tab-analytics" class="admin-tab-content">
+                <!-- Enhanced Features Row -->
+                <div class="admin-grid" id="analytics-section">
+                    <div class="dash-card">
+                        <h3 class="card-title"><i class="fas fa-stream"
+                                style="color:var(--primary); margin-right:8px;"></i>
+                            Mission Chronology</h3>
+                        <div class="activity-log">
+                            {% for r in requests[:10] %}
+                            <div class="log-item">
+                                <div class="log-time">{{ r.created_at.strftime('%H:%M') }}</div>
+                                <div class="log-desc">
+                                    <strong>{{ r.name }}</strong> submitted inquiry for
+                                    <span style="color:var(--primary); font-weight:700;">{{ r.service }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="dash-card">
+                        <h3 class="card-title"><i class="fas fa-chart-line"
+                                style="color:var(--secondary); margin-right:8px;"></i>
+                            Sector Momentum</h3>
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="sectorChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="dash-card" id="distributionAnalysis">
+                        <h3 class="card-title"><i class="fa-solid fa-chart-pie" style="color: var(--primary);"></i>
+                            Distribution
+                            Analysis</h3>
+                        <div class="chart-container">
+                            <canvas id="serviceChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="dash-card">
+                        <h3 class="card-title"><i class="fa-solid fa-server" style="color: var(--primary);"></i> Core
+                            System
+                            Integrity</h3>
+                        <div class="health-item">
+                            <span>Mainframe Core</span>
+                            <span class="status-indicator"><i class="fa-solid fa-circle"></i> Operational</span>
+                        </div>
+                        <div class="health-item">
+                            <span>Database Cluster</span>
+                            <span class="status-indicator"><i class="fa-solid fa-circle"></i> Connected</span>
+                        </div>
+                        <div class="health-item">
+                            <span>Cloud Sync</span>
+                            <span class="status-indicator"><i class="fa-solid fa-circle"></i> Enabled</span>
+                        </div>
+                        <div class="health-item">
+                            <span>Identity Proxy</span>
+                            <span class="status-indicator"><i class="fa-solid fa-circle"></i> Secured</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-strategy" class="admin-tab-content">
+                <div class="admin-grid" style="grid-template-columns: 1fr;">
+                    <div class="dash-card">
+                        <h3 class="card-title"><i class="fas fa-chess" style="color:var(--primary);"></i> Project
+                            Inquiry
+                            Operational Strategies</h3>
+                        <p style="color:var(--text-dim); margin-bottom:30px; line-height:1.6;">Use the following
+                            protocols
+                            to evaluate and manage incoming project leads effectively. These strategies ensure
+                            conversion
+                            integrity and operational excellence.</p>
+
+                        <div class="dashboard-grid">
+                            <div class="dtl-card">
+                                <span class="dtl-title"><i class="fas fa-magnifying-glass"></i> Initial
+                                    Assessment</span>
+                                <p class="dtl-txt">Review the <strong>Client Description</strong> carefully. Cross-check
+                                    the requested service against our current technical bandwidth. If the scope is
+                                    vague, prepare clarifying questions before initial contact.</p>
+                            </div>
+                            <div class="dtl-card">
+                                <span class="dtl-title"><i class="fas fa-tower-broadcast"></i> Strategic
+                                    Prioritization</span>
+                                <p class="dtl-txt">Assign <strong>High Priority</strong> to inquiries with clear
+                                    deadlines
+                                    and complete requirements. <strong>Medium Priority</strong> for standard requests.
+                                    <strong>Low Priority</strong> for vague or experimental concepts.
+                                </p>
+                            </div>
+                            <div class="dtl-card">
+                                <span class="dtl-title"><i class="fas fa-sack-dollar"></i> Value Attribution</span>
+                                <p class="dtl-txt">Estimate the <strong>Projected Valuation (₹)</strong> based on
+                                    man-hours and complexity. Use the Valuation field to track revenue potential; this
+                                    directly impacts the Revenue Analytics charts.</p>
+                            </div>
+                            <div class="dtl-card">
+                                <span class="dtl-title"><i class="fab fa-whatsapp"></i> Client Response Protocol</span>
+                                <p class="dtl-txt">Utilize the <strong>WhatsApp Contact Bridge</strong> found in the
+                                    project details. Always introduce as 'Unitary X Digital Command' and reference their
+                                    specific Project ID for professional alignment.</p>
+                            </div>
+                            <div class="dtl-card">
+                                <span class="dtl-title"><i class="fas fa-shield-halved"></i> Operational Security</span>
+                                <p class="dtl-txt">Keep client contact info confidential. Ensure the <strong>Mission
+                                        Status</strong> is updated to 'In Progress' the moment contact is established
+                                    to avoid duplicate handling by other admins.</p>
+                            </div>
+                            <div class="dtl-card"
+                                style="background: var(--primary-glow); border-color: var(--primary);">
+                                <span class="dtl-title" style="color: var(--primary);"><i class="fas fa-star"></i> Pro
+                                    Tip</span>
+                                <p class="dtl-txt" style="color: var(--text);">Use the <strong>Description
+                                        Editor</strong> to refine client requirements as discussions evolve. This keeps
+                                    all admins aligned on the final project scope.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-projects" class="admin-tab-content">
+                <div class="table-card" id="projects-section">
+                    <div class="table-header">
+                        <h3 class="card-title"><i class="fa-solid fa-list-ul" style="color: var(--primary);"></i>
+                            Project
+                            Inquiry Logs</h3>
+                        <div class="table-tools">
+                            <div class="search-wrap">
+                                <i class="fa-solid fa-search"></i>
+                                <input type="text" id="tableSearch" placeholder="Search inquiries..."
+                                    onkeyup="filterTable()">
+                            </div>
+                            <select id="statusFilter" class="filter-control" title="Filter by status">
+                                <option value="all">All Status</option>
+                                <option value="New">New</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Done">Done</option>
+                            </select>
+                            <select id="priorityFilter" class="filter-control" title="Filter by priority">
+                                <option value="all">All Priority</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                            <select id="serviceFilter" class="filter-control" title="Filter by service">
+                                <option value="all">All Services</option>
+                                {% for r in requests %}
+                                <option value="{{ r.service }}">{{ r.service }}</option>
+                                {% endfor %}
+                            </select>
+                            <select id="sortMode" class="filter-control" title="Sort inquiries">
+                                <option value="latest">Sort: Latest First</option>
+                                <option value="oldest">Sort: Oldest First</option>
+                                <option value="value_high">Sort: Value High to Low</option>
+                                <option value="value_low">Sort: Value Low to High</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="bulk-action-bar" id="bulkActionBar">
+                        <div class="bulk-summary"><span id="selectedCount">0</span> selected</div>
+                        <div class="bulk-actions">
+                            <button type="button" class="bulk-btn" data-action="mark_progress">Mark In Progress</button>
+                            <button type="button" class="bulk-btn" data-action="mark_done">Mark Done</button>
+                            <button type="button" class="bulk-btn" data-action="priority_high">High Priority</button>
+                            <button type="button" class="bulk-btn danger" data-action="delete">Delete</button>
+                        </div>
+                    </div>
+
+                    <div class="admin-table-wrap">
+                        {% if requests %}
+                        <table class="adm-table" id="requestsTable">
+                            <thead>
+                                <tr>
+                                    <th class="select-col"><input type="checkbox" id="selectAllRows"></th>
+                                    <th>ID</th>
+                                    <th>Strategic Client</th>
+                                    <th>Operational Tier</th>
+                                    <th>Projected Value</th>
+                                    <th>Status</th>
+                                    <th>Timeline</th>
+                                    <th>Control</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in requests %}
+                                <tr class="main-row" id="row-{{ r.id }}" data-id="{{ r.id }}"
+                                    data-status="{{ r.status }}" data-priority="{{ r.priority }}"
+                                    data-service="{{ r.service }}" data-value="{{ r.value }}"
+                                    data-created="{{ r.created_at.timestamp() if r.created_at else 0 }}">
+                                    <td class="select-col"><input type="checkbox" class="row-select" value="{{ r.id }}">
+                                    </td>
+                                    <td style="font-family:'JetBrains Mono'; color:var(--primary);">#{{
+                                        r.id|format_id }}
+                                    </td>
+                                    <td>
+                                        <div style="font-weight:600;">{{ r.name }}</div>
+                                        <div style="font-size:0.75rem; color:var(--text-muted);">{{ r.service }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="prio-badge prio-{{ r.priority|lower }}">{{ r.priority }}</span>
+                                    </td>
+                                    <td style="font-family:'JetBrains Mono';">₹{{ "{:,}".format(r.value) }}</td>
+                                    <td class="control-cell">
+                                        <form method="POST" action="/admin/update-project" class="control-form">
+                                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="req_id" value="{{ r.id }}">
+
+                                            <div class="control-group">
+                                                <label>Status</label>
+                                                <select name="status" class="adm-select">
+                                                    <option value="New" {% if r.status=='New' %}selected{% endif %}>
+                                                        New
+                                                    </option>
+                                                    <option value="In Progress" {% if r.status=='In Progress'
+                                                        %}selected{% endif %}>
+                                                        In Progress</option>
+                                                    <option value="Done" {% if r.status=='Done' %}selected{% endif %}>
+                                                        Done
+                                                    </option>
+                                                </select>
+                                            </div>
+
+                                            <div class="control-group">
+                                                <label>Priority</label>
+                                                <select name="priority" class="adm-select">
+                                                    <option value="High" {% if r.priority=='High' %}selected{% endif %}>
+                                                        High
+                                                    </option>
+                                                    <option value="Medium" {% if r.priority=='Medium' %}selected{% endif
+                                                        %}>
+                                                        Medium</option>
+                                                    <option value="Low" {% if r.priority=='Low' %}selected{% endif %}>
+                                                        Low
+                                                    </option>
+                                                </select>
+                                            </div>
+
+                                            <div class="control-group">
+                                                <label>Valuation (₹)</label>
+                                                <input type="number" name="value" value="{{ r.value }}"
+                                                    class="adm-input">
+                                            </div>
+
+                                            <div class="control-group">
+                                                <label>Project Description</label>
+                                                <textarea name="message" class="adm-input"
+                                                    style="min-height: 80px; resize: vertical; font-size: 0.8rem; line-height: 1.4;">{{ r.message }}</textarea>
+                                            </div>
+
+                                            <button type="submit" class="btn-update-cmd">Update Mission</button>
+                                        </form>
+                                    </td>
+                                    <td style="color: var(--text-dim); font-weight: 500;">{{
+                                        r.created_at.strftime('%d.%m.%y')
+                                        }}</td>
+                                    <td>
+                                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                            <button class="action-btn btn-msg" onclick="openMessageModal('{{ r.id }}')"
+                                                title="Read Description">
+                                                <i class="fa-solid fa-align-left"></i>
+                                            </button>
+                                            <button class="action-btn btn-info" onclick="toggleDetail('{{ r.id }}')"
+                                                title="View Full Project Info">
+                                                <i class="fa-solid fa-file-invoice"></i>
+                                            </button>
+                                            <form method="POST" action="/admin/delete/{{ r.id }}" class="delete-form">
+                                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="action-btn btn-delete"
+                                                    title="Remove Record">
+                                                    <i class="fa-solid fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="detail-row" id="detail-{{ r.id }}">
+                                    <td colspan="8">
+                                        <div class="detail-pnl">
+                                            <div class="detail-grid">
+                                                <div class="dtl-card">
+                                                    <span class="dtl-title"><i class="fas fa-user"></i> Client
+                                                        Profile</span>
+                                                    <p class="dtl-txt"><strong>Name:</strong> {{ r.name }}</p>
+                                                    <p class="dtl-txt"><strong>Phone:</strong> <a
+                                                            href="https://wa.me/91{{ r.phone }}" target="_blank"
+                                                            style="color:var(--primary); text-decoration:none;">{{
+                                                            r.phone
+                                                            }}</a></p>
+                                                    <p class="dtl-txt"><strong>Email:</strong> {{ r.email }}</p>
+                                                </div>
+                                                <div class="dtl-card">
+                                                    <span class="dtl-title"><i class="fas fa-bullseye"></i> Goal &
+                                                        Scope</span>
+                                                    <p class="dtl-txt"><strong>Project ID:</strong> #{{
+                                                        r.id|format_id }}
+                                                    </p>
+                                                    <p class="dtl-txt"><strong>Requested Service:</strong> {{
+                                                        r.service }}
+                                                    </p>
+                                                    <p class="dtl-txt"><strong>Deadline:</strong> {{ r.deadline or
+                                                        'ASAP' }}
+                                                    </p>
+                                                </div>
+                                                <div class="dtl-card">
+                                                    <span class="dtl-title"><i class="fas fa-clock"></i>
+                                                        Timestamps</span>
+                                                    <p class="dtl-txt"><strong>Submitted:</strong><br>{{
+                                                        r.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                                                </div>
+                                                <div class="dtl-card full-width">
+                                                    <span class="dtl-title"><i class="fas fa-align-left"></i> Full
+                                                        Requirements / Message</span>
+                                                    <p class="dtl-txt" id="msg-text-{{ r.id }}"
+                                                        style="white-space: pre-wrap;">{{
+                                                        r.message }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% else %}
+                        <div style="text-align: center; padding: 80px 0;">
+                            <i class="fas fa-inbox"
+                                style="font-size: 4rem; opacity: 0.1; display: block; margin-bottom: 20px;"></i>
+                            <h3 style="color: var(--text-dim);">No Logs Found</h3>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </main>
@@ -391,19 +1274,71 @@
         setInterval(updateClock, 1000);
         updateClock();
 
+        // Navigation Controller
+        const navLinks = document.querySelectorAll('.adm-nav-link[data-tab]');
+        const tabContents = document.querySelectorAll('.admin-tab-content');
+        const topPdfBtn = document.getElementById('top-pdf-download-btn');
+
+        function updateTopPdfLink(tabKey) {
+            if (!topPdfBtn) return;
+            const safeTab = (tabKey || 'dashboard').trim();
+            topPdfBtn.href = `/admin/export/pdf?tab=${encodeURIComponent(safeTab)}`;
+            topPdfBtn.setAttribute('data-tooltip', `Download ${safeTab} PDF`);
+            topPdfBtn.setAttribute('title', `Download ${safeTab} PDF`);
+        }
+
+        const initialActiveLink = document.querySelector('.adm-nav-link[data-tab].active');
+        updateTopPdfLink(initialActiveLink ? initialActiveLink.getAttribute('data-tab') : 'dashboard');
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetTab = link.getAttribute('data-tab');
+                updateTopPdfLink(targetTab);
+
+                // Update Active Link
+                navLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+
+                // Update Tab Visibility
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === `tab-${targetTab}`) {
+                        content.classList.add('active');
+                    }
+                });
+
+                // Trigger chart resize if needed
+                window.dispatchEvent(new Event('resize'));
+
+                // Update Header Title
+                const titles = {
+                    'dashboard': "Dashboard Overview",
+                    'mytasks': "My Task Desk",
+                    'projects': "Project Inquiry Logs",
+                    'analytics': "Strategic Analytics",
+                    'strategy': "Project Inquiry Strategies",
+                    'admin-control': "Superadmin Admin Accounts",
+                    'credentials-vault': "Saved Admin Credentials Vault",
+                    'task-control': "Superadmin Task Control",
+                    'super-lab': "Superadmin Super Lab"
+                };
+                const titleEl = document.querySelector('.admin-title');
+                if (titleEl && titles[targetTab]) {
+                    titleEl.innerText = titles[targetTab] + " Center";
+                }
+            });
+        });
+
         // Staggered Entry Animation
         document.addEventListener('DOMContentLoaded', () => {
             const items = document.querySelectorAll('.adm-stat, .dash-card, .table-card');
             items.forEach((item, index) => {
-                item.style.opacity = '0';
-                item.style.transform = 'translateY(20px)';
-                item.style.transition = `all 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.1}s`;
-                setTimeout(() => {
-                    item.style.opacity = '1';
-                    item.style.transform = 'translateY(0)';
-                }, 100);
+                item.style.opacity = '1'; // Ensure they are visible
+                item.style.transform = 'translateY(0)';
             });
         });
+
     </script>
     <script>
         function toggleDetail(id) {
@@ -424,25 +1359,187 @@
         setInterval(updatePulse, 1000);
         updatePulse();
 
-        function filterTable() {
-            const input = document.getElementById('tableSearch').value.toUpperCase();
+        function getMainRows() {
             const table = document.getElementById('requestsTable');
-            const rows = table.querySelectorAll('.main-row');
-            rows.forEach(row => {
-                const text = row.innerText.toUpperCase();
-                row.style.display = text.includes(input) ? '' : 'none';
+            if (!table) return [];
+            return Array.from(table.querySelectorAll('.main-row'));
+        }
 
-                // Close details if row is hidden
-                const btn = row.querySelector('.btn-inspect');
-                if (btn) {
-                    const idMatch = btn.getAttribute('onclick').match(/'(.*?)'/);
-                    if (idMatch) {
-                        const dtl = document.getElementById('detail-' + idMatch[1]);
-                        if (dtl && row.style.display === 'none') dtl.classList.remove('active');
-                    }
-                }
+        function getSelectedIds() {
+            return Array.from(document.querySelectorAll('.row-select:checked')).map(cb => cb.value);
+        }
+
+        function updateBulkActionBar() {
+            const bulkBar = document.getElementById('bulkActionBar');
+            const selectedCount = document.getElementById('selectedCount');
+            const totalVisibleRows = getMainRows().filter(row => row.style.display !== 'none').length;
+            const selected = getSelectedIds();
+
+            if (selectedCount) {
+                selectedCount.textContent = selected.length;
+            }
+
+            if (bulkBar) {
+                bulkBar.classList.toggle('active', selected.length > 0);
+            }
+
+            const selectAll = document.getElementById('selectAllRows');
+            if (selectAll) {
+                selectAll.checked = totalVisibleRows > 0 && selected.length === totalVisibleRows;
+                selectAll.indeterminate = selected.length > 0 && selected.length < totalVisibleRows;
+            }
+        }
+
+        function sortVisibleRows(mode) {
+            const tbody = document.querySelector('#requestsTable tbody');
+            if (!tbody) return;
+
+            const pairs = getMainRows().map(main => {
+                const id = main.dataset.id;
+                const detail = document.getElementById('detail-' + id);
+                return { main, detail };
+            });
+
+            pairs.sort((a, b) => {
+                const aValue = Number(a.main.dataset.value || 0);
+                const bValue = Number(b.main.dataset.value || 0);
+                const aCreated = Number(a.main.dataset.created || 0);
+                const bCreated = Number(b.main.dataset.created || 0);
+
+                if (mode === 'oldest') return aCreated - bCreated;
+                if (mode === 'value_high') return bValue - aValue;
+                if (mode === 'value_low') return aValue - bValue;
+                return bCreated - aCreated;
+            });
+
+            pairs.forEach(pair => {
+                tbody.appendChild(pair.main);
+                if (pair.detail) tbody.appendChild(pair.detail);
             });
         }
+
+        function applyAdvancedFilters() {
+            const searchTerm = (document.getElementById('tableSearch')?.value || '').toUpperCase();
+            const statusFilter = document.getElementById('statusFilter')?.value || 'all';
+            const priorityFilter = document.getElementById('priorityFilter')?.value || 'all';
+            const serviceFilter = document.getElementById('serviceFilter')?.value || 'all';
+
+            getMainRows().forEach(row => {
+                const rowText = row.innerText.toUpperCase();
+                const matchesSearch = rowText.includes(searchTerm);
+                const matchesStatus = statusFilter === 'all' || row.dataset.status === statusFilter;
+                const matchesPriority = priorityFilter === 'all' || row.dataset.priority === priorityFilter;
+                const matchesService = serviceFilter === 'all' || row.dataset.service === serviceFilter;
+                const visible = matchesSearch && matchesStatus && matchesPriority && matchesService;
+
+                row.style.display = visible ? '' : 'none';
+
+                const detail = document.getElementById('detail-' + row.dataset.id);
+                if (detail) {
+                    if (!visible) {
+                        detail.classList.remove('active');
+                        detail.style.display = 'none';
+                    } else {
+                        detail.style.display = '';
+                    }
+                }
+
+                if (!visible) {
+                    const cb = row.querySelector('.row-select');
+                    if (cb) cb.checked = false;
+                }
+            });
+
+            updateBulkActionBar();
+        }
+
+        function filterTable() {
+            applyAdvancedFilters();
+        }
+
+        function normalizeServiceFilterOptions() {
+            const serviceSelect = document.getElementById('serviceFilter');
+            if (!serviceSelect) return;
+
+            const seen = new Set();
+            Array.from(serviceSelect.options).forEach(option => {
+                const key = option.value.trim().toLowerCase();
+                if (!key || key === 'all') return;
+                if (seen.has(key)) {
+                    option.remove();
+                    return;
+                }
+                seen.add(key);
+            });
+        }
+
+        normalizeServiceFilterOptions();
+
+        document.getElementById('statusFilter')?.addEventListener('change', applyAdvancedFilters);
+        document.getElementById('priorityFilter')?.addEventListener('change', applyAdvancedFilters);
+        document.getElementById('serviceFilter')?.addEventListener('change', applyAdvancedFilters);
+
+        document.getElementById('sortMode')?.addEventListener('change', (e) => {
+            sortVisibleRows(e.target.value);
+            applyAdvancedFilters();
+        });
+
+        document.getElementById('selectAllRows')?.addEventListener('change', (e) => {
+            const checked = e.target.checked;
+            getMainRows().forEach(row => {
+                if (row.style.display === 'none') return;
+                const cb = row.querySelector('.row-select');
+                if (cb) cb.checked = checked;
+            });
+            updateBulkActionBar();
+        });
+
+        document.querySelectorAll('.row-select').forEach(cb => {
+            cb.addEventListener('change', updateBulkActionBar);
+        });
+
+        document.querySelectorAll('.bulk-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const selectedIds = getSelectedIds();
+                if (!selectedIds.length) return;
+
+                const action = btn.dataset.action;
+                const needsConfirm = action === 'delete';
+                if (needsConfirm && !confirm('Delete selected inquiries permanently?')) {
+                    return;
+                }
+
+                const csrfToken = document.querySelector('input[name="_csrf_token"]')?.value || '';
+                btn.disabled = true;
+
+                try {
+                    const res = await fetch('/admin/bulk-update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify({ ids: selectedIds, action })
+                    });
+                    const payload = await res.json();
+
+                    if (payload.success) {
+                        showNotification(payload.message, '', 0, false);
+                        setTimeout(() => window.location.reload(), 900);
+                    } else {
+                        alert(payload.message || 'Bulk action failed.');
+                    }
+                } catch (err) {
+                    console.error('Bulk action error:', err);
+                    alert('Network error while processing bulk action.');
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+        });
+
+        applyAdvancedFilters();
 
         // Sector Momentum Chart (Line)
         const ctxSector = document.getElementById('sectorChart').getContext('2d');
@@ -477,12 +1574,12 @@
                 },
                 scales: {
                     x: {
-                        grid: { display: false, color: 'rgba(255, 255, 255, 0.05)' },
-                        ticks: { color: 'rgba(255, 255, 255, 0.5)' }
+                        grid: { display: false },
+                        ticks: { color: 'var(--text-muted)', font: { family: 'Outfit', weight: '600' } }
                     },
                     y: {
-                        grid: { color: 'rgba(255, 255, 255, 0.05)', borderDash: [5, 5] },
-                        ticks: { color: 'rgba(255, 255, 255, 0.5)' },
+                        grid: { color: 'rgba(0, 82, 204, 0.05)', borderDash: [5, 5] },
+                        ticks: { color: 'var(--text-muted)', font: { family: 'Outfit', weight: '600' } },
                         beginAtZero: true
                     }
                 }
@@ -629,6 +1726,7 @@
                         if (detailRow) {
                             detailRow.remove();
                         }
+                        updateBulkActionBar();
                     } else {
                         alert("Error deleting project.");
                         submitBtn.innerHTML = originalContent;
@@ -690,6 +1788,374 @@
             });
         });
 
+        const SUPERADMIN_LOCKED_EMAIL = 'harikavi1301@gmail.com';
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function getAdminCsrfToken() {
+            const createFormToken = document.querySelector('.admin-create-account-form input[name="_csrf_token"]');
+            return createFormToken ? createFormToken.value : '';
+        }
+
+        function addAdminEmailSuggestion(email) {
+            const list = document.getElementById('admin-email-list');
+            if (!list || !email) return;
+
+            const normalized = String(email).trim().toLowerCase();
+            const exists = Array.from(list.querySelectorAll('option')).some(opt =>
+                String(opt.value || '').trim().toLowerCase() === normalized
+            );
+            if (exists) return;
+
+            const option = document.createElement('option');
+            option.value = email;
+            list.appendChild(option);
+        }
+
+        function formatUtcNow() {
+            const d = new Date();
+            const y = d.getUTCFullYear();
+            const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(d.getUTCDate()).padStart(2, '0');
+            const h = String(d.getUTCHours()).padStart(2, '0');
+            const min = String(d.getUTCMinutes()).padStart(2, '0');
+            const s = String(d.getUTCSeconds()).padStart(2, '0');
+            return `${y}-${m}-${day} ${h}:${min}:${s}`;
+        }
+
+        function findCredentialsVaultRowByEmail(tbody, email) {
+            const needle = String(email || '').trim().toLowerCase();
+            if (!tbody || !needle) return null;
+
+            return Array.from(tbody.querySelectorAll('tr')).find(row =>
+                String(row.getAttribute('data-admin-email') || '').trim().toLowerCase() === needle
+            ) || null;
+        }
+
+        function upsertCredentialsVaultRow(email, password, previousEmail = '') {
+            const nextEmail = String(email || '').trim().toLowerCase();
+            if (!nextEmail) return;
+
+            const oldEmail = String(previousEmail || '').trim().toLowerCase();
+            const tableWrap = document.getElementById('credentials-vault-table-wrap');
+            const emptyMsg = document.getElementById('credentials-vault-empty');
+            const tbody = document.getElementById('credentials-vault-body');
+            if (!tableWrap || !emptyMsg || !tbody) return;
+
+            if (oldEmail && oldEmail !== nextEmail) {
+                const oldRow = findCredentialsVaultRowByEmail(tbody, oldEmail);
+                if (oldRow) oldRow.remove();
+            }
+
+            let row = findCredentialsVaultRowByEmail(tbody, nextEmail);
+            if (!row) {
+                row = document.createElement('tr');
+                row.setAttribute('data-admin-email', nextEmail);
+                row.innerHTML = `
+                    <td class="cred-email" style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text); font-weight:600;"></td>
+                    <td class="cred-password" style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text); font-family:'JetBrains Mono', monospace; font-size:0.9rem; background:rgba(34,197,94,0.08);"></td>
+                    <td class="cred-updated" style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text-dim); font-size:0.85rem;"></td>
+                `;
+                tbody.prepend(row);
+            }
+
+            const emailCell = row.querySelector('.cred-email');
+            const passCell = row.querySelector('.cred-password');
+            const updatedCell = row.querySelector('.cred-updated');
+
+            if (emailCell) emailCell.textContent = email;
+            if (passCell) passCell.textContent = String(password || '');
+            if (updatedCell) updatedCell.textContent = formatUtcNow();
+
+            tableWrap.removeAttribute('hidden');
+            emptyMsg.setAttribute('hidden', 'hidden');
+        }
+
+        function bindAdminDeleteForm(form) {
+            if (!form || form.dataset.boundDelete === '1') return;
+            form.dataset.boundDelete = '1';
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                if (typeof form.onsubmit === 'function' && form.onsubmit() === false) {
+                    return;
+                }
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn ? submitBtn.innerHTML : '';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = 'Deleting...';
+                }
+
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': formData.get('_csrf_token') || ''
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    if (data && data.success) {
+                        const targetCardId = form.dataset.targetCard;
+                        const card = targetCardId ? document.getElementById(targetCardId) : form.closest('.admin-account-card');
+                        if (card) {
+                            card.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+                            card.style.opacity = '0';
+                            card.style.transform = 'translateX(20px)';
+                            setTimeout(() => {
+                                card.remove();
+                                const list = document.getElementById('admin-accounts-list');
+                                const noAdminsMsg = document.getElementById('no-admin-accounts-msg');
+                                if (list && noAdminsMsg && !list.querySelector('.admin-account-card')) {
+                                    noAdminsMsg.removeAttribute('hidden');
+                                    noAdminsMsg.style.display = 'block';
+                                }
+                            }, 350);
+                        }
+                        return;
+                    }
+
+                    alert((data && data.message) ? data.message : 'Failed to delete admin account.');
+                } catch (err) {
+                    console.error('Admin delete failed:', err);
+                    alert('Network error while deleting admin account.');
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }
+                }
+            });
+        }
+
+        function bindAdminUpdateForm(form) {
+            if (!form || form.dataset.boundUpdate === '1') return;
+            form.dataset.boundUpdate = '1';
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn ? submitBtn.innerHTML : '';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = 'Saving...';
+                }
+
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': formData.get('_csrf_token') || ''
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    if (data && data.success) {
+                        const previousEmail = String(form.dataset.currentEmail || '').trim().toLowerCase();
+                        const updatedEmail = String((data && data.email) ? data.email : (formData.get('email') || '')).trim().toLowerCase();
+                        const updatedPassword = String(formData.get('password') || '').trim();
+
+                        form.dataset.currentEmail = updatedEmail;
+                        upsertCredentialsVaultRow(updatedEmail, updatedPassword, previousEmail);
+
+                        const cardId = form.dataset.targetCard;
+                        const card = cardId ? document.getElementById(cardId) : form.closest('.admin-account-card');
+                        if (card) {
+                            card.style.transition = 'box-shadow 0.25s ease, border-color 0.25s ease';
+                            card.style.borderColor = 'rgba(15, 118, 110, 0.55)';
+                            card.style.boxShadow = '0 0 0 2px rgba(15,118,110,0.15)';
+                            setTimeout(() => {
+                                card.style.borderColor = 'var(--glass-border)';
+                                card.style.boxShadow = 'none';
+                            }, 700);
+                        }
+                        return;
+                    }
+
+                    alert((data && data.message) ? data.message : 'Failed to save admin account.');
+                } catch (err) {
+                    console.error('Admin save failed:', err);
+                    alert('Network error while saving admin account.');
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }
+                }
+            });
+        }
+
+        function bindAdminPasswordToggle(btn) {
+            if (!btn || btn.dataset.boundToggle === '1') return;
+            btn.dataset.boundToggle = '1';
+
+            btn.addEventListener('click', () => {
+                const wrap = btn.closest('.admin-pass-wrap');
+                if (!wrap) return;
+                const input = wrap.querySelector('.admin-pass-input');
+                const icon = btn.querySelector('i');
+                if (!input || !icon) return;
+
+                const showing = input.type === 'text';
+                input.type = showing ? 'password' : 'text';
+                icon.className = showing ? 'fas fa-eye' : 'fas fa-eye-slash';
+                btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+            });
+        }
+
+        function renderAdminCard(admin) {
+            if (!admin || !admin.id) return;
+
+            const cardList = document.getElementById('admin-accounts-list');
+            if (!cardList) return;
+
+            const existing = document.getElementById(`admin-account-${admin.id}`);
+            if (existing) return;
+
+            const noAdminsMsg = document.getElementById('no-admin-accounts-msg');
+            if (noAdminsMsg) {
+                noAdminsMsg.setAttribute('hidden', 'hidden');
+                noAdminsMsg.style.display = 'none';
+            }
+
+            const email = String(admin.email || '');
+            const name = String(admin.name || '');
+            const permanentPassword = String(admin.permanent_password || '');
+            const isActiveChecked = admin.is_active ? 'checked' : '';
+            const isSuperAdmin = email.trim().toLowerCase() === SUPERADMIN_LOCKED_EMAIL;
+            const csrfToken = getAdminCsrfToken();
+
+            const card = document.createElement('div');
+            card.id = `admin-account-${admin.id}`;
+            card.className = 'admin-account-card';
+            card.style.cssText = 'padding:10px; border:1px solid var(--glass-border); border-radius:12px; background:rgba(0,82,204,0.04);';
+            card.innerHTML = `
+                <form method="POST" action="/admin/admins/${admin.id}/update"
+                    class="admin-update-account-form" data-target-card="admin-account-${admin.id}" data-current-email="${escapeHtml(email.trim().toLowerCase())}"
+                    style="display:grid; grid-template-columns: 1.1fr 1.4fr 1fr auto auto; gap:8px; align-items:center;">
+                    <input type="hidden" name="_csrf_token" value="${escapeHtml(csrfToken)}">
+                    <input type="text" name="name" value="${escapeHtml(name)}" required minlength="2"
+                        style="padding:8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
+                    <input type="email" name="email" value="${escapeHtml(email)}" required
+                        style="padding:8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
+                    <div class="admin-pass-wrap">
+                        <input type="password" name="password" required minlength="6"
+                            placeholder="Permanent password (min 6 chars)" class="admin-pass-input"
+                            value="${escapeHtml(permanentPassword)}"
+                            style="padding:8px 38px 8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text); width:100%;">
+                        <button type="button" class="admin-pass-toggle" aria-label="Show password" title="Show/Hide password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <label style="display:flex; align-items:center; gap:6px; font-size:0.84rem; color:var(--text-dim); white-space:nowrap;">
+                        <input type="checkbox" name="is_active" value="1" ${isActiveChecked}>
+                        Active
+                    </label>
+                    <button type="submit"
+                        style="padding:8px 10px; border:none; border-radius:8px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer;">Save</button>
+                </form>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px; flex-wrap:wrap;">
+                    <div style="font-size:0.8rem; color:var(--text-dim);">
+                        ${isSuperAdmin ? 'Superadmin account' : 'Admin account'} | Created: Just now
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        ${isSuperAdmin ? '' : `
+                        <form method="POST" action="/admin/admins/${admin.id}/delete"
+                            class="admin-delete-account-form" data-target-card="admin-account-${admin.id}"
+                            onsubmit="return confirm('Delete admin account ${escapeHtml(email)}? This cannot be undone.');">
+                            <input type="hidden" name="_csrf_token" value="${escapeHtml(csrfToken)}">
+                            <button type="submit"
+                                style="padding:7px 10px; border:none; border-radius:8px; background:#dc2626; color:#fff; font-weight:700; cursor:pointer;">Delete
+                                Admin</button>
+                        </form>
+                        `}
+                    </div>
+                </div>
+            `;
+
+            cardList.prepend(card);
+
+            const updateForm = card.querySelector('.admin-update-account-form');
+            const deleteForm = card.querySelector('.admin-delete-account-form');
+            const toggleBtn = card.querySelector('.admin-pass-toggle');
+            bindAdminUpdateForm(updateForm);
+            bindAdminDeleteForm(deleteForm);
+            bindAdminPasswordToggle(toggleBtn);
+            addAdminEmailSuggestion(email);
+        }
+
+        // Superadmin Admin Create (AJAX, no full page refresh)
+        document.querySelectorAll('.admin-create-account-form').forEach(form => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn ? submitBtn.innerHTML : '';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = 'Creating...';
+                }
+
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': formData.get('_csrf_token') || ''
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    if (data && data.success) {
+                        showNotification(data.message || 'Admin account created.', '', data.admin?.id || '', false);
+                        renderAdminCard(data.admin || null);
+                        if (data.admin) {
+                            upsertCredentialsVaultRow(data.admin.email || '', data.admin.permanent_password || '');
+                        }
+                        form.reset();
+                        return;
+                    }
+
+                    alert((data && data.message) ? data.message : 'Failed to create admin account.');
+                } catch (err) {
+                    console.error('Admin create failed:', err);
+                    alert('Network error while creating admin account.');
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }
+                }
+            });
+        });
+
+        // Bind existing superadmin admin forms/toggles
+        document.querySelectorAll('.admin-delete-account-form').forEach(bindAdminDeleteForm);
+        document.querySelectorAll('.admin-update-account-form').forEach(bindAdminUpdateForm);
+        document.querySelectorAll('.admin-pass-toggle').forEach(bindAdminPasswordToggle);
+
         // Sidebar Toggle
         const sidebarToggle = document.getElementById('sidebar-toggle');
         const adminSidebar = document.querySelector('.admin-sidebar');
@@ -719,6 +2185,187 @@
                 closeMessageModal();
             }
         });
+
+        // Theme Toggle (Light / Dark)
+        (function initThemeToggle() {
+            const lightBtn = document.getElementById('theme-light-btn');
+            const darkBtn = document.getElementById('theme-dark-btn');
+            if (!lightBtn || !darkBtn) return;
+
+            const STORAGE_KEY = 'unitaryx-admin-theme';
+            const saved = localStorage.getItem(STORAGE_KEY);
+
+            function applyTheme(theme) {
+                const isDark = theme === 'dark';
+                document.body.classList.toggle('theme-dark', isDark);
+                document.body.classList.toggle('theme-light', !isDark);
+                localStorage.setItem(STORAGE_KEY, isDark ? 'dark' : 'light');
+
+                lightBtn.classList.toggle('is-active', !isDark);
+                darkBtn.classList.toggle('is-active', isDark);
+            }
+
+            if (saved === 'dark' || saved === 'light') {
+                applyTheme(saved);
+            } else {
+                applyTheme(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            }
+
+            lightBtn.addEventListener('click', () => applyTheme('light'));
+            darkBtn.addEventListener('click', () => applyTheme('dark'));
+        })();
+    </script>
+
+    <script>
+        (() => {
+            const root = document.documentElement;
+            const body = document.body;
+            const cursorBeam = document.getElementById('ai-cursor-beam');
+            const sidebar = document.querySelector('.admin-sidebar');
+            const navLinks = Array.from(document.querySelectorAll('.adm-nav-link[data-tab]'));
+            const interactiveTargets = document.querySelectorAll('.adm-nav-link, .dash-card, .table-card, .adm-stat, .top-action-btn, .action-btn, .btn-update-cmd, .bulk-btn');
+
+            let pointerX = window.innerWidth * 0.5;
+            let pointerY = window.innerHeight * 0.5;
+            let rafPointer = 0;
+
+            function applyPointer() {
+                root.style.setProperty('--mx', `${pointerX}px`);
+                root.style.setProperty('--my', `${pointerY}px`);
+                if (cursorBeam) {
+                    cursorBeam.style.transform = `translate3d(${pointerX - 170}px, ${pointerY - 170}px, 0)`;
+                }
+                rafPointer = 0;
+            }
+
+            window.addEventListener('mousemove', (event) => {
+                pointerX = event.clientX;
+                pointerY = event.clientY;
+                if (!rafPointer) {
+                    rafPointer = requestAnimationFrame(applyPointer);
+                }
+            }, { passive: true });
+
+            let rafParallax = 0;
+            function updateParallax() {
+                const depth = window.scrollY;
+                root.style.setProperty('--parallax-deep', `${depth * -0.04}px`);
+                root.style.setProperty('--parallax-mid', `${depth * -0.08}px`);
+                root.style.setProperty('--parallax-front', `${depth * -0.14}px`);
+                rafParallax = 0;
+            }
+
+            window.addEventListener('scroll', () => {
+                if (!rafParallax) {
+                    rafParallax = requestAnimationFrame(updateParallax);
+                }
+            }, { passive: true });
+            updateParallax();
+
+            function updateNavRail() {
+                if (!sidebar) return;
+                const active = sidebar.querySelector('.adm-nav-link.active');
+                if (!active) return;
+                const a = active.getBoundingClientRect();
+                const s = sidebar.getBoundingClientRect();
+                root.style.setProperty('--nav-rail-y', `${a.top - s.top}px`);
+                root.style.setProperty('--nav-rail-h', `${a.height}px`);
+            }
+
+            updateNavRail();
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    requestAnimationFrame(updateNavRail);
+                });
+            });
+            window.addEventListener('resize', updateNavRail, { passive: true });
+
+            interactiveTargets.forEach((el) => {
+                el.addEventListener('click', (event) => {
+                    const ripple = document.createElement('span');
+                    ripple.className = 'ai-ripple';
+                    const rect = el.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height) * 1.1;
+                    ripple.style.width = `${size}px`;
+                    ripple.style.height = `${size}px`;
+                    ripple.style.left = `${event.clientX - rect.left - size / 2}px`;
+                    ripple.style.top = `${event.clientY - rect.top - size / 2}px`;
+                    el.appendChild(ripple);
+                    setTimeout(() => ripple.remove(), 680);
+                });
+            });
+
+            const revealTargets = document.querySelectorAll('.dash-card, .table-card, .adm-stat, .super-kpi');
+            const revealObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('ai-reveal-in');
+                    }
+                });
+            }, { threshold: 0.16 });
+            revealTargets.forEach((target) => revealObserver.observe(target));
+
+            const canvas = document.getElementById('ai-particle-field');
+            const context = canvas ? canvas.getContext('2d') : null;
+            const particles = [];
+            const particleCount = Math.min(110, Math.max(40, Math.round(window.innerWidth / 14)));
+
+            function resizeCanvas() {
+                if (!canvas) return;
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
+            function seedParticles() {
+                particles.length = 0;
+                for (let i = 0; i < particleCount; i += 1) {
+                    particles.push({
+                        x: Math.random() * window.innerWidth,
+                        y: Math.random() * window.innerHeight,
+                        r: Math.random() * 1.8 + 0.4,
+                        vx: (Math.random() - 0.5) * 0.24,
+                        vy: (Math.random() - 0.5) * 0.24,
+                        a: Math.random() * 0.45 + 0.12
+                    });
+                }
+            }
+
+            function drawParticles() {
+                if (!context || !canvas) return;
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < particles.length; i += 1) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    if (p.x < -10) p.x = canvas.width + 10;
+                    if (p.x > canvas.width + 10) p.x = -10;
+                    if (p.y < -10) p.y = canvas.height + 10;
+                    if (p.y > canvas.height + 10) p.y = -10;
+
+                    const dx = pointerX - p.x;
+                    const dy = pointerY - p.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const influence = Math.max(0, 1 - distance / 200);
+
+                    context.beginPath();
+                    context.fillStyle = `rgba(110, 196, 255, ${p.a + influence * 0.2})`;
+                    context.arc(p.x - (dx / distance) * influence * 1.8, p.y - (dy / distance) * influence * 1.8, p.r + influence * 0.7, 0, Math.PI * 2);
+                    context.fill();
+                }
+                requestAnimationFrame(drawParticles);
+            }
+
+            if (canvas && context) {
+                resizeCanvas();
+                seedParticles();
+                drawParticles();
+                window.addEventListener('resize', () => {
+                    resizeCanvas();
+                    seedParticles();
+                }, { passive: true });
+            }
+        })();
     </script>
 
     <!-- Toast UI Container -->

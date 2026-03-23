@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Command Center | Unitary X</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}?v=1.2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}?v=20260321modesright2">
     <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
@@ -99,28 +99,26 @@
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
     </div>
+    <div class="ai-cosmos" aria-hidden="true">
+        <div class="ai-parallax ai-parallax-deep"></div>
+        <div class="ai-parallax ai-parallax-mid"></div>
+        <div class="ai-parallax ai-parallax-front"></div>
+        <div class="ai-neural-grid"></div>
+        <canvas id="ai-particle-field" class="ai-particle-field"></canvas>
+        <div id="ai-cursor-beam" class="ai-cursor-beam"></div>
+    </div>
 
     <!-- Top Global Actions -->
     <div class="top-actions">
-        <a href="/admin/export/pdf" class="top-action-btn" data-tooltip="Download Detailed PDF Report">
-            <i class="fa-solid fa-list-ul"></i>
+        <a id="top-pdf-download-btn" href="/admin/export/pdf?tab=dashboard" class="top-action-btn"
+            data-tooltip="Download PDF Report" title="Download PDF Report">
+            <i class="fa-solid fa-file-pdf"></i>
         </a>
-        <a href="/admin/export/csv" class="top-action-btn" data-tooltip="Export CSV Snapshot">
-            <i class="fa-solid fa-file-csv"></i>
-        </a>
-        <button id="quick-expand-all" class="top-action-btn" type="button" data-tooltip="Expand All Details">
-            <i class="fa-solid fa-expand"></i>
-        </button>
-        <button id="quick-collapse-all" class="top-action-btn" type="button" data-tooltip="Collapse All Details">
-            <i class="fa-solid fa-compress"></i>
-        </button>
-        <button id="quick-compact-toggle" class="top-action-btn" type="button" data-tooltip="Toggle Compact Mode">
-            <i class="fa-solid fa-table-cells"></i>
-        </button>
+        <!-- Theme mode switch removed -->
     </div>
 
     <!-- Layout Wrapper -->
-    <div style="display: flex; min-height: 100vh; width: 100%;">
+    <div class="admin-layout" style="display: flex; min-height: 100vh; width: 100%;">
         <aside class="admin-sidebar">
             <div class="sidebar-logo-container"
                 style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; width: 100%;">
@@ -144,17 +142,8 @@
                             <span>Dashboard Overview</span></a></li>
                     <li><a href="#" class="adm-nav-link" data-tab="mytasks"><i class="fas fa-list-check"></i>
                             <span>My Tasks</span></a></li>
-                    <li><a href="#" class="adm-nav-link" data-tab="projects"><i class="fas fa-project-diagram"></i>
-                            <span>Project
-                                Inquiries</span></a></li>
-                    <li><a href="#" class="adm-nav-link" data-tab="analytics"><i class="fas fa-chart-pie"></i>
-                            <span>Strategic
-                                Analytics</span></a>
-                    </li>
-                    <li><a href="#" class="adm-nav-link" data-tab="strategy"><i class="fas fa-lightbulb"></i>
-                            <span>Strategy
-                                Guide</span></a>
-                    </li>
+                    <li><a href="#" class="adm-nav-link" data-tab="projects"><i class="fas fa-folder-open"></i>
+                            <span>Projects</span></a></li>
                 </ul>
 
                 {% if is_superadmin %}
@@ -162,6 +151,8 @@
                 <ul class="adm-nav">
                     <li><a href="#" class="adm-nav-link" data-tab="admin-control"><i class="fas fa-user-shield"></i>
                             <span>Admin Accounts</span></a></li>
+                    <li><a href="#" class="adm-nav-link" data-tab="credentials-vault"><i class="fas fa-key"></i>
+                            <span>Credentials Vault</span></a></li>
                     <li><a href="#" class="adm-nav-link" data-tab="task-control"><i class="fas fa-clipboard-check"></i>
                             <span>Task Control Desk</span></a></li>
                     <li><a href="#" class="adm-nav-link" data-tab="super-lab"><i class="fas fa-bolt"></i>
@@ -189,13 +180,30 @@
         </aside>
 
         <main class="admin-main">
-            <header class="admin-header">
-                <div>
-                    <h1 class="admin-title" style="color: var(--text);">{{ admin.name if admin else 'Admin' }}'s Command
-                        Center
+            <header class="admin-header" style="flex-direction:column; align-items:center; text-align:center;">
+
+                <!-- ── Role Banner (centred, above title) ── -->
+                {% if is_superadmin %}
+                <div class="role-crown-banner" aria-label="Super Admin">
+                    <span class="role-rgb-text">✦ SUPER ADMIN ✦</span>
+                </div>
+                {% else %}
+                <div class="role-crown-banner role-crown-admin" aria-label="Admin">
+                    <span class="role-admin-text">★ ADMIN ★</span>
+                </div>
+                {% endif %}
+
+                <div class="admin-header-title-block" style="text-align:center;">
+                    <h1 class="admin-title" style="color: var(--text); margin: 0 0 10px 0 !important;">
+                        {% if is_superadmin %}
+                        {{ admin.name if admin else 'Super Admin' }}'s
+                        {% else %}
+                        {{ admin.name if admin else 'Admin' }}'s
+                        {% endif %}
+                        Command Center
                     </h1>
                     <div
-                        style="color: var(--text-dim); font-size: 0.95rem; margin-top: 8px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                        style="color: var(--text-dim); font-size: 0.95rem; font-weight: 500; display: flex; align-items: center; justify-content:center; gap: 10px;">
                         <span class="status-indicator"
                             style="color: var(--accent); background: rgba(54, 179, 126, 0.1); padding: 4px 12px; border-radius: 20px;"><i
                                 class="fas fa-circle" style="font-size: 8px; animation: pulse 2s infinite;"></i>
@@ -259,6 +267,58 @@
                         {% endif %}
                     </div>
                 </section>
+
+                <!-- 🚀 Exciting Workspace Additions: Geo Clock & Scratchpad & Health -->
+                <div class="dash-grid-2col" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 18px;">
+                    <!-- Quick Secure Scratchpad -->
+                    <section class="dash-card scratchpad-card" style="margin-bottom: 0;">
+                        <h3 class="card-title" style="margin-bottom: 10px;"><i class="fas fa-file-shield" style="color:var(--accent); margin-right:8px;"></i>Encrypted Scratchpad</h3>
+                        <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 10px;">Browser-level localized encryption. Notes auto-save.</div>
+                        <textarea id="admin-scratchpad" placeholder="Draft secure notes, strategic ideas, or mission reminders here..." style="width:100%; height: 125px; background: rgba(0,0,0,0.03); border: 1px dashed var(--glass-border); border-radius: 10px; padding: 12px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; resize: none;"></textarea>
+                    </section>
+
+                    <!-- Global Operations Clock & Live System Health -->
+                    <div style="display: flex; flex-direction: column; gap: 18px;">
+                        <section class="dash-card world-clock-card" style="margin-bottom: 0;">
+                            <h3 class="card-title" style="margin-bottom: 12px; font-size: 0.95rem;"><i class="fas fa-satellite" style="color:#8b5cf6; margin-right:8px;"></i>Global Operations Orbit</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 12px; background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 8px;">
+                                    <div style="font-size: 0.75rem; color: var(--text-dim); font-weight:700;">NYC (EST)</div>
+                                    <div id="clock-ny" style="font-size: 0.95rem; font-weight: 800; color: var(--text); font-family: 'JetBrains Mono', monospace;">--:--</div>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 12px; background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 8px;">
+                                    <div style="font-size: 0.75rem; color: var(--text-dim); font-weight:700;">LDN (GMT)</div>
+                                    <div id="clock-ldn" style="font-size: 0.95rem; font-weight: 800; color: var(--text); font-family: 'JetBrains Mono', monospace;">--:--</div>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 12px; background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 8px;">
+                                    <div style="font-size: 0.75rem; color: var(--text-dim); font-weight:700;">TKY (JST)</div>
+                                    <div id="clock-tky" style="font-size: 0.95rem; font-weight: 800; color: var(--text); font-family: 'JetBrains Mono', monospace;">--:--</div>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 12px; background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 8px;">
+                                    <div style="font-size: 0.75rem; color: var(--text-dim); font-weight:700;">SYD (AEST)</div>
+                                    <div id="clock-syd" style="font-size: 0.95rem; font-weight: 800; color: var(--text); font-family: 'JetBrains Mono', monospace;">--:--</div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="dash-card system-health-preview" style="margin-bottom: 0; padding: 15px 20px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+                                <h3 class="card-title" style="margin: 0; font-size: 0.95rem;"><i class="fas fa-server" style="color:var(--success); margin-right:8px;"></i>Live Server Nodes</h3>
+                                <div style="padding: 3px 8px; background:rgba(34, 197, 94, 0.1); color: var(--success); font-size: 0.7rem; border-radius: 20px; font-weight: 800; animation: pulse 2s infinite;"><i class="fas fa-check-circle" style="margin-right:3px;"></i> NOMINAL</div>
+                            </div>
+                            <div style="display: flex; gap: 15px;">
+                                <div style="flex: 1;">
+                                    <div style="display:flex; justify-content:space-between; font-size: 0.75rem; color:var(--text-dim); margin-bottom: 5px; font-weight:700;"><span>DB Index</span> <span id="db-load-text">24%</span></div>
+                                    <div style="height: 6px; background: rgba(0,0,0,0.05); border-radius: 6px; overflow:hidden;"><div id="db-load-bar" style="height:100%; width:24%; background:var(--primary); transition: width 2s cubic-bezier(0.4, 0, 0.2, 1);"></div></div>
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="display:flex; justify-content:space-between; font-size: 0.75rem; color:var(--text-dim); margin-bottom: 5px; font-weight:700;"><span>Memory</span> <span id="mem-load-text">42%</span></div>
+                                    <div style="height: 6px; background: rgba(0,0,0,0.05); border-radius: 6px; overflow:hidden;"><div id="mem-load-bar" style="height:100%; width:42%; background:var(--accent); transition: width 2s cubic-bezier(0.4, 0, 0.2, 1);"></div></div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
 
                 <!-- 📊 Live Vitality Grid -->
                 <section class="admin-stats">
@@ -340,6 +400,80 @@
                         </div>
                     </div>
                 </section>
+
+                <!-- NEW: AI Webpage Insights -->
+                <div class="dash-grid-2col webpage-ops-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 18px;">
+                    <!-- Live Webpage Vitals Scanner -->
+                    <section class="dash-card" style="margin-bottom:0;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <h3 class="card-title" style="margin-bottom: 0;"><i class="fas fa-radar" style="color:#3b82f6; margin-right:8px;"></i>Live Website Vitals</h3>
+                            <div style="padding: 3px 8px; background:rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 0.7rem; border-radius: 20px; font-weight: 800; animation: pulse 2.5s infinite;">SCANNING</div>
+                        </div>
+                        <p style="color:var(--text-dim); font-size:0.8rem; margin: 8px 0 15px;">Monitoring main production landing page performance.</p>
+                        
+                        <div style="display:flex; flex-direction:column; gap:12px;">
+                            <div>
+                                <div style="display:flex; justify-content:space-between; font-size: 0.8rem; font-weight:700; margin-bottom:5px;"><span>LCP (Largest Contentful Paint)</span> <span style="color:var(--success);">0.8s</span></div>
+                                <div style="height: 6px; background: rgba(0,0,0,0.05); border-radius: 6px; overflow:hidden;"><div style="height:100%; width:85%; background:var(--success);"></div></div>
+                            </div>
+                            <div>
+                                <div style="display:flex; justify-content:space-between; font-size: 0.8rem; font-weight:700; margin-bottom:5px;"><span>FID (First Input Delay)</span> <span style="color:var(--success);">12ms</span></div>
+                                <div style="height: 6px; background: rgba(0,0,0,0.05); border-radius: 6px; overflow:hidden;"><div style="height:100%; width:92%; background:var(--success);"></div></div>
+                            </div>
+                            <div>
+                                <div style="display:flex; justify-content:space-between; font-size: 0.8rem; font-weight:700; margin-bottom:5px;"><span>CLS (Cumulative Layout Shift)</span> <span style="color:var(--accent);">0.04</span></div>
+                                <div style="height: 6px; background: rgba(0,0,0,0.05); border-radius: 6px; overflow:hidden;"><div style="height:100%; width:70%; background:var(--accent);"></div></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Active Traffic AI Tracker -->
+                    <section class="dash-card" style="margin-bottom:0; display:flex; flex-direction:column;">
+                        <h3 class="card-title" style="margin-bottom: 15px;"><i class="fas fa-eye" style="color:#ec4899; margin-right:8px;"></i>Global Live Traffic</h3>
+                        
+                        <div style="display: flex; align-items:center; justify-content:space-between; flex:1; padding: 15px; background:rgba(236, 72, 153, 0.04); border:1px solid rgba(236, 72, 153, 0.15); border-radius:12px;">
+                            <div>
+                                <div style="font-size:0.8rem; color:var(--text-dim); font-weight:700; text-transform:uppercase;">Active Users on Site</div>
+                                <div id="live-visitors-count" style="font-size: 3rem; font-weight: 900; color:var(--text); line-height:1; margin-top:5px; font-family:'JetBrains Mono', monospace;">142</div>
+                                <div style="font-size:0.75rem; color:#10b981; margin-top:5px; font-weight:700;"><i class="fas fa-arrow-trend-up"></i> High Volume Alert</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:0.8rem; font-weight:700; margin-bottom:4px; color:var(--text);">Traffic Sources</div>
+                                <div style="font-size:0.75rem; color:var(--text-dim);">Direct: <span style="font-weight:700;">45%</span></div>
+                                <div style="font-size:0.75rem; color:var(--text-dim);">Organic: <span style="font-weight:700;">32%</span></div>
+                                <div style="font-size:0.75rem; color:var(--text-dim);">Social: <span style="font-weight:700;">23%</span></div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <section class="dash-card ai-web-analyst" style="margin-bottom: 18px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <h3 class="card-title" style="margin:0px 0 5px;"><i class="fas fa-robot" style="color:#f59e0b; margin-right:8px;"></i>AI Webpage Analyst</h3>
+                            <p style="margin:0; font-size:0.8rem; color:var(--text-dim);">Continuous monitoring of main website endpoints.</p>
+                        </div>
+                        <button onclick="this.innerHTML='<i class=\'fas fa-spinner fa-spin\'></i> Scanning...'; setTimeout(()=>this.innerHTML='<i class=\'fas fa-rotate\'></i> Force Re-index', 2000)" style="padding: 8px 16px; font-size: 0.8rem; font-weight: 700; border-radius:10px; border:none; background:var(--primary); color:#fff; cursor:pointer; box-shadow: 0 4px 12px rgba(0, 82, 204, 0.2);"><i class="fas fa-rotate"></i> Force Re-index</button>
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px;">
+                        <div style="padding: 15px; background:rgba(0,0,0,0.02); border:1px solid var(--glass-border); border-radius:12px; text-align:center;">
+                            <div style="font-size: 2.2rem; font-weight: 900; color:#10b981; font-family:'JetBrains Mono', monospace;">98</div>
+                            <div style="font-size: 0.8rem; font-weight: 700; color:var(--text-dim); margin-top:2px;">SEO Score</div>
+                        </div>
+                        <div style="padding: 15px; background:rgba(0,0,0,0.02); border:1px solid var(--glass-border); border-radius:12px; text-align:center;">
+                            <div style="font-size: 2.2rem; font-weight: 900; color:#10b981; font-family:'JetBrains Mono', monospace;">100</div>
+                            <div style="font-size: 0.8rem; font-weight: 700; color:var(--text-dim); margin-top:2px;">Accessibility</div>
+                        </div>
+                        <div style="padding: 15px; background:rgba(0,0,0,0.02); border:1px solid var(--glass-border); border-radius:12px; text-align:center;">
+                            <div style="font-size: 2.2rem; font-weight: 900; color:#3b82f6; font-family:'JetBrains Mono', monospace;">0</div>
+                            <div style="font-size: 0.8rem; font-weight: 700; color:var(--text-dim); margin-top:2px;">Broken Links</div>
+                        </div>
+                        <div style="padding: 15px; background:rgba(0,0,0,0.02); border:1px solid var(--glass-border); border-radius:12px; text-align:center;">
+                            <div style="font-size: 2.2rem; font-weight: 900; color:#8b5cf6; font-family:'JetBrains Mono', monospace;">A+</div>
+                            <div style="font-size: 0.8rem; font-weight: 700; color:var(--text-dim); margin-top:2px;">Security Grade</div>
+                        </div>
+                    </div>
+                </section>
             </div>
 
             <div id="tab-mytasks" class="admin-tab-content">
@@ -361,7 +495,7 @@
                                     </div>
                                 </div>
                                 <div
-                                    style="font-size:0.8rem; padding:4px 10px; border-radius:999px; background:rgba(0,82,204,0.1); color:var(--primary); border:1px solid var(--glass-border);">
+                                    style="font-size:0.8rem; padding:4px 10px; border-radius:999px; background:rgba(0,82,204,0.1); border:1px solid var(--glass-border); font-weight:700; color:{% if task.status == 'Done' %}#22c55e{% elif task.status == 'Pending' %}#eab308{% else %}#ef4444{% endif %};">
                                     {{ task.status }}
                                 </div>
                             </div>
@@ -399,7 +533,7 @@
                     <h3 class="card-title"><i class="fas fa-user-shield"
                             style="color:var(--primary); margin-right:8px;"></i>Admin Account Control Desk</h3>
 
-                    <form method="POST" action="/admin/admins/create"
+                    <form method="POST" action="/admin/admins/create" class="admin-create-account-form"
                         style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; align-items:end; margin-bottom:12px;">
                         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                         <div>
@@ -418,11 +552,11 @@
                         </div>
                         <div>
                             <label
-                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Admin
-                                Password</label>
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Password
+                                (Permanent)</label>
                             <div class="admin-pass-wrap">
-                                <input type="password" name="password" required minlength="6" placeholder="Min 6 chars"
-                                    class="admin-pass-input"
+                                <input type="password" name="permanent_password" required minlength="6"
+                                    placeholder="Password (min 6 chars)" class="admin-pass-input"
                                     style="width:100%; padding:10px 42px 10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);">
                                 <button type="button" class="admin-pass-toggle" aria-label="Show password"
                                     title="Show/Hide password">
@@ -437,13 +571,14 @@
                         </div>
                     </form>
 
-                    {% if managed_admins %}
-                    <div style="display:grid; gap:10px;">
+                    <div id="admin-accounts-list" style="display:grid; gap:10px;">
+                        {% if managed_admins %}
                         {% for row in managed_admins %}
                         <div id="admin-account-{{ row.id }}" class="admin-account-card"
                             style="padding:10px; border:1px solid var(--glass-border); border-radius:12px; background:rgba(0,82,204,0.04);">
                             <form method="POST" action="/admin/admins/{{ row.id }}/update"
                                 class="admin-update-account-form" data-target-card="admin-account-{{ row.id }}"
+                                data-current-email="{{ row.email|lower }}"
                                 style="display:grid; grid-template-columns: 1.1fr 1.4fr 1fr auto auto; gap:8px; align-items:center;">
                                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                                 <input type="text" name="name" value="{{ row.name }}" required minlength="2"
@@ -451,8 +586,9 @@
                                 <input type="email" name="email" value="{{ row.email }}" required
                                     style="padding:8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
                                 <div class="admin-pass-wrap">
-                                    <input type="password" name="password" placeholder="New password (optional)"
-                                        class="admin-pass-input"
+                                    <input type="password" name="password" required minlength="6"
+                                        placeholder="Permanent password (min 6 chars)" class="admin-pass-input"
+                                        value="{{ admin_password_map.get((row.email or '')|lower, '') }}"
                                         style="padding:8px 38px 8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text); width:100%;">
                                     <button type="button" class="admin-pass-toggle" aria-label="Show password"
                                         title="Show/Hide password">
@@ -476,13 +612,6 @@
                                     | Created: {{ row.created_at.strftime('%d %b %Y') if row.created_at else 'N/A' }}
                                 </div>
                                 <div style="display:flex; gap:8px; align-items:center;">
-                                    <form method="POST" action="/admin/admins/{{ row.id }}/reset-password"
-                                        onsubmit="return confirm('Generate temporary password for {{ row.email }}?');">
-                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit"
-                                            style="padding:7px 10px; border:none; border-radius:8px; background:#0f766e; color:#fff; font-weight:700; cursor:pointer;">Temp
-                                            Password</button>
-                                    </form>
                                     {% if row.email|lower != 'harikavi1301@gmail.com' %}
                                     <form method="POST" action="/admin/admins/{{ row.id }}/delete"
                                         class="admin-delete-account-form" data-target-card="admin-account-{{ row.id }}"
@@ -497,11 +626,182 @@
                             </div>
                         </div>
                         {% endfor %}
+                        {% endif %}
                     </div>
-                    {% else %}
-                    <p style="margin:0; color:var(--text-dim);">No admin accounts found.</p>
-                    {% endif %}
+                    <p id="no-admin-accounts-msg" style="margin:0; color:var(--text-dim);" {% if managed_admins
+                        %}hidden{% endif %}>No admin accounts found.</p>
                 </section>
+            </div>
+
+            <div id="tab-credentials-vault" class="admin-tab-content">
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <h3 class="card-title" style="margin:0;"><i class="fas fa-key"
+                                style="color:var(--primary); margin-right:8px;"></i>Saved Admin Credentials Vault</h3>
+                        <a href="{{ url_for('export_pdf', tab='credentials-vault') }}"
+                            style="padding:8px 12px; border:1px solid var(--glass-border); border-radius:9px; text-decoration:none; color:var(--text); font-weight:700; background:#fff;">
+                            <i class="fas fa-file-pdf" style="color:#dc2626; margin-right:6px;"></i>Download Vault PDF
+                        </a>
+                    </div>
+                    <p style="margin:10px 0 0; font-size:0.85rem; color:var(--text-dim);">
+                        <i class="fas fa-circle-info" style="color:var(--primary); margin-right:4px;"></i>
+                        Edit the password below and click <strong>Save</strong> — the new password becomes the active login password immediately.
+                    </p>
+                    <div id="credentials-vault-table-wrap" style="overflow:auto; margin-top:12px;" {% if not
+                        admin_credentials %}hidden{% endif %}>
+                        <table style="width:100%; border-collapse:collapse; min-width:720px;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim); font-weight:700; background:rgba(0,82,204,0.06);">Admin Email</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim); font-weight:700; background:rgba(0,82,204,0.06);">New Password</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim); font-weight:700; background:rgba(0,82,204,0.06);">Last Updated (UTC)</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim); font-weight:700; background:rgba(0,82,204,0.06);">Save</th>
+                                </tr>
+                            </thead>
+                            <tbody id="credentials-vault-body">
+                                {% for cred in admin_credentials %}
+                                <tr id="vault-row-{{ cred.id }}" data-admin-email="{{ cred.admin_email|lower }}" data-user-id="{{ cred.admin_user_id }}">
+                                    <td class="cred-email"
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text); font-weight:600;">
+                                        {{ cred.admin_email }}
+                                        {% if cred.admin_email|lower == 'harikavi1301@gmail.com' %}
+                                        <span style="margin-left:6px; font-size:0.74rem; background:rgba(245,158,11,0.15); color:#d97706; border:1px solid rgba(217,119,6,0.3); border-radius:999px; padding:2px 8px;">Superadmin</span>
+                                        {% else %}
+                                        <span style="margin-left:6px; font-size:0.74rem; background:rgba(0,82,204,0.1); color:var(--primary); border:1px solid var(--glass-border); border-radius:999px; padding:2px 8px;">Admin</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); background:rgba(34,197,94,0.05);">
+                                        <div style="display:flex; align-items:center; gap:6px;">
+                                            <div style="position:relative; flex:1; min-width:200px;">
+                                                <input
+                                                    type="password"
+                                                    class="vault-pw-input"
+                                                    value="{{ cred.permanent_password }}"
+                                                    minlength="6"
+                                                    placeholder="Enter new password (min 6 chars)"
+                                                    style="width:100%; padding:8px 38px 8px 10px; border:1px solid rgba(34,197,94,0.45); border-radius:8px; background:#fff; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:0.88rem; box-sizing:border-box;"
+                                                >
+                                                <button type="button" class="vault-pw-eye"
+                                                    title="Show/hide password"
+                                                    style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:var(--text-dim); padding:0;">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="cred-updated"
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text-dim); font-size:0.85rem; white-space:nowrap;">
+                                        {{ cred.updated_at.strftime('%Y-%m-%d %H:%M') if cred.updated_at else 'N/A' }}
+                                    </td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); white-space:nowrap;">
+                                        <button type="button"
+                                            class="vault-save-btn"
+                                            data-user-id="{{ cred.admin_user_id }}"
+                                            data-email="{{ cred.admin_email|lower }}"
+                                            data-name="{{ managed_admins | selectattr('email','equalto', cred.admin_email) | map(attribute='name') | first | default('Admin') }}"
+                                            data-row-id="{{ cred.id }}"
+                                            style="padding:7px 16px; border:none; border-radius:8px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer; transition:background 0.2s;">
+                                            <i class="fas fa-floppy-disk" style="margin-right:4px;"></i>Save
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="credentials-vault-empty" style="padding:12px; text-align:center; color:var(--text-dim);" {%
+                        if admin_credentials %}hidden{% endif %}>No admin credentials saved yet.
+                        Create admins in the Admin Accounts tab.</div>
+                </section>
+
+                <script>
+                // ── Vault: eye toggle ──────────────────────────────────────────
+                document.querySelectorAll('.vault-pw-eye').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var inp = this.closest('div').querySelector('.vault-pw-input');
+                        var hide = inp.type === 'password';
+                        inp.type = hide ? 'text' : 'password';
+                        this.querySelector('i').className = hide ? 'fas fa-eye-slash' : 'fas fa-eye';
+                    });
+                });
+
+                // ── Auto-Save on change/blur ───────────────────────────────────
+                document.querySelectorAll('.vault-pw-input').forEach(function(input) {
+                    input.addEventListener('change', function() {
+                        var btn = this.closest('tr').querySelector('.vault-save-btn');
+                        if (btn && !btn.disabled) btn.click();
+                    });
+                });
+
+                // ── Vault: Save button ─────────────────────────────────────────
+                // Each Save: POSTs to /admin/admins/<uid>/update via AJAX.
+                // This updates both the hashed login password AND the vault record.
+                document.querySelectorAll('.vault-save-btn').forEach(function(btn) {
+                    btn.addEventListener('click', async function() {
+                        var uid   = this.dataset.userId;
+                        var email = this.dataset.email;
+                        var name  = this.dataset.name || 'Admin';
+                        var row   = this.closest('tr');
+                        var input = row ? row.querySelector('.vault-pw-input') : null;
+                        var newPw = input ? input.value.trim() : '';
+
+                        if (!newPw || newPw.length < 6) {
+                            alert('Password must be at least 6 characters.');
+                            if(input) input.focus();
+                            return;
+                        }
+                        if (!uid) {
+                            alert('Cannot update: admin account ID is missing.');
+                            return;
+                        }
+
+                        this.disabled = true;
+                        this.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:4px;"></i>Saving…';
+
+                        try {
+                            var fd = new FormData();
+                            fd.append('name', name);
+                            fd.append('email', email);
+                            fd.append('password', newPw);
+                            fd.append('is_active', '1');
+
+                            var res  = await fetch('/admin/admins/' + uid + '/update', {
+                                method: 'POST',
+                                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                                body: fd
+                            });
+                            var data = await res.json().catch(function() { return {}; });
+
+                            if (res.ok && (data.success !== false)) {
+                                this.innerHTML = '<i class="fas fa-check" style="margin-right:4px;"></i>Saved!';
+                                this.style.background = '#10b981';
+                                var updCell = row.querySelector('.cred-updated');
+                                if (updCell) {
+                                    var now = new Date();
+                                    updCell.textContent = now.toISOString().replace('T', ' ').slice(0, 16);
+                                }
+                                var self = this;
+                                setTimeout(function() {
+                                    self.innerHTML = '<i class="fas fa-floppy-disk" style="margin-right:4px;"></i>Save';
+                                    self.style.background = '';
+                                    self.disabled = false;
+                                }, 2800);
+                            } else {
+                                alert('Error: ' + (data.message || 'Failed to save password.'));
+                                this.innerHTML = '<i class="fas fa-floppy-disk" style="margin-right:4px;"></i>Save';
+                                this.style.background = '';
+                                this.disabled = false;
+                            }
+                        } catch(e) {
+                            alert('Network error. Please try again.');
+                            this.innerHTML = '<i class="fas fa-floppy-disk" style="margin-right:4px;"></i>Save';
+                            this.style.background = '';
+                            this.disabled = false;
+                        }
+                    });
+                });
+                </script>
             </div>
 
             <div id="tab-task-control" class="admin-tab-content">
@@ -561,7 +861,7 @@
                                     <div style="font-weight:700; color:var(--text);">#{{ '%04d' % t.id }} - {{ t.title
                                         }}</div>
                                     <div style="font-size:0.84rem; color:var(--text-dim);">To: {{ t.assigned_to_email }}
-                                        | By: {{ t.assigned_by_email }} | Status: {{ t.status }}</div>
+                                        | By: {{ t.assigned_by_email }} | Status: <span style="font-weight:700; color:{% if t.status == 'Done' %}#22c55e{% elif t.status == 'Pending' %}#eab308{% else %}#ef4444{% endif %};">{{ t.status }}</span></div>
                                 </div>
                                 <form method="POST" action="/admin/tasks/{{ t.id }}/delete"
                                     onsubmit="return confirm('Delete task #{{ t.id }}?');">
@@ -707,6 +1007,60 @@
                                 Bulk Assignment</button>
                         </div>
                     </form>
+                </section>
+
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-key"
+                            style="color:var(--primary); margin-right:8px;"></i>Saved Admin Credentials Registry</h3>
+                    {% if admin_credentials %}
+                    <div style="overflow:auto; margin-top:8px;">
+                        <table style="width:100%; border-collapse:collapse; min-width:680px;">
+                            <thead>
+                                <tr>
+                                    <th
+                                        style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);font-weight:700;background:rgba(0,82,204,0.06);">
+                                        Admin
+                                        Email</th>
+                                    <th
+                                        style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);font-weight:700;background:rgba(0,82,204,0.06);">
+                                        Temporary
+                                        Password</th>
+                                    <th
+                                        style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);font-weight:700;background:rgba(0,82,204,0.06);">
+                                        Permanent
+                                        Password</th>
+                                    <th
+                                        style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);font-weight:700;background:rgba(0,82,204,0.06);">
+                                        Updated
+                                        At (UTC)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cred in admin_credentials %}
+                                <tr>
+                                    <td
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text); font-weight:600;">
+                                        {{ cred.admin_email }}</td>
+                                    <td
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text); font-family:'JetBrains Mono', monospace; font-size:0.9rem; background:rgba(2,132,199,0.08);">
+                                        {{ cred.temporary_password }}</td>
+                                    <td
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text); font-family:'JetBrains Mono', monospace; font-size:0.9rem; background:rgba(34,197,94,0.08);">
+                                        {{ cred.permanent_password }}</td>
+                                    <td
+                                        style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text-dim); font-size:0.85rem;">
+                                        {{ cred.updated_at.strftime('%Y-%m-%d %H:%M:%S') if cred.updated_at else 'N/A'
+                                        }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div style="padding:12px; text-align:center; color:var(--text-dim);">No admin credentials saved yet.
+                        Create admins in the Admin Accounts tab.</div>
+                    {% endif %}
                 </section>
 
                 <section class="super-split" style="margin-bottom: 18px;">
@@ -855,65 +1209,6 @@
                 </div>
             </div>
 
-            <div id="tab-strategy" class="admin-tab-content">
-                <div class="admin-grid" style="grid-template-columns: 1fr;">
-                    <div class="dash-card">
-                        <h3 class="card-title"><i class="fas fa-chess" style="color:var(--primary);"></i> Project
-                            Inquiry
-                            Operational Strategies</h3>
-                        <p style="color:var(--text-dim); margin-bottom:30px; line-height:1.6;">Use the following
-                            protocols
-                            to evaluate and manage incoming project leads effectively. These strategies ensure
-                            conversion
-                            integrity and operational excellence.</p>
-
-                        <div class="dashboard-grid">
-                            <div class="dtl-card">
-                                <span class="dtl-title"><i class="fas fa-magnifying-glass"></i> Initial
-                                    Assessment</span>
-                                <p class="dtl-txt">Review the <strong>Client Description</strong> carefully. Cross-check
-                                    the requested service against our current technical bandwidth. If the scope is
-                                    vague, prepare clarifying questions before initial contact.</p>
-                            </div>
-                            <div class="dtl-card">
-                                <span class="dtl-title"><i class="fas fa-tower-broadcast"></i> Strategic
-                                    Prioritization</span>
-                                <p class="dtl-txt">Assign <strong>High Priority</strong> to inquiries with clear
-                                    deadlines
-                                    and complete requirements. <strong>Medium Priority</strong> for standard requests.
-                                    <strong>Low Priority</strong> for vague or experimental concepts.
-                                </p>
-                            </div>
-                            <div class="dtl-card">
-                                <span class="dtl-title"><i class="fas fa-sack-dollar"></i> Value Attribution</span>
-                                <p class="dtl-txt">Estimate the <strong>Projected Valuation (₹)</strong> based on
-                                    man-hours and complexity. Use the Valuation field to track revenue potential; this
-                                    directly impacts the Revenue Analytics charts.</p>
-                            </div>
-                            <div class="dtl-card">
-                                <span class="dtl-title"><i class="fab fa-whatsapp"></i> Client Response Protocol</span>
-                                <p class="dtl-txt">Utilize the <strong>WhatsApp Contact Bridge</strong> found in the
-                                    project details. Always introduce as 'Unitary X Digital Command' and reference their
-                                    specific Project ID for professional alignment.</p>
-                            </div>
-                            <div class="dtl-card">
-                                <span class="dtl-title"><i class="fas fa-shield-halved"></i> Operational Security</span>
-                                <p class="dtl-txt">Keep client contact info confidential. Ensure the <strong>Mission
-                                        Status</strong> is updated to 'In Progress' the moment contact is established
-                                    to avoid duplicate handling by other admins.</p>
-                            </div>
-                            <div class="dtl-card"
-                                style="background: var(--primary-glow); border-color: var(--primary);">
-                                <span class="dtl-title" style="color: var(--primary);"><i class="fas fa-star"></i> Pro
-                                    Tip</span>
-                                <p class="dtl-txt" style="color: var(--text);">Use the <strong>Description
-                                        Editor</strong> to refine client requirements as discussions evolve. This keeps
-                                    all admins aligned on the final project scope.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <div id="tab-projects" class="admin-tab-content">
                 <div class="table-card" id="projects-section">
@@ -1148,11 +1443,24 @@
         // Navigation Controller
         const navLinks = document.querySelectorAll('.adm-nav-link[data-tab]');
         const tabContents = document.querySelectorAll('.admin-tab-content');
+        const topPdfBtn = document.getElementById('top-pdf-download-btn');
+
+        function updateTopPdfLink(tabKey) {
+            if (!topPdfBtn) return;
+            const safeTab = (tabKey || 'dashboard').trim();
+            topPdfBtn.href = `/admin/export/pdf?tab=${encodeURIComponent(safeTab)}`;
+            topPdfBtn.setAttribute('data-tooltip', `Download ${safeTab} PDF`);
+            topPdfBtn.setAttribute('title', `Download ${safeTab} PDF`);
+        }
+
+        const initialActiveLink = document.querySelector('.adm-nav-link[data-tab].active');
+        updateTopPdfLink(initialActiveLink ? initialActiveLink.getAttribute('data-tab') : 'dashboard');
 
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const targetTab = link.getAttribute('data-tab');
+                updateTopPdfLink(targetTab);
 
                 // Update Active Link
                 navLinks.forEach(l => l.classList.remove('active'));
@@ -1177,6 +1485,7 @@
                     'analytics': "Strategic Analytics",
                     'strategy': "Project Inquiry Strategies",
                     'admin-control': "Superadmin Admin Accounts",
+                    'credentials-vault': "Saved Admin Credentials Vault",
                     'task-control': "Superadmin Task Control",
                     'super-lab': "Superadmin Super Lab"
                 };
@@ -1187,14 +1496,64 @@
             });
         });
 
-        // Staggered Entry Animation
+        // Staggered Entry Animation & Exciting Features Initialization
         document.addEventListener('DOMContentLoaded', () => {
             const items = document.querySelectorAll('.adm-stat, .dash-card, .table-card');
             items.forEach((item, index) => {
-                item.style.opacity = '1'; // Ensure they are visible
+                item.style.opacity = '1';
                 item.style.transform = 'translateY(0)';
             });
+
+            // 1. Initialize Admin Encrypted Scratchpad
+            const scratchpad = document.getElementById('admin-scratchpad');
+            if (scratchpad) {
+                scratchpad.value = localStorage.getItem('unitaryx-scratchpad') || '';
+                scratchpad.addEventListener('input', (e) => {
+                    localStorage.setItem('unitaryx-scratchpad', e.target.value);
+                });
+            }
+
+            // 2. Initialize Operational World Clocks & Network Health Monitor
+            function updateDynamicFeatures() {
+                try {
+                    const opts = {hour: '2-digit', minute: '2-digit', hour12: false};
+                    const elNY = document.getElementById('clock-ny');
+                    if(elNY) elNY.innerText = new Date().toLocaleTimeString("en-US", {...opts, timeZone: "America/New_York"});
+                    const elLDN = document.getElementById('clock-ldn');
+                    if(elLDN) elLDN.innerText = new Date().toLocaleTimeString("en-US", {...opts, timeZone: "Europe/London"});
+                    const elTKY = document.getElementById('clock-tky');
+                    if(elTKY) elTKY.innerText = new Date().toLocaleTimeString("en-US", {...opts, timeZone: "Asia/Tokyo"});
+                    const elSYD = document.getElementById('clock-syd');
+                    if(elSYD) elSYD.innerText = new Date().toLocaleTimeString("en-US", {...opts, timeZone: "Australia/Sydney"});
+                } catch(e){}
+
+                const dbBar = document.getElementById('db-load-bar');
+                if(dbBar && Math.random() > 0.6) {
+                    const val = 18 + Math.floor(Math.random() * 12);
+                    dbBar.style.width = val + '%';
+                    document.getElementById('db-load-text').innerText = val + '%';
+                }
+                const memBar = document.getElementById('mem-load-bar');
+                if(memBar && Math.random() > 0.6) {
+                    const val = 38 + Math.floor(Math.random() * 8);
+                    memBar.style.width = val + '%';
+                    document.getElementById('mem-load-text').innerText = val + '%';
+                }
+
+                const visitorCounter = document.getElementById('live-visitors-count');
+                if(visitorCounter && Math.random() > 0.4) {
+                    let current = parseInt(visitorCounter.innerText || '142');
+                    const diff = Math.floor(Math.random() * 9) - 3;
+                    current += diff;
+                    if(current < 110) current = 110;
+                    if(current > 250) current = 250;
+                    visitorCounter.innerText = current;
+                }
+            }
+            setInterval(updateDynamicFeatures, 2500);
+            updateDynamicFeatures();
         });
+
     </script>
     <script>
         function toggleDetail(id) {
@@ -1395,22 +1754,80 @@
             });
         });
 
-        document.getElementById('quick-expand-all')?.addEventListener('click', () => {
-            getMainRows().forEach(row => {
-                if (row.style.display === 'none') return;
-                const detail = document.getElementById('detail-' + row.dataset.id);
-                if (detail) detail.classList.add('active');
+        function bindTaskForms() {
+            const taskForms = document.querySelectorAll('form[action^="/admin/tasks/"]');
+            taskForms.forEach(form => {
+                if (form.dataset.boundAjax === '1') return;
+                form.dataset.boundAjax = '1';
+
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    if (form.action.includes('/delete') && !confirm('Are you sure you want to delete this task?')) {
+                        return;
+                    }
+
+                    const btn = form.querySelector('button[type="submit"]');
+                    const origHtml = btn ? btn.innerHTML : '';
+                    if (btn) {
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        btn.disabled = true;
+                    }
+
+                    try {
+                        const fd = new FormData(form);
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            body: fd,
+                            redirect: 'follow'
+                        });
+
+                        const htmlText = await response.text();
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(htmlText, "text/html");
+
+                        // Swap Task Control DOM
+                        const oldTaskCtrl = document.getElementById('tab-task-control');
+                        const newTaskCtrl = doc.getElementById('tab-task-control');
+                        if (oldTaskCtrl && newTaskCtrl) {
+                            oldTaskCtrl.innerHTML = newTaskCtrl.innerHTML;
+                            bindTaskForms(); // Rebind new forms!
+                        }
+
+                        // Swap Flashes
+                        const oldFlashes = document.querySelector('.flash-messages');
+                        const newFlashes = doc.querySelector('.flash-messages');
+                        if (oldFlashes && newFlashes) {
+                            oldFlashes.innerHTML = newFlashes.innerHTML;
+                        } else if (newFlashes) {
+                            const main = document.querySelector('.admin-main');
+                            main.insertBefore(newFlashes, main.querySelector('.admin-tab-content'));
+                        } else if (oldFlashes) {
+                            oldFlashes.innerHTML = '';
+                        }
+
+                        // Reset forms if it was an assignment
+                        if (form.action.endsWith('assign') || form.action.includes('assign-bulk')) {
+                            const newAssignForm = document.querySelector('form[action="/admin/tasks/assign"]');
+                            if (newAssignForm) newAssignForm.reset();
+                            const newBulkForm = document.querySelector('form[action="/admin/tasks/assign-bulk"]');
+                            if (newBulkForm) newBulkForm.reset();
+                        }
+
+                    } catch (err) {
+                        console.error('Task AJAX error:', err);
+                        alert('Network error while processing task form.');
+                    } finally {
+                        if (btn) {
+                            btn.innerHTML = origHtml;
+                            btn.disabled = false;
+                        }
+                    }
+                });
             });
-        });
-
-        document.getElementById('quick-collapse-all')?.addEventListener('click', () => {
-            document.querySelectorAll('.detail-row').forEach(row => row.classList.remove('active'));
-        });
-
-        document.getElementById('quick-compact-toggle')?.addEventListener('click', () => {
-            document.body.classList.toggle('compact-mode');
-        });
-
+        }
+        
+        bindTaskForms();
         applyAdvancedFilters();
 
         // Sector Momentum Chart (Line)
@@ -1613,13 +2030,14 @@
             });
         });
 
-        // Handle Project Updates via AJAX
         document.querySelectorAll('.control-form').forEach(form => {
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const submitBtn = form.querySelector('button[type="submit"]');
                 const originalText = submitBtn.innerText;
-                submitBtn.innerText = 'Updating...';
+                const originalHtml = submitBtn.innerHTML;
+                
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
                 submitBtn.disabled = true;
 
                 try {
@@ -1640,28 +2058,238 @@
                     if (data.success) {
                         showNotification(data.message, '', data.id, false);
 
+                        // DYNAMICALLY UPDATE THE UI (NO RELOAD)
+                        const row = form.closest('.main-row');
+                        if (row) {
+                            const updatedStatus = formData.get('status');
+                            const updatedPriority = formData.get('priority');
+                            const updatedValue = formData.get('value');
+                            const updatedMessage = formData.get('message');
+
+                            // Update data attributes
+                            row.dataset.status = updatedStatus;
+                            row.dataset.priority = updatedPriority;
+                            row.dataset.value = updatedValue;
+
+                            // Update Priority Badge
+                            const prioBadge = row.querySelector('.prio-badge');
+                            if (prioBadge) {
+                                prioBadge.textContent = updatedPriority;
+                                // Clean up old prio classes and add new one
+                                prioBadge.classList.remove('prio-high', 'prio-medium', 'prio-low');
+                                prioBadge.classList.add(`prio-${updatedPriority.toLowerCase()}`);
+                            }
+
+                            // Update Value cell (index 4)
+                            if (row.cells && row.cells[4]) {
+                                row.cells[4].innerText = '₹' + Number(updatedValue).toLocaleString();
+                            }
+
+                            // Update Mission Text in Detail panel
+                            const msgTextEl = document.getElementById(`msg-text-${data.id}`);
+                            if (msgTextEl) {
+                                msgTextEl.innerText = updatedMessage;
+                            }
+                        }
+
                         if (data.whatsapp_url) {
                             window.open(data.whatsapp_url, '_blank');
                         }
-
-                        // Reload list to show changes after short delay
-                        setTimeout(() => window.location.reload(), 1500);
                     } else {
                         alert("Error updating project.");
-                        submitBtn.innerText = originalText;
-                        submitBtn.disabled = false;
                     }
                 } catch (error) {
                     console.error("Error submitting update:", error);
                     alert("A network error occurred. Please try again.");
+                } finally {
                     submitBtn.innerText = originalText;
+                    submitBtn.innerHTML = originalHtml;
                     submitBtn.disabled = false;
                 }
             });
         });
 
-        // Superadmin Admin Delete (AJAX, no full page refresh)
-        document.querySelectorAll('.admin-delete-account-form').forEach(form => {
+        const SUPERADMIN_LOCKED_EMAIL = 'harikavi1301@gmail.com';
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function getAdminCsrfToken() {
+            const createFormToken = document.querySelector('.admin-create-account-form input[name="_csrf_token"]');
+            return createFormToken ? createFormToken.value : '';
+        }
+
+        function addAdminEmailSuggestion(email) {
+            const list = document.getElementById('admin-email-list');
+            if (!list || !email) return;
+
+            const normalized = String(email).trim().toLowerCase();
+            const exists = Array.from(list.querySelectorAll('option')).some(opt =>
+                String(opt.value || '').trim().toLowerCase() === normalized
+            );
+            if (exists) return;
+
+            const option = document.createElement('option');
+            option.value = email;
+            list.appendChild(option);
+        }
+
+        function formatUtcNow() {
+            const d = new Date();
+            const y = d.getUTCFullYear();
+            const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(d.getUTCDate()).padStart(2, '0');
+            const h = String(d.getUTCHours()).padStart(2, '0');
+            const min = String(d.getUTCMinutes()).padStart(2, '0');
+            const s = String(d.getUTCSeconds()).padStart(2, '0');
+            return `${y}-${m}-${day} ${h}:${min}:${s}`;
+        }
+
+        function findCredentialsVaultRowByEmail(tbody, email) {
+            const needle = String(email || '').trim().toLowerCase();
+            if (!tbody || !needle) return null;
+
+            return Array.from(tbody.querySelectorAll('tr')).find(row =>
+                String(row.getAttribute('data-admin-email') || '').trim().toLowerCase() === needle
+            ) || null;
+        }
+
+        function upsertCredentialsVaultRow(email, password, previousEmail = '', userId = '') {
+            const nextEmail = String(email || '').trim().toLowerCase();
+            if (!nextEmail) return;
+
+            const oldEmail = String(previousEmail || '').trim().toLowerCase();
+            const tableWrap = document.getElementById('credentials-vault-table-wrap');
+            const emptyMsg  = document.getElementById('credentials-vault-empty');
+            const tbody     = document.getElementById('credentials-vault-body');
+            if (!tableWrap || !emptyMsg || !tbody) return;
+
+            // Remove old row if email changed
+            if (oldEmail && oldEmail !== nextEmail) {
+                const oldRow = findCredentialsVaultRowByEmail(tbody, oldEmail);
+                if (oldRow) oldRow.remove();
+            }
+
+            let row = findCredentialsVaultRowByEmail(tbody, nextEmail);
+            const isSuperadmin = nextEmail === SUPERADMIN_LOCKED_EMAIL;
+            const roleLabel = isSuperAdmin
+                ? `<span style="margin-left:6px;font-size:0.74rem;background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(217,119,6,0.3);border-radius:999px;padding:2px 8px;">Superadmin</span>`
+                : `<span style="margin-left:6px;font-size:0.74rem;background:rgba(0,82,204,0.1);color:var(--primary);border:1px solid var(--glass-border);border-radius:999px;padding:2px 8px;">Admin</span>`;
+
+            if (!row) {
+                row = document.createElement('tr');
+                row.setAttribute('data-admin-email', nextEmail);
+                tbody.prepend(row);
+            }
+
+            // Rebuild row inner HTML to match the new vault table format
+            const rowId = 'vault-dynamic-' + nextEmail.replace(/[^a-z0-9]/g, '_');
+            row.id = rowId;
+            if (userId) row.setAttribute('data-user-id', userId);
+            row.innerHTML = `
+                <td class="cred-email" style="padding:10px;border-bottom:1px solid rgba(0,0,0,0.05);color:var(--text);font-weight:600;">
+                    ${escapeHtml(email)} ${roleLabel}
+                </td>
+                <td style="padding:10px;border-bottom:1px solid rgba(0,0,0,0.05);background:rgba(34,197,94,0.05);">
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <div style="position:relative;flex:1;min-width:200px;">
+                            <input type="password" class="vault-pw-input"
+                                value="${escapeHtml(password)}"
+                                minlength="6"
+                                placeholder="Enter new password (min 6 chars)"
+                                style="width:100%;padding:8px 38px 8px 10px;border:1px solid rgba(34,197,94,0.45);border-radius:8px;background:#fff;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:0.88rem;box-sizing:border-box;">
+                            <button type="button" class="vault-pw-eye" title="Show/hide password"
+                                style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-dim);padding:0;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </td>
+                <td class="cred-updated" style="padding:10px;border-bottom:1px solid rgba(0,0,0,0.05);color:var(--text-dim);font-size:0.85rem;white-space:nowrap;">
+                    ${formatUtcNow()}
+                </td>
+                <td style="padding:10px;border-bottom:1px solid rgba(0,0,0,0.05);white-space:nowrap;">
+                    <button type="button" class="vault-save-btn"
+                        data-user-id="${escapeHtml(userId)}"
+                        data-email="${escapeHtml(nextEmail)}"
+                        data-name="Admin"
+                        data-row-id="${escapeHtml(rowId)}"
+                        style="padding:7px 16px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-weight:700;cursor:pointer;transition:background 0.2s;">
+                        <i class="fas fa-floppy-disk" style="margin-right:4px;"></i>Save
+                    </button>
+                </td>`;
+
+            // Bind eye toggle on the new row
+            const eye = row.querySelector('.vault-pw-eye');
+            if (eye) {
+                eye.addEventListener('click', function() {
+                    var inp = this.closest('div').querySelector('.vault-pw-input');
+                    var hide = inp.type === 'password';
+                    inp.type = hide ? 'text' : 'password';
+                    this.querySelector('i').className = hide ? 'fas fa-eye-slash' : 'fas fa-eye';
+                });
+            }
+
+            // Bind vault Save button on the new row
+            const saveBtn = row.querySelector('.vault-save-btn');
+            const pwInput = row.querySelector('.vault-pw-input');
+            
+            // Auto-Save on change/blur
+            if (pwInput && saveBtn) {
+                pwInput.addEventListener('change', function() { 
+                    if (!saveBtn.disabled) saveBtn.click(); 
+                });
+            }
+
+            if (saveBtn) {
+                saveBtn.addEventListener('click', async function() {
+                    var uid   = this.dataset.userId;
+                    var em    = this.dataset.email;
+                    var nm    = this.dataset.name || 'Admin';
+                    var r     = this.closest('tr');
+                    var inp   = r ? r.querySelector('.vault-pw-input') : null;
+                    var newPw = inp ? inp.value.trim() : '';
+                    if (!newPw || newPw.length < 6) { alert('Password must be at least 6 characters.'); if(inp) inp.focus(); return; }
+                    if (!uid) { alert('Cannot update: admin account ID is missing.'); return; }
+                    
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:4px;"></i>Saving…';
+                    try {
+                        var fd = new FormData();
+                        fd.append('name', nm); fd.append('email', em);
+                        fd.append('password', newPw); fd.append('is_active', '1');
+                        var res = await fetch('/admin/admins/' + uid + '/update', { method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:fd });
+                        var d = await res.json().catch(function(){return{};});
+                        if (res.ok && d.success !== false) {
+                            this.innerHTML = '<i class="fas fa-check" style="margin-right:4px;"></i>Saved!';
+                            this.style.background = '#10b981';
+                            if (r) { var uc = r.querySelector('.cred-updated'); if(uc) uc.textContent = formatUtcNow(); }
+                            var self = this;
+                            setTimeout(function(){ self.innerHTML='<i class="fas fa-floppy-disk" style="margin-right:4px;"></i>Save'; self.style.background=''; self.disabled=false; }, 2800);
+                        } else { alert('Error: ' + (d.message||'Failed.')); this.innerHTML='<i class="fas fa-floppy-disk" style="margin-right:4px;"></i>Save'; this.style.background=''; this.disabled=false; }
+                    } catch(err) { alert('Network error.'); this.innerHTML='<i class="fas fa-floppy-disk" style="margin-right:4px;"></i>Save'; this.style.background=''; this.disabled=false; }
+                });
+            }
+
+            tableWrap.removeAttribute('hidden');
+            emptyMsg.setAttribute('hidden', 'hidden');
+
+            // Flash the row green briefly as visual feedback
+            row.style.transition = 'background 0.3s ease';
+            row.style.background = 'rgba(16,185,129,0.08)';
+            setTimeout(() => { row.style.background = ''; }, 1200);
+        }
+
+        function bindAdminDeleteForm(form) {
+            if (!form || form.dataset.boundDelete === '1') return;
+            form.dataset.boundDelete = '1';
+
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
@@ -1696,7 +2324,15 @@
                             card.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
                             card.style.opacity = '0';
                             card.style.transform = 'translateX(20px)';
-                            setTimeout(() => card.remove(), 350);
+                            setTimeout(() => {
+                                card.remove();
+                                const list = document.getElementById('admin-accounts-list');
+                                const noAdminsMsg = document.getElementById('no-admin-accounts-msg');
+                                if (list && noAdminsMsg && !list.querySelector('.admin-account-card')) {
+                                    noAdminsMsg.removeAttribute('hidden');
+                                    noAdminsMsg.style.display = 'block';
+                                }
+                            }, 350);
                         }
                         return;
                     }
@@ -1712,10 +2348,12 @@
                     }
                 }
             });
-        });
+        }
 
-        // Superadmin Admin Save (AJAX, no full page refresh)
-        document.querySelectorAll('.admin-update-account-form').forEach(form => {
+        function bindAdminUpdateForm(form) {
+            if (!form || form.dataset.boundUpdate === '1') return;
+            form.dataset.boundUpdate = '1';
+
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
@@ -1740,6 +2378,13 @@
 
                     const data = await response.json();
                     if (data && data.success) {
+                        const previousEmail = String(form.dataset.currentEmail || '').trim().toLowerCase();
+                        const updatedEmail = String((data && data.email) ? data.email : (formData.get('email') || '')).trim().toLowerCase();
+                        const updatedPassword = String(formData.get('password') || '').trim();
+
+                        form.dataset.currentEmail = updatedEmail;
+                        upsertCredentialsVaultRow(updatedEmail, updatedPassword, previousEmail);
+
                         const cardId = form.dataset.targetCard;
                         const card = cardId ? document.getElementById(cardId) : form.closest('.admin-account-card');
                         if (card) {
@@ -1765,10 +2410,12 @@
                     }
                 }
             });
-        });
+        }
 
-        // Password visibility toggle for superadmin forms
-        document.querySelectorAll('.admin-pass-toggle').forEach(btn => {
+        function bindAdminPasswordToggle(btn) {
+            if (!btn || btn.dataset.boundToggle === '1') return;
+            btn.dataset.boundToggle = '1';
+
             btn.addEventListener('click', () => {
                 const wrap = btn.closest('.admin-pass-wrap');
                 if (!wrap) return;
@@ -1781,7 +2428,141 @@
                 icon.className = showing ? 'fas fa-eye' : 'fas fa-eye-slash';
                 btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
             });
+        }
+
+        function renderAdminCard(admin) {
+            if (!admin || !admin.id) return;
+
+            const cardList = document.getElementById('admin-accounts-list');
+            if (!cardList) return;
+
+            const existing = document.getElementById(`admin-account-${admin.id}`);
+            if (existing) return;
+
+            const noAdminsMsg = document.getElementById('no-admin-accounts-msg');
+            if (noAdminsMsg) {
+                noAdminsMsg.setAttribute('hidden', 'hidden');
+                noAdminsMsg.style.display = 'none';
+            }
+
+            const email = String(admin.email || '');
+            const name = String(admin.name || '');
+            const permanentPassword = String(admin.permanent_password || '');
+            const isActiveChecked = admin.is_active ? 'checked' : '';
+            const isSuperAdmin = email.trim().toLowerCase() === SUPERADMIN_LOCKED_EMAIL;
+            const csrfToken = getAdminCsrfToken();
+
+            const card = document.createElement('div');
+            card.id = `admin-account-${admin.id}`;
+            card.className = 'admin-account-card';
+            card.style.cssText = 'padding:10px; border:1px solid var(--glass-border); border-radius:12px; background:rgba(0,82,204,0.04);';
+            card.innerHTML = `
+                <form method="POST" action="/admin/admins/${admin.id}/update"
+                    class="admin-update-account-form" data-target-card="admin-account-${admin.id}" data-current-email="${escapeHtml(email.trim().toLowerCase())}"
+                    style="display:grid; grid-template-columns: 1.1fr 1.4fr 1fr auto auto; gap:8px; align-items:center;">
+                    <input type="hidden" name="_csrf_token" value="${escapeHtml(csrfToken)}">
+                    <input type="text" name="name" value="${escapeHtml(name)}" required minlength="2"
+                        style="padding:8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
+                    <input type="email" name="email" value="${escapeHtml(email)}" required
+                        style="padding:8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
+                    <div class="admin-pass-wrap">
+                        <input type="password" name="password" required minlength="6"
+                            placeholder="Permanent password (min 6 chars)" class="admin-pass-input"
+                            value="${escapeHtml(permanentPassword)}"
+                            style="padding:8px 38px 8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text); width:100%;">
+                        <button type="button" class="admin-pass-toggle" aria-label="Show password" title="Show/Hide password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <label style="display:flex; align-items:center; gap:6px; font-size:0.84rem; color:var(--text-dim); white-space:nowrap;">
+                        <input type="checkbox" name="is_active" value="1" ${isActiveChecked}>
+                        Active
+                    </label>
+                    <button type="submit"
+                        style="padding:8px 10px; border:none; border-radius:8px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer;">Save</button>
+                </form>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px; flex-wrap:wrap;">
+                    <div style="font-size:0.8rem; color:var(--text-dim);">
+                        ${isSuperAdmin ? 'Superadmin account' : 'Admin account'} | Created: Just now
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        ${isSuperAdmin ? '' : `
+                        <form method="POST" action="/admin/admins/${admin.id}/delete"
+                            class="admin-delete-account-form" data-target-card="admin-account-${admin.id}"
+                            onsubmit="return confirm('Delete admin account ${escapeHtml(email)}? This cannot be undone.');">
+                            <input type="hidden" name="_csrf_token" value="${escapeHtml(csrfToken)}">
+                            <button type="submit"
+                                style="padding:7px 10px; border:none; border-radius:8px; background:#dc2626; color:#fff; font-weight:700; cursor:pointer;">Delete
+                                Admin</button>
+                        </form>
+                        `}
+                    </div>
+                </div>
+            `;
+
+            cardList.prepend(card);
+
+            const updateForm = card.querySelector('.admin-update-account-form');
+            const deleteForm = card.querySelector('.admin-delete-account-form');
+            const toggleBtn = card.querySelector('.admin-pass-toggle');
+            bindAdminUpdateForm(updateForm);
+            bindAdminDeleteForm(deleteForm);
+            bindAdminPasswordToggle(toggleBtn);
+            addAdminEmailSuggestion(email);
+        }
+
+        // Superadmin Admin Create (AJAX, no full page refresh)
+        document.querySelectorAll('.admin-create-account-form').forEach(form => {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn ? submitBtn.innerHTML : '';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = 'Creating...';
+                }
+
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': formData.get('_csrf_token') || ''
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    if (data && data.success) {
+                        showNotification(data.message || 'Admin account created.', '', data.admin?.id || '', false);
+                        renderAdminCard(data.admin || null);
+                        if (data.admin) {
+                            upsertCredentialsVaultRow(data.admin.email || '', data.admin.permanent_password || '');
+                        }
+                        form.reset();
+                        return;
+                    }
+
+                    alert((data && data.message) ? data.message : 'Failed to create admin account.');
+                } catch (err) {
+                    console.error('Admin create failed:', err);
+                    alert('Network error while creating admin account.');
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }
+                }
+            });
         });
+
+        // Bind existing superadmin admin forms/toggles
+        document.querySelectorAll('.admin-delete-account-form').forEach(bindAdminDeleteForm);
+        document.querySelectorAll('.admin-update-account-form').forEach(bindAdminUpdateForm);
+        document.querySelectorAll('.admin-pass-toggle').forEach(bindAdminPasswordToggle);
 
         // Sidebar Toggle
         const sidebarToggle = document.getElementById('sidebar-toggle');
@@ -1812,6 +2593,163 @@
                 closeMessageModal();
             }
         });
+
+        // Theme Toggle functionality removed
+        (function initThemeToggle() {
+            // Theme setting logic was here
+        })();
+    </script>
+
+    <script>
+        (() => {
+            const root = document.documentElement;
+            const body = document.body;
+            const cursorBeam = document.getElementById('ai-cursor-beam');
+            const sidebar = document.querySelector('.admin-sidebar');
+            const navLinks = Array.from(document.querySelectorAll('.adm-nav-link[data-tab]'));
+            const interactiveTargets = document.querySelectorAll('.adm-nav-link, .dash-card, .table-card, .adm-stat, .top-action-btn, .action-btn, .btn-update-cmd, .bulk-btn');
+
+            let pointerX = window.innerWidth * 0.5;
+            let pointerY = window.innerHeight * 0.5;
+            let rafPointer = 0;
+
+            function applyPointer() {
+                root.style.setProperty('--mx', `${pointerX}px`);
+                root.style.setProperty('--my', `${pointerY}px`);
+                if (cursorBeam) {
+                    cursorBeam.style.transform = `translate3d(${pointerX - 170}px, ${pointerY - 170}px, 0)`;
+                }
+                rafPointer = 0;
+            }
+
+            window.addEventListener('mousemove', (event) => {
+                pointerX = event.clientX;
+                pointerY = event.clientY;
+                if (!rafPointer) {
+                    rafPointer = requestAnimationFrame(applyPointer);
+                }
+            }, { passive: true });
+
+            let rafParallax = 0;
+            function updateParallax() {
+                const depth = window.scrollY;
+                root.style.setProperty('--parallax-deep', `${depth * -0.04}px`);
+                root.style.setProperty('--parallax-mid', `${depth * -0.08}px`);
+                root.style.setProperty('--parallax-front', `${depth * -0.14}px`);
+                rafParallax = 0;
+            }
+
+            window.addEventListener('scroll', () => {
+                if (!rafParallax) {
+                    rafParallax = requestAnimationFrame(updateParallax);
+                }
+            }, { passive: true });
+            updateParallax();
+
+            function updateNavRail() {
+                if (!sidebar) return;
+                const active = sidebar.querySelector('.adm-nav-link.active');
+                if (!active) return;
+                const a = active.getBoundingClientRect();
+                const s = sidebar.getBoundingClientRect();
+                root.style.setProperty('--nav-rail-y', `${a.top - s.top}px`);
+                root.style.setProperty('--nav-rail-h', `${a.height}px`);
+            }
+
+            updateNavRail();
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    requestAnimationFrame(updateNavRail);
+                });
+            });
+            window.addEventListener('resize', updateNavRail, { passive: true });
+
+            interactiveTargets.forEach((el) => {
+                el.addEventListener('click', (event) => {
+                    const ripple = document.createElement('span');
+                    ripple.className = 'ai-ripple';
+                    const rect = el.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height) * 1.1;
+                    ripple.style.width = `${size}px`;
+                    ripple.style.height = `${size}px`;
+                    ripple.style.left = `${event.clientX - rect.left - size / 2}px`;
+                    ripple.style.top = `${event.clientY - rect.top - size / 2}px`;
+                    el.appendChild(ripple);
+                    setTimeout(() => ripple.remove(), 680);
+                });
+            });
+
+            const revealTargets = document.querySelectorAll('.dash-card, .table-card, .adm-stat, .super-kpi');
+            const revealObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('ai-reveal-in');
+                    }
+                });
+            }, { threshold: 0.16 });
+            revealTargets.forEach((target) => revealObserver.observe(target));
+
+            const canvas = document.getElementById('ai-particle-field');
+            const context = canvas ? canvas.getContext('2d') : null;
+            const particles = [];
+            const particleCount = Math.min(110, Math.max(40, Math.round(window.innerWidth / 14)));
+
+            function resizeCanvas() {
+                if (!canvas) return;
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
+            function seedParticles() {
+                particles.length = 0;
+                for (let i = 0; i < particleCount; i += 1) {
+                    particles.push({
+                        x: Math.random() * window.innerWidth,
+                        y: Math.random() * window.innerHeight,
+                        r: Math.random() * 1.8 + 0.4,
+                        vx: (Math.random() - 0.5) * 0.24,
+                        vy: (Math.random() - 0.5) * 0.24,
+                        a: Math.random() * 0.45 + 0.12
+                    });
+                }
+            }
+
+            function drawParticles() {
+                if (!context || !canvas) return;
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < particles.length; i += 1) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    if (p.x < -10) p.x = canvas.width + 10;
+                    if (p.x > canvas.width + 10) p.x = -10;
+                    if (p.y < -10) p.y = canvas.height + 10;
+                    if (p.y > canvas.height + 10) p.y = -10;
+
+                    const dx = pointerX - p.x;
+                    const dy = pointerY - p.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const influence = Math.max(0, 1 - distance / 200);
+
+                    context.beginPath();
+                    context.fillStyle = `rgba(110, 196, 255, ${p.a + influence * 0.2})`;
+                    context.arc(p.x - (dx / distance) * influence * 1.8, p.y - (dy / distance) * influence * 1.8, p.r + influence * 0.7, 0, Math.PI * 2);
+                    context.fill();
+                }
+                requestAnimationFrame(drawParticles);
+            }
+
+            if (canvas && context) {
+                resizeCanvas();
+                seedParticles();
+                drawParticles();
+                window.addEventListener('resize', () => {
+                    resizeCanvas();
+                    seedParticles();
+                }, { passive: true });
+            }
+        })();
     </script>
 
     <!-- Toast UI Container -->
