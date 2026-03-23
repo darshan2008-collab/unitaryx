@@ -173,18 +173,48 @@
         };
         const barTick = setInterval(increment, TICK_MS);
 
-        /* ── 4. on load → finish + exit ── */
+        /* ── 4. on load → finish + GPU zoom exit ── */
         const finish = () => {
             clearInterval(statusTick);
             clearInterval(barTick);
+
+            /* Snap bar to 100% */
             if (bar) bar.style.width = "100%";
             if (pctEl) pctEl.textContent = "100%";
-            if (statusEl) statusEl.textContent = "READY";
-            /* short hold then cinematic exit */
+            if (statusEl) statusEl.textContent = "SYSTEMS ONLINE ✓";
+
             setTimeout(() => {
-                ldr.classList.add("hide");
-                setTimeout(() => ldr.remove(), 750);
-            }, 280);
+                /*
+                 * PERFORMANCE: stop ALL expensive work before zoom starts
+                 * so the GPU has a clear runway to hit 60fps.
+                 */
+
+                /* 1. Kill canvas starfield RAF */
+                const canvas = q("#ux-ldr-canvas");
+                if (canvas) canvas.style.display = "none"; /* stops drawCanvas RAF on next tick */
+
+                /* 2. Remove particle DOM nodes (saves render cost) */
+                const ptc = q("#ux-ldr-particles");
+                if (ptc) ptc.innerHTML = "";
+
+                /* 3. Hide streams + sweep + hud instantly */
+                [".ux-ldr-streams", ".ux-ldr-scan-sweep", ".ux-ldr-hud", ".ux-ldr-svg-rings"]
+                    .forEach(sel => { const el = q(sel); if (el) el.style.opacity = "0"; });
+
+                /* 4. Wait one frame so browser flushes style changes,
+                   then add zoom-exit on a clean GPU frame */
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        ldr.classList.add("zoom-exit");
+
+                        /* Remove after animation completes (800ms) */
+                        setTimeout(() => {
+                            ldr.classList.add("hide");
+                            setTimeout(() => ldr.remove(), 300);
+                        }, 800);
+                    });
+                });
+            }, 400);
         };
 
         if (document.readyState === "complete") {

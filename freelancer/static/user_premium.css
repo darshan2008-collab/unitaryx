@@ -475,20 +475,7 @@ body {
     50%       { transform: scale(1.3); opacity: 1; }
 }
 
-.ux-ldr-hex-badge {
-    position: relative;
-    width: 100px; height: 90px;
-    margin-bottom: -10px;
-    animation: ldrHexBadgeSpin 30s linear infinite;
-    filter: drop-shadow(0 0 16px rgba(0,242,255,0.5));
-}
 
-@keyframes ldrHexBadgeSpin {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-}
-
-.ux-ldr-hex-svg { width: 100%; height: 100%; }
 
 .ux-ldr-logo-text {
     display: flex;
@@ -734,6 +721,58 @@ body {
 }
 
 .ux-loader.hide .ux-ldr-wipe { transform: translateY(-100%); }
+
+/* ══ GPU-OPTIMISED ZOOM EXIT (60 FPS) ═══════════════════════
+   RULES:
+   - ONLY animate transform + opacity (GPU-composited, no repaint)
+   - NO background / color / box-shadow / filter changes
+   - will-change pre-promotes elements to their own GPU layers
+   - All child CSS animations killed before zoom fires (via JS)
+   - Scale capped at 6× to avoid rasterisation overload
+══════════════════════════════════════════════════════════════ */
+
+/* Pre-promote loader to GPU layer the moment it exists */
+.ux-loader { will-change: transform, opacity; backface-visibility: hidden; }
+
+/* Freeze ALL child animations when zoom begins — done in JS too */
+.ux-loader.zoom-exit * {
+    animation-play-state: paused !important;
+}
+
+/* The loader itself zooms forward — GPU only */
+.ux-loader.zoom-exit {
+    animation: ldrZoomExit 0.8s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+    will-change: transform, opacity;
+}
+
+/* Core text also gets its own GPU layer and punches forward */
+.ux-loader.zoom-exit .ux-ldr-core {
+    animation: ldrCoreZoom 0.8s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+    animation-play-state: running !important;
+    will-change: transform, opacity;
+}
+
+/* GPU-only: transform + opacity only */
+@keyframes ldrZoomExit {
+    0%   { transform: scale(1);   opacity: 1; }
+    50%  { transform: scale(2.2); opacity: 1; }
+    100% { transform: scale(6);   opacity: 0; }
+}
+
+@keyframes ldrCoreZoom {
+    0%   { transform: scale(1);   opacity: 1; }
+    45%  { transform: scale(1.8); opacity: 1; }
+    100% { transform: scale(5);   opacity: 0; }
+}
+
+/* After zoom, hide cleanly — no wipe needed */
+.ux-loader.zoom-exit.hide {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s linear, visibility 0.3s linear;
+}
+
+.ux-loader.zoom-exit .ux-ldr-wipe { display: none; }
 
 
 
