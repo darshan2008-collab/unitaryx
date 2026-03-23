@@ -14,6 +14,7 @@ from io import StringIO
 from email.message import EmailMessage
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 # Security & Config
 from flask_talisman import Talisman
@@ -21,7 +22,8 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 
-load_dotenv(os.path.join(os.path.dirname(__file__), ".env"), override=True)
+# Keep container/host env vars authoritative while still supporting local .env defaults.
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"), override=False)
 
 APP_DIR = os.path.abspath(os.path.dirname(__file__))
 app = Flask(
@@ -219,9 +221,16 @@ def add_no_cache_headers(response):
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL", f"sqlite:///{os.path.join(basedir, 'unitaryx_v2.db')}")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    "connect_args": {"timeout": 5}
-}
+db_uri = (app.config['SQLALCHEMY_DATABASE_URI'] or "").lower()
+if db_uri.startswith("sqlite"):
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "connect_args": {"timeout": 5}
+    }
+else:
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "connect_args": {"connect_timeout": 5},
+        "pool_pre_ping": True,
+    }
 db = SQLAlchemy(app)
 
 
@@ -2283,13 +2292,26 @@ def toggle_user(uid):
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 
-with app.app_context():
-    db.create_all()
-    seed_data()
-    AdminCredentialRecord.query.filter(AdminCredentialRecord.temporary_password != "").update(
-        {"temporary_password": ""}, synchronize_session=False
-    )
-    db.session.commit()
+def initialize_database():
+    with app.app_context():
+        try:
+            db.create_all()
+            seed_data()
+            AdminCredentialRecord.query.filter(AdminCredentialRecord.temporary_password != "").update(
+                {"temporary_password": ""}, synchronize_session=False
+            )
+            db.session.commit()
+        except IntegrityError as exc:
+            # When multiple workers start at once, table creation can race once; recover gracefully.
+            db.session.rollback()
+            app.logger.warning("Non-fatal database initialization race detected: %s", exc)
+        except OperationalError:
+            db.session.rollback()
+            app.logger.exception("Database initialization failed")
+            raise
+
+
+initialize_database()
 
 if __name__ == "__main__":
     with app.app_context():
