@@ -1,0 +1,15 @@
+.git
+.gitignore
+.vscode
+__pycache__/
+*/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+instance/
+freelancer/instance/
+backup/
+*.zip
+.env
+.env.*
