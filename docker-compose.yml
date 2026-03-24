@@ -2,6 +2,7 @@ version: "3.8"
 
 services:
   db:
+    profiles: ["internal-db"]
     image: postgres:16-alpine
     container_name: unitaryx-db
     restart: unless-stopped
@@ -11,7 +12,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeThisDbPassword!}
       TZ: ${TZ:-UTC}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
@@ -30,9 +31,6 @@ services:
     image: unitaryx-app:latest
     container_name: unitaryx-app
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
       TZ: ${TZ:-UTC}
       DEBUG: ${DEBUG:-False}
@@ -40,7 +38,7 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@unitaryx.com}
       ADMIN_PASS: ${ADMIN_PASS:-ChangeMeNow123!}
       PORT: ${APP_PORT:-10003}
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-unitaryx}:${POSTGRES_PASSWORD:-ChangeThisDbPassword!}@db:5432/${POSTGRES_DB:-unitaryx}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://${POSTGRES_USER:-unitaryx}:${POSTGRES_PASSWORD:-ChangeThisDbPassword!}@${DB_HOST:-db}:${DB_PORT:-5432}/${POSTGRES_DB:-unitaryx}}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_ALLOWED_ORIGINS: ${GOOGLE_ALLOWED_ORIGINS:-https://unitaryx.org,http://localhost:10003,http://127.0.0.1:10003}
