@@ -154,8 +154,9 @@
                     </div>
                     {% else %}
                     <div class="auth-alert" style="display:block; margin-top:12px; font-size:0.86rem;">
-                        Google Sign-In disabled for this host ({{ google_current_origin }}). Add this origin in Google
-                        Cloud OAuth Client then reload.
+                        Google Sign-In disabled for this host ({{ google_current_origin }}).
+                        {% if google_signin_reason %}{{ google_signin_reason }}{% endif %}
+                        Add this origin in Google Cloud OAuth Client then reload.
                     </div>
                     {% endif %}
                 </form>

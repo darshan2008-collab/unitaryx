@@ -487,6 +487,15 @@ def _origin_host(origin):
     return host
 
 
+def _is_google_client_id_configured():
+    client_id = (app.config.get("GOOGLE_CLIENT_ID") or "").strip()
+    if not client_id:
+        return False
+    if "your_google_client_id_here" in client_id:
+        return False
+    return client_id.endswith(".apps.googleusercontent.com")
+
+
 def get_google_origin_settings(current_origin):
     raw = (os.getenv("GOOGLE_ALLOWED_ORIGINS") or "").strip()
     configured = {
@@ -497,9 +506,18 @@ def get_google_origin_settings(current_origin):
     allowed_hosts = {_origin_host(x) for x in allowed_origins if _origin_host(x)}
     current_host = _origin_host(normalized_current)
     # Allow same-host origins even when proxy transport rewriting changes scheme.
-    enabled = normalized_current in allowed_origins or (current_host and current_host in allowed_hosts)
+    origin_allowed = normalized_current in allowed_origins or (current_host and current_host in allowed_hosts)
+    client_id_ok = _is_google_client_id_configured()
+    enabled = bool(origin_allowed and client_id_ok)
+    if not client_id_ok:
+        reason = "Google OAuth client is not configured on server."
+    elif not origin_allowed:
+        reason = "Current host is not in GOOGLE_ALLOWED_ORIGINS."
+    else:
+        reason = ""
     return {
         "enabled": enabled,
+        "reason": reason,
         "current_origin": normalized_current,
         "allowed_origins": sorted(allowed_origins),
     }
@@ -836,6 +854,7 @@ def login():
         tab=tab,
         error=error,
         google_signin_enabled=origin_settings["enabled"],
+        google_signin_reason=origin_settings["reason"],
         google_current_origin=origin_settings["current_origin"],
         google_allowed_origins=origin_settings["allowed_origins"],
     )

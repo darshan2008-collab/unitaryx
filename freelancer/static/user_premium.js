@@ -903,7 +903,14 @@
                     },
                     body: JSON.stringify(payload),
                 });
-                const data = await res.json();
+                let data = {};
+                const contentType = (res.headers.get("content-type") || "").toLowerCase();
+                if (contentType.includes("application/json")) {
+                    data = await res.json();
+                } else {
+                    const rawText = await res.text();
+                    data = { message: rawText || `Request failed (${res.status})` };
+                }
                 if (!res.ok || !data.success) {
                     const msg = data.message || (data.errors ? Object.values(data.errors)[0] : "Request failed");
                     feedback.className = "ux-feedback err";
