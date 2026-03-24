@@ -2291,11 +2291,10 @@
             form.dataset.boundDelete = '1';
 
             form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-
-                if (typeof form.onsubmit === 'function' && form.onsubmit() === false) {
+                if (e.defaultPrevented) {
                     return;
                 }
+                e.preventDefault();
 
                 const submitBtn = form.querySelector('button[type="submit"]');
                 const originalText = submitBtn ? submitBtn.innerHTML : '';
