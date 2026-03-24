@@ -15,6 +15,7 @@ from email.message import EmailMessage
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from sqlalchemy.exc import IntegrityError, OperationalError
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Security & Config
 from flask_talisman import Talisman
@@ -33,6 +34,8 @@ app = Flask(
     template_folder=os.path.join(APP_DIR, "templates"),
     static_folder=os.path.join(APP_DIR, "static"),
 )
+# Respect original scheme/host when running behind reverse proxies (NPM/Traefik).
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1, x_port=1)
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.jinja_env.auto_reload = True
@@ -50,6 +53,8 @@ DEFAULT_GOOGLE_ALLOWED_ORIGINS = {
     "https://unitaryx.org",
     "http://localhost:5005",
     "http://127.0.0.1:5005",
+    "http://unitaryx.org",
+    
 }
 
 OAUTH_ADMIN_EMAILS = {
@@ -473,6 +478,15 @@ def _normalize_origin(origin):
     return (origin or "").strip().rstrip("/")
 
 
+def _origin_host(origin):
+    normalized = _normalize_origin(origin)
+    if not normalized:
+        return ""
+    parsed = urllib.parse.urlsplit(normalized)
+    host = (parsed.netloc or parsed.path or "").strip().lower()
+    return host
+
+
 def get_google_origin_settings(current_origin):
     raw = (os.getenv("GOOGLE_ALLOWED_ORIGINS") or "").strip()
     configured = {
@@ -480,7 +494,10 @@ def get_google_origin_settings(current_origin):
     }
     allowed_origins = configured if configured else DEFAULT_GOOGLE_ALLOWED_ORIGINS
     normalized_current = _normalize_origin(current_origin)
-    enabled = normalized_current in allowed_origins
+    allowed_hosts = {_origin_host(x) for x in allowed_origins if _origin_host(x)}
+    current_host = _origin_host(normalized_current)
+    # Allow same-host origins even when proxy transport rewriting changes scheme.
+    enabled = normalized_current in allowed_origins or (current_host and current_host in allowed_hosts)
     return {
         "enabled": enabled,
         "current_origin": normalized_current,
