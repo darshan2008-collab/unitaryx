@@ -26,6 +26,16 @@
         lerp: (a, b, n) => (1 - n) * a + n * b,
     };
 
+    const mobileLite =
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+        window.matchMedia("(max-width: 768px)").matches ||
+        /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        (navigator.hardwareConcurrency || 8) <= 4;
+
+    if (mobileLite && document.body) {
+        document.body.classList.add("ux-mobile-lite");
+    }
+
     window.addEventListener("mousemove", (e) => {
         state.mx = e.clientX;
         state.my = e.clientY;
@@ -68,6 +78,14 @@
         const ldrCanvas = q("#ux-ldr-canvas");
         if (!ldr) return;
 
+        if (mobileLite) {
+            ldr.classList.add("hide");
+            setTimeout(() => {
+                if (ldr.parentNode) ldr.remove();
+            }, 120);
+            return;
+        }
+
         /* ── 0. canvas starfield + nebula ── */
         if (ldrCanvas) {
             const lctx = ldrCanvas.getContext("2d");
@@ -85,7 +103,7 @@
                 da: (Math.random() - 0.5) * 0.012,
                 vx: (Math.random() - 0.5) * 0.15,
                 vy: (Math.random() - 0.5) * 0.15,
-                color: ["34,211,238","139,92,246","236,72,153","245,158,11","96,165,250"][Math.floor(Math.random()*5)]
+                color: ["34,211,238", "139,92,246", "236,72,153", "245,158,11", "96,165,250"][Math.floor(Math.random() * 5)]
             }));
             let ldrRaf;
             const drawCanvas = () => {
@@ -122,7 +140,7 @@
 
         /* ── 1. seed particle field (more particles, with glow) ── */
         if (ptcWrap) {
-            const COLORS = ["#22d3ee","#8b5cf6","#ec4899","#34d399","#f59e0b","#60a5fa","#f472b6"];
+            const COLORS = ["#22d3ee", "#8b5cf6", "#ec4899", "#34d399", "#f59e0b", "#60a5fa", "#f472b6"];
             for (let i = 0; i < 90; i++) {
                 const s = document.createElement("span");
                 const ang = Math.random() * Math.PI * 2;
@@ -238,6 +256,7 @@
 
 
     const initBackgroundParticles = () => {
+        if (mobileLite) return;
         const canvas = q("#ux-bg-canvas");
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
@@ -500,7 +519,7 @@
         const orbs = qa(".ux-orb");
         const floor = q(".ux-grid-floor");
         if (!floats.length && !orbs.length && !floor) return;
-        
+
         let tx = 0, ty = 0; // Target
         let cx = 0, cy = 0; // Current
         const lerp = (a, b, n) => (1 - n) * a + n * b;
@@ -1173,28 +1192,38 @@
         initHeadline();
         initReveals();
         initNavActive();
-        initMagnetic();
-        initRipples();
-        initHeroParallax();
+        if (!mobileLite) {
+            initMagnetic();
+            initRipples();
+            initHeroParallax();
+        }
         initSkillTags();
         initMeters();
         initProjectFilter();
         initLiveStatus();
         initPricingMode();
-        initTiltAndCounters();
+        if (!mobileLite) {
+            initTiltAndCounters();
+        }
         initTestimonial();
         initFaq();
         initContact();
         initScrollProgress();
-        initCommandPalette();
-        initEasterEgg();
+        if (!mobileLite) {
+            initCommandPalette();
+            initEasterEgg();
+        }
         /* ── NEW FEATURES ── */
-        initStatCounters();
+        if (!mobileLite) {
+            initStatCounters();
+        }
         initSkillBars();
         initTestimonialCarousel();
         initPriceEstimator();
-        initSpotlightCards();
-        initScrambleText();
+        if (!mobileLite) {
+            initSpotlightCards();
+            initScrambleText();
+        }
     };
 
     init();

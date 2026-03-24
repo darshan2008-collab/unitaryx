@@ -7,7 +7,8 @@
     --ux-border: rgba(34, 211, 238, 0.18);
     --ux-text: #ffffff;
     --ux-muted: #94a3b8;
-    --ux-blue: #00f2ff; /* Electric Cyan */
+    --ux-blue: #00f2ff;
+    /* Electric Cyan */
     --ux-violet: #8b5cf6;
     --ux-gold: #f59e0b;
     --ux-glow: 0 0 40px rgba(0, 242, 255, 0.3);
@@ -227,18 +228,65 @@ body {
     transition: opacity 0.9s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.9s;
 }
 
-.ux-loader.hide { opacity: 0; visibility: hidden; }
+.ux-loader.hide {
+    opacity: 0;
+    visibility: hidden;
+}
+
+body.ux-mobile-lite .ux-loader,
+body.ux-mobile-lite .ux-bg-canvas,
+body.ux-mobile-lite .ux-grid-overlay,
+body.ux-mobile-lite .ux-bg-orbs,
+body.ux-mobile-lite .ux-light-beam {
+    display: none !important;
+}
+
+body.ux-mobile-lite .ux-shell {
+    overflow-x: hidden;
+}
+
+body.ux-mobile-lite .ux-hero-wrap,
+body.ux-mobile-lite .ux-process-grid,
+body.ux-mobile-lite .ux-services-grid,
+body.ux-mobile-lite .ux-project-grid,
+body.ux-mobile-lite .ux-contact-grid,
+body.ux-mobile-lite .ux-footer-grid {
+    grid-template-columns: 1fr !important;
+}
+
+body.ux-mobile-lite .ux-section,
+body.ux-mobile-lite .ux-nav-inner {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+}
+
+body.ux-mobile-lite .ux-headline {
+    font-size: clamp(1.6rem, 7.5vw, 2rem) !important;
+    line-height: 1.2;
+}
+
+body.ux-mobile-lite .ux-btn,
+body.ux-mobile-lite input,
+body.ux-mobile-lite textarea,
+body.ux-mobile-lite select {
+    font-size: 16px;
+}
+
+body.ux-mobile-lite *,
+body.ux-mobile-lite *::before,
+body.ux-mobile-lite *::after {
+    animation: none !important;
+    transition: none !important;
+}
 
 /* CRT scanline overlay */
 .ux-loader::before {
     content: "";
     position: absolute;
     inset: 0;
-    background: repeating-linear-gradient(
-        0deg,
-        rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px,
-        rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px
-    );
+    background: repeating-linear-gradient(0deg,
+            rgba(0, 0, 0, 0) 0px, rgba(0, 0, 0, 0) 2px,
+            rgba(0, 0, 0, 0.06) 2px, rgba(0, 0, 0, 0.06) 4px);
     pointer-events: none;
     z-index: 999;
 }
@@ -249,17 +297,24 @@ body {
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(ellipse 70% 60% at 50% 50%, rgba(0,242,255,0.07) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 30% at 25% 75%, rgba(139,92,246,0.08) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 30% at 75% 25%, rgba(236,72,153,0.06) 0%, transparent 60%);
+        radial-gradient(ellipse 70% 60% at 50% 50%, rgba(0, 242, 255, 0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 30% at 25% 75%, rgba(139, 92, 246, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 75% 25%, rgba(236, 72, 153, 0.06) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
     animation: ldrAmbientShift 8s ease-in-out infinite alternate;
 }
 
 @keyframes ldrAmbientShift {
-    0%   { opacity: 0.8; transform: scale(1); }
-    100% { opacity: 1;   transform: scale(1.05); }
+    0% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
 }
 
 /* ── LAYER 1: CANVAS ── */
@@ -277,42 +332,103 @@ body {
     position: absolute;
     width: min(90vmin, 700px);
     height: min(90vmin, 700px);
-    top: 50%; left: 50%;
+    top: 50%;
+    left: 50%;
     transform: translate(-50%, -50%);
     z-index: 2;
     overflow: visible;
 }
 
-.ux-ldr-arc-grp       { transform-origin: 400px 400px; }
-.ux-ldr-arc-grp.a1    { animation: ldrArcG1 14s linear infinite; }
-.ux-ldr-arc-grp.a2    { animation: ldrArcG2 22s linear infinite; }
-.ux-ldr-arc-grp.a3    { animation: ldrArcG3  9s linear infinite; }
+.ux-ldr-arc-grp {
+    transform-origin: 400px 400px;
+}
 
-@keyframes ldrArcG1 { to { transform: rotate(360deg); } }
-@keyframes ldrArcG2 { to { transform: rotate(-360deg); } }
-@keyframes ldrArcG3 { to { transform: rotate(360deg); } }
+.ux-ldr-arc-grp.a1 {
+    animation: ldrArcG1 14s linear infinite;
+}
+
+.ux-ldr-arc-grp.a2 {
+    animation: ldrArcG2 22s linear infinite;
+}
+
+.ux-ldr-arc-grp.a3 {
+    animation: ldrArcG3 9s linear infinite;
+}
+
+@keyframes ldrArcG1 {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes ldrArcG2 {
+    to {
+        transform: rotate(-360deg);
+    }
+}
+
+@keyframes ldrArcG3 {
+    to {
+        transform: rotate(360deg);
+    }
+}
 
 .ux-ldr-hex-frame {
     transform-origin: 400px 400px;
     animation: ldrHexDrift 30s linear infinite;
 }
-@keyframes ldrHexDrift { to { transform: rotate(360deg); } }
 
-.ux-ldr-tri { transform-origin: 400px 400px; }
-.ux-ldr-tri.t1 { animation: ldrTriA 11s linear infinite; }
-.ux-ldr-tri.t2 { animation: ldrTriB 17s linear infinite; }
-@keyframes ldrTriA { to { transform: rotate(360deg); } }
-@keyframes ldrTriB { to { transform: rotate(-360deg); } }
+@keyframes ldrHexDrift {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.ux-ldr-tri {
+    transform-origin: 400px 400px;
+}
+
+.ux-ldr-tri.t1 {
+    animation: ldrTriA 11s linear infinite;
+}
+
+.ux-ldr-tri.t2 {
+    animation: ldrTriB 17s linear infinite;
+}
+
+@keyframes ldrTriA {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes ldrTriB {
+    to {
+        transform: rotate(-360deg);
+    }
+}
 
 .ux-ldr-core-ring {
     transform-origin: 400px 400px;
     animation: ldrCoreRingPulse 2.5s ease-in-out infinite;
 }
-.ux-ldr-core-ring.r2 { animation-delay: -1.25s; }
+
+.ux-ldr-core-ring.r2 {
+    animation-delay: -1.25s;
+}
 
 @keyframes ldrCoreRingPulse {
-    0%, 100% { opacity: 0.5; transform: scale(1); }
-    50%       { opacity: 1;   transform: scale(1.08); }
+
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.08);
+    }
 }
 
 /* ── LAYER 3: 3D ORBIT RINGS ── */
@@ -320,7 +436,8 @@ body {
     position: absolute;
     width: 600px;
     height: 600px;
-    top: 50%; left: 50%;
+    top: 50%;
+    left: 50%;
     margin-top: -300px;
     margin-left: -300px;
     transform-style: preserve-3d;
@@ -330,64 +447,105 @@ body {
 }
 
 @keyframes ldrOrbTilt {
-    0%   { transform: rotateX(20deg) rotateY(-12deg); }
-    100% { transform: rotateX(-20deg) rotateY(12deg); }
+    0% {
+        transform: rotateX(20deg) rotateY(-12deg);
+    }
+
+    100% {
+        transform: rotateX(-20deg) rotateY(12deg);
+    }
 }
 
 .ux-ldr-orbit {
     position: absolute;
-    top: 50%; left: 50%;
+    top: 50%;
+    left: 50%;
     border-radius: 50%;
     transform: translate(-50%, -50%);
 }
 
 .ux-ldr-orbit.o1 {
-    width: 580px; height: 580px;
-    border: 1px dashed rgba(0,242,255,0.22);
+    width: 580px;
+    height: 580px;
+    border: 1px dashed rgba(0, 242, 255, 0.22);
     animation: ldrOrbitSpin 35s linear infinite;
-    box-shadow: inset 0 0 60px rgba(0,242,255,0.03);
+    box-shadow: inset 0 0 60px rgba(0, 242, 255, 0.03);
 }
+
 .ux-ldr-orbit.o2 {
-    width: 470px; height: 470px;
-    border: 1px solid rgba(139,92,246,0.2);
+    width: 470px;
+    height: 470px;
+    border: 1px solid rgba(139, 92, 246, 0.2);
     animation: ldrOrbitSpin 22s linear infinite reverse;
 }
+
 .ux-ldr-orbit.o3 {
-    width: 360px; height: 360px;
+    width: 360px;
+    height: 360px;
     border: 2px solid transparent;
     border-top-color: #00f2ff;
     border-bottom-color: #8b5cf6;
-    box-shadow: 0 0 25px rgba(0,242,255,0.15);
+    box-shadow: 0 0 25px rgba(0, 242, 255, 0.15);
     animation: ldrOrbitSpin 9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
+
 .ux-ldr-orbit.o4 {
-    width: 250px; height: 250px;
-    border: 1px dotted rgba(255,255,255,0.15);
+    width: 250px;
+    height: 250px;
+    border: 1px dotted rgba(255, 255, 255, 0.15);
     animation: ldrOrbitSpin 14s linear infinite;
 }
 
 @keyframes ldrOrbitSpin {
-    from { transform: translate(-50%, -50%) rotateZ(0deg); }
-    to   { transform: translate(-50%, -50%) rotateZ(360deg); }
+    from {
+        transform: translate(-50%, -50%) rotateZ(0deg);
+    }
+
+    to {
+        transform: translate(-50%, -50%) rotateZ(360deg);
+    }
 }
 
 .ux-ldr-orb-node {
     position: absolute;
-    top: -7px; left: 50%;
-    width: 14px; height: 14px;
+    top: -7px;
+    left: 50%;
+    width: 14px;
+    height: 14px;
     margin-left: -7px;
     border-radius: 50%;
     background: #fff;
-    box-shadow: 0 0 0 2px rgba(0,242,255,0.4), 0 0 20px #00f2ff, 0 0 50px rgba(0,242,255,0.5);
+    box-shadow: 0 0 0 2px rgba(0, 242, 255, 0.4), 0 0 20px #00f2ff, 0 0 50px rgba(0, 242, 255, 0.5);
     animation: ldrNodePulse 2s ease-in-out infinite;
 }
-.ux-ldr-orb-node.n2 { background: #8b5cf6; box-shadow: 0 0 0 2px rgba(139,92,246,0.4), 0 0 20px #8b5cf6, 0 0 50px rgba(139,92,246,0.4); }
-.ux-ldr-orb-node.n3 { background: #ec4899; box-shadow: 0 0 0 2px rgba(236,72,153,0.4), 0 0 20px #ec4899, 0 0 50px rgba(236,72,153,0.4); }
-.ux-ldr-orb-node.n4 { background: #00f2ff; box-shadow: 0 0 0 2px rgba(0,242,255,0.4), 0 0 20px #00f2ff, 0 0 50px rgba(0,242,255,0.4); top: auto; bottom: -7px; }
+
+.ux-ldr-orb-node.n2 {
+    background: #8b5cf6;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.4), 0 0 20px #8b5cf6, 0 0 50px rgba(139, 92, 246, 0.4);
+}
+
+.ux-ldr-orb-node.n3 {
+    background: #ec4899;
+    box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.4), 0 0 20px #ec4899, 0 0 50px rgba(236, 72, 153, 0.4);
+}
+
+.ux-ldr-orb-node.n4 {
+    background: #00f2ff;
+    box-shadow: 0 0 0 2px rgba(0, 242, 255, 0.4), 0 0 20px #00f2ff, 0 0 50px rgba(0, 242, 255, 0.4);
+    top: auto;
+    bottom: -7px;
+}
 
 @keyframes ldrNodePulse {
-    0%, 100% { transform: scale(1); }
-    50%       { transform: scale(1.5); }
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.5);
+    }
 }
 
 /* ── LAYER 4: DATA STREAMS ── */
@@ -401,45 +559,122 @@ body {
 .ux-ldr-stream {
     position: absolute;
     width: 1px;
-    background: linear-gradient(to bottom, transparent 0%, rgba(0,242,255,0.8) 50%, transparent 100%);
+    background: linear-gradient(to bottom, transparent 0%, rgba(0, 242, 255, 0.8) 50%, transparent 100%);
     opacity: 0;
     animation: ldrStreamFall linear infinite;
 }
 
-.ux-ldr-stream.s1 { left:  6%; height: 22vh; animation-duration: 1.8s; animation-delay: 0.0s; }
-.ux-ldr-stream.s2 { left: 12%; height: 30vh; animation-duration: 2.4s; animation-delay: 0.5s; background: linear-gradient(to bottom, transparent 0%, rgba(139,92,246,0.8) 50%, transparent 100%); }
-.ux-ldr-stream.s3 { left: 30%; height: 18vh; animation-duration: 1.5s; animation-delay: 0.9s; }
-.ux-ldr-stream.s4 { left: 48%; height: 26vh; animation-duration: 2.1s; animation-delay: 0.2s; background: linear-gradient(to bottom, transparent 0%, rgba(236,72,153,0.8) 50%, transparent 100%); }
-.ux-ldr-stream.s5 { left: 62%; height: 20vh; animation-duration: 1.6s; animation-delay: 0.7s; }
-.ux-ldr-stream.s6 { left: 75%; height: 28vh; animation-duration: 2.0s; animation-delay: 0.3s; background: linear-gradient(to bottom, transparent 0%, rgba(139,92,246,0.8) 50%, transparent 100%); }
-.ux-ldr-stream.s7 { left: 86%; height: 24vh; animation-duration: 1.9s; animation-delay: 1.1s; }
-.ux-ldr-stream.s8 { left: 94%; height: 16vh; animation-duration: 1.4s; animation-delay: 0.6s; }
+.ux-ldr-stream.s1 {
+    left: 6%;
+    height: 22vh;
+    animation-duration: 1.8s;
+    animation-delay: 0.0s;
+}
+
+.ux-ldr-stream.s2 {
+    left: 12%;
+    height: 30vh;
+    animation-duration: 2.4s;
+    animation-delay: 0.5s;
+    background: linear-gradient(to bottom, transparent 0%, rgba(139, 92, 246, 0.8) 50%, transparent 100%);
+}
+
+.ux-ldr-stream.s3 {
+    left: 30%;
+    height: 18vh;
+    animation-duration: 1.5s;
+    animation-delay: 0.9s;
+}
+
+.ux-ldr-stream.s4 {
+    left: 48%;
+    height: 26vh;
+    animation-duration: 2.1s;
+    animation-delay: 0.2s;
+    background: linear-gradient(to bottom, transparent 0%, rgba(236, 72, 153, 0.8) 50%, transparent 100%);
+}
+
+.ux-ldr-stream.s5 {
+    left: 62%;
+    height: 20vh;
+    animation-duration: 1.6s;
+    animation-delay: 0.7s;
+}
+
+.ux-ldr-stream.s6 {
+    left: 75%;
+    height: 28vh;
+    animation-duration: 2.0s;
+    animation-delay: 0.3s;
+    background: linear-gradient(to bottom, transparent 0%, rgba(139, 92, 246, 0.8) 50%, transparent 100%);
+}
+
+.ux-ldr-stream.s7 {
+    left: 86%;
+    height: 24vh;
+    animation-duration: 1.9s;
+    animation-delay: 1.1s;
+}
+
+.ux-ldr-stream.s8 {
+    left: 94%;
+    height: 16vh;
+    animation-duration: 1.4s;
+    animation-delay: 0.6s;
+}
 
 @keyframes ldrStreamFall {
-    0%   { transform: translateY(-30vh); opacity: 0; }
-    15%  { opacity: 1; }
-    85%  { opacity: 1; }
-    100% { transform: translateY(110vh); opacity: 0; }
+    0% {
+        transform: translateY(-30vh);
+        opacity: 0;
+    }
+
+    15% {
+        opacity: 1;
+    }
+
+    85% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(110vh);
+        opacity: 0;
+    }
 }
 
 /* ── LAYER 5: SCAN SWEEP ── */
 .ux-ldr-scan-sweep {
     position: absolute;
-    left: 0; right: 0;
+    left: 0;
+    right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent 0%, rgba(0,242,255,0.9) 50%, transparent 100%);
+    background: linear-gradient(90deg, transparent 0%, rgba(0, 242, 255, 0.9) 50%, transparent 100%);
     filter: blur(1px);
-    box-shadow: 0 0 30px rgba(0,242,255,0.4), 0 0 80px rgba(0,242,255,0.15);
+    box-shadow: 0 0 30px rgba(0, 242, 255, 0.4), 0 0 80px rgba(0, 242, 255, 0.15);
     z-index: 15;
     animation: ldrScanSweep 3.5s ease-in-out infinite;
     pointer-events: none;
 }
 
 @keyframes ldrScanSweep {
-    0%   { top: 0%; opacity: 0; }
-    5%   { opacity: 1; }
-    95%  { opacity: 1; }
-    100% { top: 100%; opacity: 0; }
+    0% {
+        top: 0%;
+        opacity: 0;
+    }
+
+    5% {
+        opacity: 1;
+    }
+
+    95% {
+        opacity: 1;
+    }
+
+    100% {
+        top: 100%;
+        opacity: 0;
+    }
 }
 
 /* ── LAYER 6: CENTRAL LOGO CORE ── */
@@ -455,15 +690,23 @@ body {
 }
 
 @keyframes ldrCoreReveal {
-    from { opacity: 0; transform: scale(0.6) rotateX(30deg); }
-    to   { opacity: 1; transform: scale(1) rotateX(0deg); }
+    from {
+        opacity: 0;
+        transform: scale(0.6) rotateX(30deg);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) rotateX(0deg);
+    }
 }
 
 .ux-ldr-core-glow {
     position: absolute;
-    width: 300px; height: 300px;
+    width: 300px;
+    height: 300px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(0,242,255,0.15) 0%, rgba(139,92,246,0.1) 40%, transparent 70%);
+    background: radial-gradient(circle, rgba(0, 242, 255, 0.15) 0%, rgba(139, 92, 246, 0.1) 40%, transparent 70%);
     filter: blur(30px);
     animation: ldrCoreGlowPulse 3s ease-in-out infinite;
     pointer-events: none;
@@ -471,8 +714,17 @@ body {
 }
 
 @keyframes ldrCoreGlowPulse {
-    0%, 100% { transform: scale(1);   opacity: 0.7; }
-    50%       { transform: scale(1.3); opacity: 1; }
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+
+    50% {
+        transform: scale(1.3);
+        opacity: 1;
+    }
 }
 
 
@@ -492,7 +744,7 @@ body {
     letter-spacing: 0.5em;
     margin-left: 0.5em;
     color: #fff;
-    text-shadow: 0 0 20px rgba(0,242,255,0.9), 0 0 60px rgba(0,242,255,0.4), 0 0 120px rgba(0,242,255,0.2);
+    text-shadow: 0 0 20px rgba(0, 242, 255, 0.9), 0 0 60px rgba(0, 242, 255, 0.4), 0 0 120px rgba(0, 242, 255, 0.2);
     position: relative;
     display: inline-block;
 }
@@ -501,26 +753,82 @@ body {
 .ux-ldr-glitch::after {
     content: attr(data-text);
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     clip-path: inset(100% 0 0 0);
     opacity: 0;
     letter-spacing: inherit;
     font-weight: inherit;
 }
-.ux-ldr-glitch::before { color: #00f2ff; z-index: 1; animation: ldrGlitch1 6s infinite; }
-.ux-ldr-glitch::after  { color: #8b5cf6; z-index: 1; animation: ldrGlitch2 6s infinite; }
+
+.ux-ldr-glitch::before {
+    color: #00f2ff;
+    z-index: 1;
+    animation: ldrGlitch1 6s infinite;
+}
+
+.ux-ldr-glitch::after {
+    color: #8b5cf6;
+    z-index: 1;
+    animation: ldrGlitch2 6s infinite;
+}
 
 @keyframes ldrGlitch1 {
-    0%, 88%, 100% { opacity: 0; clip-path: inset(100% 0 0 0); transform: translate(0); }
-    90% { opacity: 0.8; clip-path: inset(15% 0 65% 0); transform: translate(-4px, 1px); }
-    93% { opacity: 0.6; clip-path: inset(60% 0 15% 0); transform: translate(4px, -2px); }
-    96% { opacity: 0; clip-path: inset(100% 0 0 0); }
+
+    0%,
+    88%,
+    100% {
+        opacity: 0;
+        clip-path: inset(100% 0 0 0);
+        transform: translate(0);
+    }
+
+    90% {
+        opacity: 0.8;
+        clip-path: inset(15% 0 65% 0);
+        transform: translate(-4px, 1px);
+    }
+
+    93% {
+        opacity: 0.6;
+        clip-path: inset(60% 0 15% 0);
+        transform: translate(4px, -2px);
+    }
+
+    96% {
+        opacity: 0;
+        clip-path: inset(100% 0 0 0);
+    }
 }
+
 @keyframes ldrGlitch2 {
-    0%, 91%, 100% { opacity: 0; clip-path: inset(100% 0 0 0); transform: translate(0); }
-    94% { opacity: 0.7; clip-path: inset(35% 0 40% 0); transform: translate(4px, -1px); }
-    97% { opacity: 0.5; clip-path: inset(5% 0 80% 0); transform: translate(-4px, 2px); }
-    99% { opacity: 0; clip-path: inset(100% 0 0 0); }
+
+    0%,
+    91%,
+    100% {
+        opacity: 0;
+        clip-path: inset(100% 0 0 0);
+        transform: translate(0);
+    }
+
+    94% {
+        opacity: 0.7;
+        clip-path: inset(35% 0 40% 0);
+        transform: translate(4px, -1px);
+    }
+
+    97% {
+        opacity: 0.5;
+        clip-path: inset(5% 0 80% 0);
+        transform: translate(-4px, 2px);
+    }
+
+    99% {
+        opacity: 0;
+        clip-path: inset(100% 0 0 0);
+    }
 }
 
 .ux-ldr-tagline {
@@ -534,26 +842,47 @@ body {
 }
 
 @keyframes ldrTagBlink {
-    0%, 100% { opacity: 0.55; }
-    50%       { opacity: 0.9; }
+
+    0%,
+    100% {
+        opacity: 0.55;
+    }
+
+    50% {
+        opacity: 0.9;
+    }
 }
 
 .ux-ldr-scan-beam {
     position: absolute;
-    left: -60px; right: -60px;
+    left: -60px;
+    right: -60px;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(0,242,255,0.9), transparent);
+    background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.9), transparent);
     filter: blur(0.5px);
-    box-shadow: 0 0 12px rgba(0,242,255,0.6);
+    box-shadow: 0 0 12px rgba(0, 242, 255, 0.6);
     animation: ldrBeamScan 2.2s ease-in-out infinite;
     top: 0;
 }
 
 @keyframes ldrBeamScan {
-    0%   { top: -10px; opacity: 0; }
-    10%  { opacity: 1; }
-    90%  { opacity: 1; }
-    100% { top: 130px; opacity: 0; }
+    0% {
+        top: -10px;
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        top: 130px;
+        opacity: 0;
+    }
 }
 
 /* ── LAYER 7: PARTICLES ── */
@@ -579,10 +908,23 @@ body {
 }
 
 @keyframes ldrParticleFloat {
-    0%   { transform: translate(0, 0) scale(0); opacity: 0; }
-    10%  { opacity: 1; }
-    80%  { opacity: 0.8; }
-    100% { transform: translate(var(--mx, 80px), var(--my, -120px)) scale(0.2); opacity: 0; }
+    0% {
+        transform: translate(0, 0) scale(0);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    80% {
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: translate(var(--mx, 80px), var(--my, -120px)) scale(0.2);
+        opacity: 0;
+    }
 }
 
 /* ── LAYER 8: TACTICAL HUD ── */
@@ -600,8 +942,15 @@ body {
 }
 
 @keyframes ldrHudReveal {
-    from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
 }
 
 .ux-ldr-status {
@@ -609,24 +958,34 @@ body {
     align-items: center;
     gap: 12px;
     font-size: 0.65rem;
-    color: rgba(0,242,255,0.7);
+    color: rgba(0, 242, 255, 0.7);
     letter-spacing: 0.35em;
     text-transform: uppercase;
     font-family: 'Space Grotesk', monospace;
 }
 
 .ux-ldr-dot {
-    width: 8px; height: 8px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: #00f2ff;
-    box-shadow: 0 0 12px #00f2ff, 0 0 24px rgba(0,242,255,0.4);
+    box-shadow: 0 0 12px #00f2ff, 0 0 24px rgba(0, 242, 255, 0.4);
     animation: ldrDotPulse 1s ease-in-out infinite;
     flex-shrink: 0;
 }
 
 @keyframes ldrDotPulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50%       { transform: scale(1.6); opacity: 0.4; }
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.6);
+        opacity: 0.4;
+    }
 }
 
 .ux-ldr-bar-wrap {
@@ -638,7 +997,7 @@ body {
 .ux-ldr-bar-label {
     font-size: 0.55rem;
     letter-spacing: 0.25em;
-    color: rgba(255,255,255,0.2);
+    color: rgba(255, 255, 255, 0.2);
     text-transform: uppercase;
     white-space: nowrap;
 }
@@ -647,8 +1006,8 @@ body {
     position: relative;
     width: 320px;
     height: 3px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(0,242,255,0.12);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(0, 242, 255, 0.12);
     overflow: hidden;
 }
 
@@ -658,15 +1017,20 @@ body {
     background: linear-gradient(90deg, #00f2ff, #8b5cf6, #ec4899);
     background-size: 200% 100%;
     animation: ldrBarShimmer 1.8s linear infinite;
-    box-shadow: 0 0 10px rgba(0,242,255,0.6), 0 0 25px rgba(0,242,255,0.3);
+    box-shadow: 0 0 10px rgba(0, 242, 255, 0.6), 0 0 25px rgba(0, 242, 255, 0.3);
     transition: width 0.15s linear;
     position: relative;
     z-index: 1;
 }
 
 @keyframes ldrBarShimmer {
-    0%   { background-position: 0% 50%; }
-    100% { background-position: 200% 50%; }
+    0% {
+        background-position: 0% 50%;
+    }
+
+    100% {
+        background-position: 200% 50%;
+    }
 }
 
 .ux-ldr-bar-segments {
@@ -687,28 +1051,57 @@ body {
     font-weight: 900;
     color: #fff;
     min-width: 42px;
-    text-shadow: 0 0 10px rgba(0,242,255,0.8);
+    text-shadow: 0 0 10px rgba(0, 242, 255, 0.8);
     font-family: 'Space Grotesk', monospace;
 }
 
 /* ── CORNER HUD BRACKETS ── */
 .ux-ldr-bracket {
     position: absolute;
-    width: 48px; height: 48px;
+    width: 48px;
+    height: 48px;
     pointer-events: none;
     z-index: 20;
     animation: ldrBracketPulse 3s ease-in-out infinite alternate;
 }
 
 @keyframes ldrBracketPulse {
-    0%   { opacity: 0.3; }
-    100% { opacity: 1; }
+    0% {
+        opacity: 0.3;
+    }
+
+    100% {
+        opacity: 1;
+    }
 }
 
-.ux-ldr-bracket.tl { top: 28px; left: 28px;     border-top:    2px solid rgba(0,242,255,0.7); border-left:   2px solid rgba(0,242,255,0.7); }
-.ux-ldr-bracket.tr { top: 28px; right: 28px;    border-top:    2px solid rgba(0,242,255,0.7); border-right:  2px solid rgba(0,242,255,0.7); }
-.ux-ldr-bracket.bl { bottom: 28px; left: 28px;  border-bottom: 2px solid rgba(0,242,255,0.7); border-left:   2px solid rgba(0,242,255,0.7); }
-.ux-ldr-bracket.br { bottom: 28px; right: 28px; border-bottom: 2px solid rgba(0,242,255,0.7); border-right:  2px solid rgba(0,242,255,0.7); }
+.ux-ldr-bracket.tl {
+    top: 28px;
+    left: 28px;
+    border-top: 2px solid rgba(0, 242, 255, 0.7);
+    border-left: 2px solid rgba(0, 242, 255, 0.7);
+}
+
+.ux-ldr-bracket.tr {
+    top: 28px;
+    right: 28px;
+    border-top: 2px solid rgba(0, 242, 255, 0.7);
+    border-right: 2px solid rgba(0, 242, 255, 0.7);
+}
+
+.ux-ldr-bracket.bl {
+    bottom: 28px;
+    left: 28px;
+    border-bottom: 2px solid rgba(0, 242, 255, 0.7);
+    border-left: 2px solid rgba(0, 242, 255, 0.7);
+}
+
+.ux-ldr-bracket.br {
+    bottom: 28px;
+    right: 28px;
+    border-bottom: 2px solid rgba(0, 242, 255, 0.7);
+    border-right: 2px solid rgba(0, 242, 255, 0.7);
+}
 
 /* ── EXIT WIPE ── */
 .ux-ldr-wipe {
@@ -720,7 +1113,9 @@ body {
     transition: transform 0.85s cubic-bezier(0.76, 0, 0.24, 1);
 }
 
-.ux-loader.hide .ux-ldr-wipe { transform: translateY(-100%); }
+.ux-loader.hide .ux-ldr-wipe {
+    transform: translateY(-100%);
+}
 
 /* ══ GPU-OPTIMISED ZOOM EXIT (60 FPS) ═══════════════════════
    RULES:
@@ -732,7 +1127,10 @@ body {
 ══════════════════════════════════════════════════════════════ */
 
 /* Pre-promote loader to GPU layer the moment it exists */
-.ux-loader { will-change: transform, opacity; backface-visibility: hidden; }
+.ux-loader {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+}
 
 /* Freeze ALL child animations when zoom begins — done in JS too */
 .ux-loader.zoom-exit * {
@@ -754,15 +1152,37 @@ body {
 
 /* GPU-only: transform + opacity only */
 @keyframes ldrZoomExit {
-    0%   { transform: scale(1);   opacity: 1; }
-    50%  { transform: scale(2.2); opacity: 1; }
-    100% { transform: scale(6);   opacity: 0; }
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(2.2);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(6);
+        opacity: 0;
+    }
 }
 
 @keyframes ldrCoreZoom {
-    0%   { transform: scale(1);   opacity: 1; }
-    45%  { transform: scale(1.8); opacity: 1; }
-    100% { transform: scale(5);   opacity: 0; }
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    45% {
+        transform: scale(1.8);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(5);
+        opacity: 0;
+    }
 }
 
 /* After zoom, hide cleanly — no wipe needed */
@@ -772,7 +1192,9 @@ body {
     transition: opacity 0.3s linear, visibility 0.3s linear;
 }
 
-.ux-loader.zoom-exit .ux-ldr-wipe { display: none; }
+.ux-loader.zoom-exit .ux-ldr-wipe {
+    display: none;
+}
 
 
 
@@ -1476,8 +1898,15 @@ footer {
 }
 
 @keyframes uxIcon3D {
-    0%, 100% { transform: translateY(0) rotateY(-10deg) rotateX(10deg); }
-    50% { transform: translateY(-20px) rotateY(15deg) rotateX(-5deg); }
+
+    0%,
+    100% {
+        transform: translateY(0) rotateY(-10deg) rotateX(10deg);
+    }
+
+    50% {
+        transform: translateY(-20px) rotateY(15deg) rotateX(-5deg);
+    }
 }
 
 .ux-project-card:hover .ux-project-thumb i {

@@ -23,9 +23,11 @@ from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 
 # Keep container/host env vars authoritative while still supporting local .env defaults.
-load_dotenv(os.path.join(os.path.dirname(__file__), ".env"), override=False)
-
 APP_DIR = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(APP_DIR, ".env"), override=False)
+# Also support launching from workspace root where SMTP/OAuth vars are often stored.
+load_dotenv(os.path.join(os.path.dirname(APP_DIR), ".env"), override=False)
+
 app = Flask(
     __name__,
     template_folder=os.path.join(APP_DIR, "templates"),
@@ -37,7 +39,7 @@ app.jinja_env.auto_reload = True
 app.secret_key = os.getenv("SECRET_KEY", "fallback_weak_key_for_dev_only")
 PASSWORD_HASH_METHOD = (os.getenv("PASSWORD_HASH_METHOD") or "pbkdf2:sha256:260000").strip()
 
-_default_google_client_id = "1062977400292-gnrhgek38h1jiu30v91r5vkq73avr6ut.apps.googleusercontent.com"
+_default_google_client_id = "your_google_client_id_here.apps.googleusercontent.com"
 _env_google_client_id = (os.getenv("GOOGLE_CLIENT_ID") or "").strip()
 if not _env_google_client_id or "your_google_client_id_here" in _env_google_client_id:
     app.config['GOOGLE_CLIENT_ID'] = _default_google_client_id
@@ -45,6 +47,7 @@ else:
     app.config['GOOGLE_CLIENT_ID'] = _env_google_client_id
 
 DEFAULT_GOOGLE_ALLOWED_ORIGINS = {
+    "https://unitaryx.org",
     "http://localhost:5005",
     "http://127.0.0.1:5005",
 }
@@ -509,7 +512,7 @@ def log_superadmin_action(action, target="", details="", actor=None):
     ))
 
 
-OTP_TTL_MINUTES = 1
+OTP_TTL_MINUTES = 5
 OTP_MAX_ATTEMPTS = 5
 
 
@@ -543,7 +546,50 @@ def _save_otp_for_email(email, otp_code):
         is_verified=False,
     )
     db.session.add(row)
-    _safe_commit()
+    return _safe_commit()
+
+
+def _env_flag(name, default=False):
+    raw = os.getenv(name)
+    if raw is None:
+        raw = "true" if default else "false"
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _smtp_send_message(msg):
+    smtp_host = (os.getenv("SMTP_HOST") or "smtp.gmail.com").strip()
+    smtp_port_raw = (os.getenv("SMTP_PORT") or "587").strip()
+    smtp_user = (os.getenv("SMTP_USER") or "").strip()
+    smtp_pass = (os.getenv("SMTP_PASS") or "").strip()
+    smtp_use_tls = _env_flag("SMTP_USE_TLS", default=True)
+    smtp_use_ssl = _env_flag("SMTP_USE_SSL", default=False)
+
+    try:
+        smtp_port = int(smtp_port_raw)
+    except ValueError as exc:
+        raise RuntimeError("SMTP_PORT must be a valid integer") from exc
+
+    if not smtp_user or not smtp_pass:
+        raise RuntimeError("SMTP_USER/SMTP_PASS are not configured")
+
+    # Port 465 typically requires implicit SSL even when TLS flag is set.
+    use_ssl = smtp_use_ssl or smtp_port == 465
+
+    if use_ssl:
+        with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=20, context=ssl.create_default_context()) as server:
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+        return
+
+    with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
+        server.ehlo()
+        if smtp_use_tls:
+            if not server.has_extn("starttls"):
+                raise RuntimeError("SMTP server does not support STARTTLS. Set SMTP_USE_TLS=False or SMTP_USE_SSL=True.")
+            server.starttls(context=ssl.create_default_context())
+            server.ehlo()
+        server.login(smtp_user, smtp_pass)
+        server.send_message(msg)
 
 
 def _otp_matches(stored_otp_value, otp_code):
@@ -563,15 +609,10 @@ def _get_active_otp(email):
 
 
 def _send_password_reset_otp(email, otp_code):
-    smtp_host = (os.getenv("SMTP_HOST") or "smtp.gmail.com").strip()
-    smtp_port = int((os.getenv("SMTP_PORT") or "587").strip())
     smtp_user = (os.getenv("SMTP_USER") or "").strip()
-    smtp_pass = (os.getenv("SMTP_PASS") or "").strip()
     smtp_from = (os.getenv("SMTP_FROM") or smtp_user).strip()
-    smtp_use_tls = (os.getenv("SMTP_USE_TLS") or "true").strip().lower() in {"1", "true", "yes", "on"}
-
-    if not smtp_user or not smtp_pass:
-        raise RuntimeError("SMTP_USER/SMTP_PASS are not configured")
+    if not smtp_from:
+        raise RuntimeError("SMTP_FROM or SMTP_USER must be configured")
 
     msg = EmailMessage()
     msg["Subject"] = "Unitary X Password Reset OTP"
@@ -584,15 +625,7 @@ def _send_password_reset_otp(email, otp_code):
         "If you did not request this, please ignore this email."
     )
 
-    if smtp_use_tls:
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
-            server.starttls(context=ssl.create_default_context())
-            server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
-    else:
-        with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=15, context=ssl.create_default_context()) as server:
-            server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
+    _smtp_send_message(msg)
 
 
 # ─── Seed Data ────────────────────────────────────────────────────────────────
@@ -874,7 +907,8 @@ def forgot_password_send_otp():
 
     _cleanup_expired_otps()
     otp_code = _generate_otp_code()
-    _save_otp_for_email(email, otp_code)
+    if not _save_otp_for_email(email, otp_code):
+        return jsonify({"success": False, "error": "Server busy. Please try again."}), 503
 
     try:
         _send_password_reset_otp(email, otp_code)
@@ -883,11 +917,14 @@ def forgot_password_send_otp():
         PasswordResetOTP.query.filter_by(email=email).delete(synchronize_session=False)
         db.session.commit()
         return jsonify({"success": False, "error": "Mail login failed. Set SMTP_PASS to a valid Gmail App Password."}), 500
-    except Exception:
+    except Exception as exc:
         app.logger.exception("Failed to send OTP email")
         PasswordResetOTP.query.filter_by(email=email).delete(synchronize_session=False)
-        db.session.commit()
-        return jsonify({"success": False, "error": "Unable to send OTP email right now."}), 500
+        _safe_commit()
+        error_message = "Unable to send OTP email right now."
+        if debug_mode:
+            error_message = f"{error_message} ({exc})"
+        return jsonify({"success": False, "error": error_message}), 500
 
     payload = {
         "success": True,
@@ -1135,13 +1172,9 @@ def api_contact():
 
     def send_notification():
         try:
-            smtp_host = (os.getenv("SMTP_HOST") or "smtp.gmail.com").strip()
-            smtp_port = int((os.getenv("SMTP_PORT") or "587").strip())
             smtp_user = (os.getenv("SMTP_USER") or "").strip()
-            smtp_pass = (os.getenv("SMTP_PASS") or "").strip()
             smtp_from = (os.getenv("SMTP_FROM") or smtp_user).strip()
-            smtp_use_tls = (os.getenv("SMTP_USE_TLS") or "true").strip().lower() in {"1", "true", "yes", "on"}
-            if not smtp_user or not smtp_pass:
+            if not smtp_from:
                 return
             msg = EmailMessage()
             msg["Subject"] = f"New Project Request: {service.capitalize()} from {name}"
@@ -1156,16 +1189,8 @@ def api_contact():
                 f"Deadline: {deadline}\n\n"
                 f"Message:\n{message}"
             )
-            if smtp_use_tls:
-                with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
-                    server.starttls(context=ssl.create_default_context())
-                    server.login(smtp_user, smtp_pass)
-                    server.send_message(msg)
-            else:
-                with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=15, context=ssl.create_default_context()) as server:
-                    server.login(smtp_user, smtp_pass)
-                    server.send_message(msg)
-        except Exception as e:
+            _smtp_send_message(msg)
+        except Exception:
             app.logger.exception("Failed to send notification email")
 
     import threading

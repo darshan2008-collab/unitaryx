@@ -43,7 +43,7 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-unitaryx}:${POSTGRES_PASSWORD:-ChangeThisDbPassword!}@db:5432/${POSTGRES_DB:-unitaryx}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_ALLOWED_ORIGINS: ${GOOGLE_ALLOWED_ORIGINS:-http://localhost:10003,http://127.0.0.1:10003}
+      GOOGLE_ALLOWED_ORIGINS: ${GOOGLE_ALLOWED_ORIGINS:-https://unitaryx.org,http://localhost:10003,http://127.0.0.1:10003}
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}

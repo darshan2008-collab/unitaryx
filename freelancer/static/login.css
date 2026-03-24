@@ -77,9 +77,17 @@ body {
 }
 
 @keyframes bgShift {
-    0%   { filter: hue-rotate(0deg)   brightness(1); }
-    50%  { filter: hue-rotate(25deg)  brightness(1.15); }
-    100% { filter: hue-rotate(-15deg) brightness(0.95); }
+    0% {
+        filter: hue-rotate(0deg) brightness(1);
+    }
+
+    50% {
+        filter: hue-rotate(25deg) brightness(1.15);
+    }
+
+    100% {
+        filter: hue-rotate(-15deg) brightness(0.95);
+    }
 }
 
 /* Layer 1 – Giant Plasma Orb A (cyan, top-left drifter) */
@@ -92,19 +100,34 @@ body {
     left: -40vw;
     border-radius: 50%;
     background: radial-gradient(circle at center,
-        rgba(34, 211, 238, 0.55) 0%,
-        rgba(6, 182, 212, 0.28) 30%,
-        transparent 70%);
+            rgba(34, 211, 238, 0.55) 0%,
+            rgba(6, 182, 212, 0.28) 30%,
+            transparent 70%);
     filter: blur(60px);
     animation: orbA 18s ease-in-out infinite alternate;
     mix-blend-mode: screen;
 }
 
 @keyframes orbA {
-    0%   { transform: translate(0%,   0%)   scale(1);    opacity: 0.55; }
-    33%  { transform: translate(30%,  15%)  scale(1.15); opacity: 0.7;  }
-    66%  { transform: translate(10%,  40%)  scale(0.9);  opacity: 0.5;  }
-    100% { transform: translate(35%,  10%)  scale(1.2);  opacity: 0.65; }
+    0% {
+        transform: translate(0%, 0%) scale(1);
+        opacity: 0.55;
+    }
+
+    33% {
+        transform: translate(30%, 15%) scale(1.15);
+        opacity: 0.7;
+    }
+
+    66% {
+        transform: translate(10%, 40%) scale(0.9);
+        opacity: 0.5;
+    }
+
+    100% {
+        transform: translate(35%, 10%) scale(1.2);
+        opacity: 0.65;
+    }
 }
 
 /* Layer 2 – Giant Plasma Orb B (violet, bottom-right drifter) */
@@ -117,19 +140,34 @@ body {
     right: -30vw;
     border-radius: 50%;
     background: radial-gradient(circle at center,
-        rgba(139, 92, 246, 0.6)  0%,
-        rgba(109, 40, 217, 0.3)  35%,
-        transparent 70%);
+            rgba(139, 92, 246, 0.6) 0%,
+            rgba(109, 40, 217, 0.3) 35%,
+            transparent 70%);
     filter: blur(55px);
     animation: orbB 22s ease-in-out infinite alternate-reverse;
     mix-blend-mode: screen;
 }
 
 @keyframes orbB {
-    0%   { transform: translate(0%,    0%)  scale(1);    opacity: 0.55; }
-    40%  { transform: translate(-25%, -20%) scale(1.18); opacity: 0.72; }
-    70%  { transform: translate(-10%, -40%) scale(0.88); opacity: 0.48; }
-    100% { transform: translate(-30%, -15%) scale(1.25); opacity: 0.68; }
+    0% {
+        transform: translate(0%, 0%) scale(1);
+        opacity: 0.55;
+    }
+
+    40% {
+        transform: translate(-25%, -20%) scale(1.18);
+        opacity: 0.72;
+    }
+
+    70% {
+        transform: translate(-10%, -40%) scale(0.88);
+        opacity: 0.48;
+    }
+
+    100% {
+        transform: translate(-30%, -15%) scale(1.25);
+        opacity: 0.68;
+    }
 }
 
 /* Layer 3 – Spinning Vortex Conic Ring */
@@ -156,24 +194,27 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: conic-gradient(
-        from 0deg at 50% 50%,
-        transparent 0deg,
-        rgba(34, 211, 238, 0.18) 40deg,
-        transparent 80deg,
-        rgba(139, 92, 246, 0.16) 160deg,
-        transparent 200deg,
-        rgba(59, 130, 246, 0.18) 280deg,
-        transparent 320deg
-    );
+    background: conic-gradient(from 0deg at 50% 50%,
+            transparent 0deg,
+            rgba(34, 211, 238, 0.18) 40deg,
+            transparent 80deg,
+            rgba(139, 92, 246, 0.16) 160deg,
+            transparent 200deg,
+            rgba(59, 130, 246, 0.18) 280deg,
+            transparent 320deg);
     filter: blur(18px);
     opacity: 1;
     animation: vortexSpin 30s linear infinite;
 }
 
 @keyframes vortexSpin {
-    from { transform: translate(-50%, -50%) rotate(0deg); }
-    to   { transform: translate(-50%, -50%) rotate(360deg); }
+    from {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
 }
 
 /* Hot pink micro-orb (top right accent) */
@@ -190,8 +231,13 @@ body {
 }
 
 @keyframes orbDriftB {
-    from { transform: translate(0, 0) scale(1); }
-    to   { transform: translate(-5vw, 8vh) scale(1.15); }
+    from {
+        transform: translate(0, 0) scale(1);
+    }
+
+    to {
+        transform: translate(-5vw, 8vh) scale(1.15);
+    }
 }
 
 /* Second accent orb – electric lime bottom-left */
@@ -208,8 +254,13 @@ body {
 }
 
 @keyframes orbDriftC {
-    from { transform: translate(0, 0) scale(1); }
-    to   { transform: translate(6vw, -6vh) scale(1.12); }
+    from {
+        transform: translate(0, 0) scale(1);
+    }
+
+    to {
+        transform: translate(6vw, -6vh) scale(1.12);
+    }
 }
 
 /* Aurora streaks */
@@ -228,31 +279,49 @@ body {
 .atm-beam-a {
     left: 12vw;
     background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(34, 211, 238, 0.7) 30%,
-        rgba(6, 182, 212, 0.5) 60%,
-        transparent 100%);
+            transparent 0%,
+            rgba(34, 211, 238, 0.7) 30%,
+            rgba(6, 182, 212, 0.5) 60%,
+            transparent 100%);
     animation: beamSweepA 9s ease-in-out infinite;
 }
 
 .atm-beam-b {
     right: 16vw;
     background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(139, 92, 246, 0.65) 30%,
-        rgba(109, 40, 217, 0.45) 60%,
-        transparent 100%);
+            transparent 0%,
+            rgba(139, 92, 246, 0.65) 30%,
+            rgba(109, 40, 217, 0.45) 60%,
+            transparent 100%);
     animation: beamSweepB 11s ease-in-out infinite;
 }
 
 @keyframes beamSweepA {
-    0%,100% { transform: rotate(-18deg) translateX(-3vw); opacity: 0.22; }
-    50%     { transform: rotate(-6deg)  translateX(4vw);  opacity: 0.38; }
+
+    0%,
+    100% {
+        transform: rotate(-18deg) translateX(-3vw);
+        opacity: 0.22;
+    }
+
+    50% {
+        transform: rotate(-6deg) translateX(4vw);
+        opacity: 0.38;
+    }
 }
 
 @keyframes beamSweepB {
-    0%,100% { transform: rotate(16deg)  translateX(3vw);  opacity: 0.22; }
-    50%     { transform: rotate(5deg)   translateX(-4vw); opacity: 0.38; }
+
+    0%,
+    100% {
+        transform: rotate(16deg) translateX(3vw);
+        opacity: 0.22;
+    }
+
+    50% {
+        transform: rotate(5deg) translateX(-4vw);
+        opacity: 0.38;
+    }
 }
 
 /* 3-D Scrolling Grid Floor */
@@ -265,14 +334,19 @@ body {
         linear-gradient(90deg, rgba(34, 211, 238, 0.28) 1px, transparent 1px);
     background-size: 52px 52px;
     transform: perspective(800px) rotateX(62deg) translateY(30vh);
-    mask-image: linear-gradient(to top, rgba(0,0,0,0.98), rgba(0,0,0,0));
-    -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.98), rgba(0,0,0,0));
+    mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.98), rgba(0, 0, 0, 0));
+    -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.98), rgba(0, 0, 0, 0));
     animation: gridFlow 14s linear infinite;
 }
 
 @keyframes gridFlow {
-    0%   { transform: perspective(800px) rotateX(62deg) translateY(30vh) translateX(0); }
-    100% { transform: perspective(800px) rotateX(62deg) translateY(30vh) translateX(-52px); }
+    0% {
+        transform: perspective(800px) rotateX(62deg) translateY(30vh) translateX(0);
+    }
+
+    100% {
+        transform: perspective(800px) rotateX(62deg) translateY(30vh) translateX(-52px);
+    }
 }
 
 .lux-atmosphere {
@@ -1339,6 +1413,7 @@ body {
     background: #fff;
     box-shadow: 0 0 6px 2px rgba(34, 211, 238, 0.8);
 }
+
 .meteor::after {
     content: '';
     position: absolute;
@@ -1346,27 +1421,89 @@ body {
     right: 0;
     width: 140px;
     height: 1px;
-    background: linear-gradient(90deg, rgba(255,255,255,0), rgba(34,211,238,0.85));
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(34, 211, 238, 0.85));
     transform: translateY(-50%);
 }
 
 /* Positions & individual animations */
-.m1  { top: 8%;  left: 5%;   animation: meteorFall 4.5s  4s    linear infinite; }
-.m2  { top: 14%; left: 25%;  animation: meteorFall 5.2s  0.8s  linear infinite; }
-.m3  { top: 3%;  left: 55%;  animation: meteorFall 3.8s  2.2s  linear infinite; }
-.m4  { top: 20%; left: 80%;  animation: meteorFall 6.1s  1s    linear infinite; }
-.m5  { top: 1%;  left: 38%;  animation: meteorFall 4.2s  3.5s  linear infinite; }
-.m6  { top: 30%; left: 10%;  animation: meteorFall 5.8s  0.3s  linear infinite; }
-.m7  { top: 12%; left: 70%;  animation: meteorFall 3.4s  5s    linear infinite; }
-.m8  { top: 6%;  left: 90%;  animation: meteorFall 7.2s  1.8s  linear infinite; }
-.m9  { top: 22%; left: 48%;  animation: meteorFall 4.9s  6.5s  linear infinite; }
-.m10 { top: 0%;  left: 15%;  animation: meteorFall 6.7s  2.8s  linear infinite; }
+.m1 {
+    top: 8%;
+    left: 5%;
+    animation: meteorFall 4.5s 4s linear infinite;
+}
+
+.m2 {
+    top: 14%;
+    left: 25%;
+    animation: meteorFall 5.2s 0.8s linear infinite;
+}
+
+.m3 {
+    top: 3%;
+    left: 55%;
+    animation: meteorFall 3.8s 2.2s linear infinite;
+}
+
+.m4 {
+    top: 20%;
+    left: 80%;
+    animation: meteorFall 6.1s 1s linear infinite;
+}
+
+.m5 {
+    top: 1%;
+    left: 38%;
+    animation: meteorFall 4.2s 3.5s linear infinite;
+}
+
+.m6 {
+    top: 30%;
+    left: 10%;
+    animation: meteorFall 5.8s 0.3s linear infinite;
+}
+
+.m7 {
+    top: 12%;
+    left: 70%;
+    animation: meteorFall 3.4s 5s linear infinite;
+}
+
+.m8 {
+    top: 6%;
+    left: 90%;
+    animation: meteorFall 7.2s 1.8s linear infinite;
+}
+
+.m9 {
+    top: 22%;
+    left: 48%;
+    animation: meteorFall 4.9s 6.5s linear infinite;
+}
+
+.m10 {
+    top: 0%;
+    left: 15%;
+    animation: meteorFall 6.7s 2.8s linear infinite;
+}
 
 @keyframes meteorFall {
-    0%   { transform: translate(0, 0);        opacity: 0; }
-    5%   { opacity: 1; }
-    80%  { opacity: 1; }
-    100% { transform: translate(400px, 400px); opacity: 0; }
+    0% {
+        transform: translate(0, 0);
+        opacity: 0;
+    }
+
+    5% {
+        opacity: 1;
+    }
+
+    80% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(400px, 400px);
+        opacity: 0;
+    }
 }
 
 /* ── FLOATING GEOMETRIC SHAPES ─────────────────────────── */
@@ -1425,34 +1562,128 @@ body {
 }
 
 /* Positions & staggered animations */
-.g1 { top: 10%;  left: 4%;   width: 70px; height: 70px; animation: geoFloat1 18s  1s   ease-in-out infinite, geoSpin 25s  2s   linear infinite; }
-.g2 { top: 55%;  left: 8%;   width: 55px; height: 55px; animation: geoFloat2 22s  3s   ease-in-out infinite; }
-.g3 { top: 78%;  left: 18%;  animation:   geoFloat3 16s  0.5s ease-in-out infinite, geoSpin 20s  1s   linear infinite; }
-.g4 { top: 30%;  left: 3%;   width: 45px; height: 45px; animation: geoFloat1 20s  5s   ease-in-out infinite, geoSpin 30s  0s   linear infinite reverse; }
-.g5 { top: 15%;  right: 6%;  width: 80px; height: 80px; animation: geoFloat2 24s  2s   ease-in-out infinite; }
-.g6 { top: 70%;  right: 4%;  width: 65px; height: 65px; animation: geoFloat3 19s  4s   ease-in-out infinite, geoSpin 22s  3s   linear infinite; }
-.g7 { top: 40%;  right: 8%;  animation:   geoFloat1 17s  1.5s ease-in-out infinite, geoSpin 18s  0.5s linear infinite reverse; }
-.g8 { top: 85%;  right: 14%; width: 50px; height: 50px; animation: geoFloat2 21s  6s   ease-in-out infinite, geoSpin 28s  1s   linear infinite; }
+.g1 {
+    top: 10%;
+    left: 4%;
+    width: 70px;
+    height: 70px;
+    animation: geoFloat1 18s 1s ease-in-out infinite, geoSpin 25s 2s linear infinite;
+}
+
+.g2 {
+    top: 55%;
+    left: 8%;
+    width: 55px;
+    height: 55px;
+    animation: geoFloat2 22s 3s ease-in-out infinite;
+}
+
+.g3 {
+    top: 78%;
+    left: 18%;
+    animation: geoFloat3 16s 0.5s ease-in-out infinite, geoSpin 20s 1s linear infinite;
+}
+
+.g4 {
+    top: 30%;
+    left: 3%;
+    width: 45px;
+    height: 45px;
+    animation: geoFloat1 20s 5s ease-in-out infinite, geoSpin 30s 0s linear infinite reverse;
+}
+
+.g5 {
+    top: 15%;
+    right: 6%;
+    width: 80px;
+    height: 80px;
+    animation: geoFloat2 24s 2s ease-in-out infinite;
+}
+
+.g6 {
+    top: 70%;
+    right: 4%;
+    width: 65px;
+    height: 65px;
+    animation: geoFloat3 19s 4s ease-in-out infinite, geoSpin 22s 3s linear infinite;
+}
+
+.g7 {
+    top: 40%;
+    right: 8%;
+    animation: geoFloat1 17s 1.5s ease-in-out infinite, geoSpin 18s 0.5s linear infinite reverse;
+}
+
+.g8 {
+    top: 85%;
+    right: 14%;
+    width: 50px;
+    height: 50px;
+    animation: geoFloat2 21s 6s ease-in-out infinite, geoSpin 28s 1s linear infinite;
+}
 
 @keyframes geoAppear {
-    from { opacity: 0; transform: scale(0.6); }
-    to   { opacity: 1; transform: scale(1); }
+    from {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
+
 @keyframes geoFloat1 {
-    0%,100% { transform: translateY(0)     rotate(0deg); opacity: 0.45; }
-    50%     { transform: translateY(-30px) rotate(8deg); opacity: 0.7;  }
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.45;
+    }
+
+    50% {
+        transform: translateY(-30px) rotate(8deg);
+        opacity: 0.7;
+    }
 }
+
 @keyframes geoFloat2 {
-    0%,100% { transform: translateY(0)     rotate(0deg);   opacity: 0.35; }
-    50%     { transform: translateY(-24px) rotate(-10deg); opacity: 0.6;  }
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.35;
+    }
+
+    50% {
+        transform: translateY(-24px) rotate(-10deg);
+        opacity: 0.6;
+    }
 }
+
 @keyframes geoFloat3 {
-    0%,100% { transform: translateY(0)     rotate(0deg);  opacity: 0.4; }
-    50%     { transform: translateY(-18px) rotate(14deg); opacity: 0.65; }
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.4;
+    }
+
+    50% {
+        transform: translateY(-18px) rotate(14deg);
+        opacity: 0.65;
+    }
 }
+
 @keyframes geoSpin {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* ── ENERGY PULSE RINGS ─────────────────────────────────── */
@@ -1472,31 +1703,49 @@ body {
 }
 
 .er1 {
-    width: 160px; height: 160px;
-    top: 15%; left: 15%;
+    width: 160px;
+    height: 160px;
+    top: 15%;
+    left: 15%;
     border-color: rgba(34, 211, 238, 0.55);
     animation-delay: 0s;
     animation-duration: 6s;
 }
+
 .er2 {
-    width: 200px; height: 200px;
-    top: 60%; right: 12%;
+    width: 200px;
+    height: 200px;
+    top: 60%;
+    right: 12%;
     border-color: rgba(139, 92, 246, 0.5);
     animation-delay: 2s;
     animation-duration: 7.5s;
 }
+
 .er3 {
-    width: 120px; height: 120px;
-    top: 40%; left: 45%;
+    width: 120px;
+    height: 120px;
+    top: 40%;
+    left: 45%;
     border-color: rgba(236, 72, 153, 0.45);
     animation-delay: 4.5s;
     animation-duration: 5.5s;
 }
 
 @keyframes energyPulse {
-    0%   { transform: scale(0.6); opacity: 0.9; }
-    60%  { opacity: 0.4; }
-    100% { transform: scale(2.8); opacity: 0; }
+    0% {
+        transform: scale(0.6);
+        opacity: 0.9;
+    }
+
+    60% {
+        opacity: 0.4;
+    }
+
+    100% {
+        transform: scale(2.8);
+        opacity: 0;
+    }
 }
 
 /* ── AURORA SCANLINES ───────────────────────────────────── */
@@ -1524,12 +1773,14 @@ body {
     background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.5), rgba(139, 92, 246, 0.4), transparent);
     animation-delay: 0s;
 }
+
 .al2 {
     top: 50%;
     background: linear-gradient(90deg, transparent, rgba(236, 72, 153, 0.45), rgba(34, 211, 238, 0.35), transparent);
     animation-delay: 3s;
     animation-duration: 11s;
 }
+
 .al3 {
     top: 78%;
     background: linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.4), rgba(139, 92, 246, 0.35), transparent);
@@ -1538,9 +1789,103 @@ body {
 }
 
 @keyframes auroraScan {
-    0%   { opacity: 0; transform: translateX(-60%) scaleY(1); }
-    15%  { opacity: 0.8; }
-    50%  { opacity: 0.55; transform: translateX(0%)   scaleY(2.5); }
-    85%  { opacity: 0.7; }
-    100% { opacity: 0; transform: translateX(60%)  scaleY(1); }
-}
+    0% {
+        opacity: 0;
+        transform: translateX(-60%) scaleY(1);
+    }
+
+    15% {
+        opacity: 0.8;
+    }
+
+    50% {
+        opacity: 0.55;
+        transform: translateX(0%) scaleY(2.5);
+    }
+
+    85% {
+        opacity: 0.7;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(60%) scaleY(1);
+    }
+}
+
+@media (max-width: 768px) {
+    .scene-panel {
+        display: none;
+    }
+
+    .lux-atmosphere,
+    .meteor-field,
+    .geo-field,
+    .energy-field,
+    .aurora-field,
+    .lux-grain,
+    .lux-overlay,
+    #lux-canvas {
+        display: none !important;
+    }
+
+    .auth-scene {
+        min-height: 100dvh;
+        grid-template-columns: 1fr;
+        gap: 0;
+        padding: 12px;
+        align-items: flex-start;
+    }
+
+    .auth-card {
+        width: min(100%, 460px);
+        margin: 56px auto 14px;
+        padding: 16px;
+        border-radius: 14px;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.22);
+    }
+
+    .field input {
+        font-size: 16px;
+        padding: 11px 12px;
+    }
+
+    .otp-modal {
+        padding: 10px;
+    }
+
+    .otp-modal-card {
+        width: 100%;
+        max-height: 92dvh;
+        overflow: auto;
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    .otp-meta-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (prefers-reduced-motion: reduce),
+(max-width: 768px) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .lux-pro-bg,
+    .auth-card,
+    .scene-panel,
+    .card-glint {
+        animation: none !important;
+    }
+}

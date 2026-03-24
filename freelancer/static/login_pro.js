@@ -14,29 +14,54 @@
     "use strict";
 
     const canvas = document.getElementById("lux-canvas");
-    const card   = document.getElementById("auth-card");
-    const intro  = document.getElementById("lux-intro");
+    const card = document.getElementById("auth-card");
+    const intro = document.getElementById("lux-intro");
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
 
     /* ── Device capability detection ── */
-    const isMobile   = /Mobi|Android/i.test(navigator.userAgent);
-    const lowEnd     = isMobile || (navigator.hardwareConcurrency || 8) <= 4;
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const lowEnd = isMobile || (navigator.hardwareConcurrency || 8) <= 4;
     const prefersRed = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const QUALITY    = prefersRed ? 0.3 : lowEnd ? 0.55 : 1.0;
+    const QUALITY = prefersRed ? 0.3 : lowEnd ? 0.55 : 1.0;
+
+    // Mobile-lite mode: skip the expensive background renderer for smoother phones.
+    const mobileLite = prefersRed || window.matchMedia("(max-width: 768px)").matches;
+    if (mobileLite) {
+        canvas.style.display = "none";
+        if (intro) {
+            intro.style.animation = "none";
+            setTimeout(function () { intro.remove(); }, 250);
+        }
+        if (card) {
+            card.style.transform = "";
+        }
+        window.luxFX = window.luxFX || {};
+        window.luxFX.success = function () { };
+        window.luxFX.error = function () {
+            if (!card) return;
+            card.animate([
+                { transform: "translateX(0)" },
+                { transform: "translateX(-4px)" },
+                { transform: "translateX(4px)" },
+                { transform: "translateX(0)" }
+            ], { duration: 220, easing: "ease-out" });
+        };
+        return;
+    }
 
     /* Scale canvas to physical pixels (max 1.5x to save fill rate) */
     const DPR = Math.min(window.devicePixelRatio || 1, 1.5);
 
     /* ── Palette – pre-built rgba strings to avoid alloc in loop ── */
     const PALETTE = [
-        { r: 34,  g: 211, b: 238 },  // cyan
-        { r: 139, g: 92,  b: 246 },  // violet
-        { r: 236, g: 72,  b: 153 },  // pink
-        { r: 52,  g: 211, b: 153 },  // emerald
-        { r: 99,  g: 102, b: 241 },  // indigo
-        { r: 251, g: 191, b: 36  },  // amber
+        { r: 34, g: 211, b: 238 },  // cyan
+        { r: 139, g: 92, b: 246 },  // violet
+        { r: 236, g: 72, b: 153 },  // pink
+        { r: 52, g: 211, b: 153 },  // emerald
+        { r: 99, g: 102, b: 241 },  // indigo
+        { r: 251, g: 191, b: 36 },  // amber
     ];
     function pickCol() { return PALETTE[Math.floor(Math.random() * PALETTE.length)]; }
     function rgba(c, a) { return `rgba(${c.r},${c.g},${c.b},${(+a).toFixed(2)})`; }
@@ -47,7 +72,7 @@
     let W = 0, H = 0;
     let MX = 0, MY = 0, SMX = 0, SMY = 0;
     let PULSE = 0, BURST = 0, WARP = 0;
-    let TIME  = 0;
+    let TIME = 0;
     let lastTS = 0;
 
     /* Click ring */
@@ -55,15 +80,15 @@
 
     /* Sparks – pre-allocated pool */
     const MAX_SPARKS = 40;
-    const sparkPool  = [];
+    const sparkPool = [];
     for (let i = 0; i < MAX_SPARKS; i++) {
-        sparkPool.push({ alive: false, x:0, y:0, vx:0, vy:0, life:0, r:0, col: PALETTE[0] });
+        sparkPool.push({ alive: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, r: 0, col: PALETTE[0] });
     }
     function spawnSparks(cx, cy, count) {
         let spawned = 0;
         for (let i = 0; i < sparkPool.length && spawned < count; i++) {
             if (!sparkPool[i].alive) {
-                const sp    = sparkPool[i];
+                const sp = sparkPool[i];
                 const angle = (spawned / count) * Math.PI * 2;
                 const speed = rnd(1.8, 5);
                 sp.alive = true;
@@ -71,8 +96,8 @@
                 sp.vx = Math.cos(angle) * speed;
                 sp.vy = Math.sin(angle) * speed;
                 sp.life = 1.0;
-                sp.r    = rnd(1.2, 2.8);
-                sp.col  = pickCol();
+                sp.r = rnd(1.2, 2.8);
+                sp.col = pickCol();
                 spawned++;
             }
         }
@@ -97,9 +122,9 @@
         W = window.innerWidth;
         H = window.innerHeight;
 
-        canvas.width  = Math.round(W * DPR);
+        canvas.width = Math.round(W * DPR);
         canvas.height = Math.round(H * DPR);
-        canvas.style.width  = W + "px";
+        canvas.style.width = W + "px";
         canvas.style.height = H + "px";
         ctx.scale(DPR, DPR);
 
@@ -111,45 +136,45 @@
         STAR_COUNT = Math.round((prefersRed ? 60 : lowEnd ? 110 : 180) * QUALITY);
 
         /* Nodes – typed arrays */
-        nX    = new Float32Array(NODE_COUNT);
-        nY    = new Float32Array(NODE_COUNT);
-        nVX   = new Float32Array(NODE_COUNT);
-        nVY   = new Float32Array(NODE_COUNT);
-        nR    = new Float32Array(NODE_COUNT);
-        nA    = new Float32Array(NODE_COUNT);
-        nPhs  = new Float32Array(NODE_COUNT);
+        nX = new Float32Array(NODE_COUNT);
+        nY = new Float32Array(NODE_COUNT);
+        nVX = new Float32Array(NODE_COUNT);
+        nVY = new Float32Array(NODE_COUNT);
+        nR = new Float32Array(NODE_COUNT);
+        nA = new Float32Array(NODE_COUNT);
+        nPhs = new Float32Array(NODE_COUNT);
         nPhsSpd = new Float32Array(NODE_COUNT);
         nColR = new Uint8Array(NODE_COUNT);
         nColG = new Uint8Array(NODE_COUNT);
         nColB = new Uint8Array(NODE_COUNT);
 
         for (let i = 0; i < NODE_COUNT; i++) {
-            nX[i]    = Math.random() * W;
-            nY[i]    = Math.random() * H;
-            nVX[i]   = rnd(-0.28, 0.28);
-            nVY[i]   = rnd(-0.28, 0.28);
-            nR[i]    = rnd(1.2, 3.5);
-            nA[i]    = rnd(0.55, 1.0);
-            nPhs[i]  = Math.random() * Math.PI * 2;
+            nX[i] = Math.random() * W;
+            nY[i] = Math.random() * H;
+            nVX[i] = rnd(-0.28, 0.28);
+            nVY[i] = rnd(-0.28, 0.28);
+            nR[i] = rnd(1.2, 3.5);
+            nA[i] = rnd(0.55, 1.0);
+            nPhs[i] = Math.random() * Math.PI * 2;
             nPhsSpd[i] = rnd(0.016, 0.040);
-            const c  = pickCol();
+            const c = pickCol();
             nColR[i] = c.r; nColG[i] = c.g; nColB[i] = c.b;
         }
 
         /* Stars – typed arrays */
-        sX      = new Float32Array(STAR_COUNT);
-        sY      = new Float32Array(STAR_COUNT);
-        sR      = new Float32Array(STAR_COUNT);
-        sA      = new Float32Array(STAR_COUNT);
-        sTwPhase= new Float32Array(STAR_COUNT);
-        sTwSpd  = new Float32Array(STAR_COUNT);
+        sX = new Float32Array(STAR_COUNT);
+        sY = new Float32Array(STAR_COUNT);
+        sR = new Float32Array(STAR_COUNT);
+        sA = new Float32Array(STAR_COUNT);
+        sTwPhase = new Float32Array(STAR_COUNT);
+        sTwSpd = new Float32Array(STAR_COUNT);
         for (let i = 0; i < STAR_COUNT; i++) {
-            sX[i]       = Math.random() * W;
-            sY[i]       = Math.random() * H;
-            sR[i]       = rnd(0.3, 1.4);
-            sA[i]       = rnd(0.25, 0.85);
+            sX[i] = Math.random() * W;
+            sY[i] = Math.random() * H;
+            sR[i] = rnd(0.3, 1.4);
+            sA[i] = rnd(0.25, 0.85);
             sTwPhase[i] = Math.random() * Math.PI * 2;
-            sTwSpd[i]   = rnd(0.005, 0.018);
+            sTwSpd[i] = rnd(0.005, 0.018);
         }
 
         /* Hex rings */
@@ -189,7 +214,7 @@
     /* ── Off-screen nebula canvas ── */
     function rebuildNebulaCache() {
         const oc = document.createElement("canvas");
-        oc.width  = Math.round(W * DPR);
+        oc.width = Math.round(W * DPR);
         oc.height = Math.round(H * DPR);
         const oc2 = oc.getContext("2d");
         oc2.scale(DPR, DPR);
@@ -199,9 +224,9 @@
             oc2.translate(nb.x, nb.y);
             oc2.rotate(nb.rot);
             const g = oc2.createRadialGradient(0, 0, 0, 0, 0, nb.rx);
-            g.addColorStop(0,    rgba(nb.col, nb.a));
+            g.addColorStop(0, rgba(nb.col, nb.a));
             g.addColorStop(0.55, rgba(nb.col, nb.a * 0.4));
-            g.addColorStop(1,    rgba(nb.col, 0));
+            g.addColorStop(1, rgba(nb.col, 0));
             oc2.scale(1, nb.ry / nb.rx);
             oc2.fillStyle = g;
             oc2.beginPath();
@@ -226,7 +251,7 @@
 
     window.addEventListener("pointerdown", function (e) {
         BURST = 1;
-        WARP  = Math.min(1, WARP + 0.45);
+        WARP = Math.min(1, WARP + 0.45);
         clickRing = { x: e.clientX, y: e.clientY, r: 0, max: 260 };
         spawnSparks(e.clientX, e.clientY, 16);
     }, { passive: true });
@@ -268,7 +293,7 @@
             sTwPhase[i] += sTwSpd[i] * dtF;
             const a = sA[i] * (0.55 + 0.45 * Math.sin(sTwPhase[i]));
             ctx.globalAlpha = a;
-            ctx.fillStyle   = "#b8eeff";
+            ctx.fillStyle = "#b8eeff";
             ctx.beginPath();
             ctx.arc(sX[i], sY[i], sR[i], 0, Math.PI * 2);
             ctx.fill();
@@ -281,7 +306,7 @@
             h.radii.forEach(function (rad, idx) {
                 const a = h.a * (0.5 + 0.5 * Math.sin(TIME * 0.025 + idx * 1.2));
                 ctx.strokeStyle = h.colStr + a.toFixed(2) + ")";
-                ctx.lineWidth   = idx === 1 ? 1.5 : 0.85;
+                ctx.lineWidth = idx === 1 ? 1.5 : 0.85;
                 ctx.beginPath();
                 const sides = h.sides;
                 for (let k = 0; k <= sides; k++) {
@@ -296,7 +321,7 @@
         });
 
         /* ── 4. NETWORK LINKS (spatial skip, no gradient) ── */
-        const LINK_DIST  = Math.min(W, H) * (lowEnd ? 0.17 : 0.22);
+        const LINK_DIST = Math.min(W, H) * (lowEnd ? 0.17 : 0.22);
         const LINK_DIST2 = LINK_DIST * LINK_DIST;
         const CHECK_RANGE = lowEnd ? 10 : 15; // max neighbours to check per node
 
@@ -318,7 +343,7 @@
                 const mg = (nColG[i] + nColG[j]) >> 1;
                 const mb = (nColB[i] + nColB[j]) >> 1;
                 ctx.strokeStyle = `rgba(${mr},${mg},${mb},${alpha.toFixed(2)})`;
-                ctx.lineWidth   = 0.6 + (1 - d2 / LINK_DIST2) * 1.1;
+                ctx.lineWidth = 0.6 + (1 - d2 / LINK_DIST2) * 1.1;
                 ctx.beginPath();
                 ctx.moveTo(nX[i], nY[i]);
                 ctx.lineTo(nX[j], nY[j]);
@@ -339,7 +364,7 @@
             const dm2 = dxm * dxm + dym * dym;
             if (dm2 < repelR2 && dm2 > 0.5) {
                 const inv = (1 - dm2 / repelR2) * 0.032;
-                const dm  = Math.sqrt(dm2);
+                const dm = Math.sqrt(dm2);
                 nVX[i] += (dxm / dm) * inv * dtF;
                 nVY[i] += (dym / dm) * inv * dtF;
             }
@@ -356,12 +381,12 @@
             else if (nY[i] > H + 24) nY[i] = -24;
 
             nPhs[i] += nPhsSpd[i] * dtF;
-            const pm  = 0.72 + 0.28 * Math.sin(nPhs[i]);
+            const pm = 0.72 + 0.28 * Math.sin(nPhs[i]);
             const rad = nR[i] * pm;
 
             /* Draw node – simple arc, no glow */
             const nodeA = nA[i] * (0.7 + PULSE * 0.3);
-            ctx.fillStyle   = `rgba(${nColR[i]},${nColG[i]},${nColB[i]},${nodeA.toFixed(2)})`;
+            ctx.fillStyle = `rgba(${nColR[i]},${nColG[i]},${nColB[i]},${nodeA.toFixed(2)})`;
             ctx.beginPath();
             ctx.arc(nX[i], nY[i], rad, 0, Math.PI * 2);
             ctx.fill();
@@ -376,19 +401,19 @@
         /* ── 6. CLICK PULSE RING ── */
         if (clickRing) {
             clickRing.r += 7 * dtF;
-            const ratio  = clickRing.r / clickRing.max;
-            const ringA  = Math.max(0, (1 - ratio) * 0.75);
+            const ratio = clickRing.r / clickRing.max;
+            const ringA = Math.max(0, (1 - ratio) * 0.75);
             if (ringA <= 0) {
                 clickRing = null;
             } else {
                 ctx.strokeStyle = `rgba(34,211,238,${ringA.toFixed(2)})`;
-                ctx.lineWidth   = 2.5 * (1 - ratio);
+                ctx.lineWidth = 2.5 * (1 - ratio);
                 ctx.beginPath();
                 ctx.arc(clickRing.x, clickRing.y, clickRing.r, 0, Math.PI * 2);
                 ctx.stroke();
 
                 ctx.strokeStyle = `rgba(139,92,246,${(ringA * 0.5).toFixed(2)})`;
-                ctx.lineWidth   = 1.2;
+                ctx.lineWidth = 1.2;
                 ctx.beginPath();
                 ctx.arc(clickRing.x, clickRing.y, clickRing.r * 0.6, 0, Math.PI * 2);
                 ctx.stroke();
@@ -399,10 +424,10 @@
         for (let i = 0; i < sparkPool.length; i++) {
             const sp = sparkPool[i];
             if (!sp.alive) continue;
-            sp.x  += sp.vx * dtF;
-            sp.y  += sp.vy * dtF;
+            sp.x += sp.vx * dtF;
+            sp.y += sp.vy * dtF;
             sp.vx *= Math.pow(0.93, dtF);
-            sp.vy  = sp.vy * Math.pow(0.93, dtF) + 0.04 * dtF;
+            sp.vy = sp.vy * Math.pow(0.93, dtF) + 0.04 * dtF;
             sp.life -= 0.028 * dtF;
             if (sp.life <= 0) { sp.alive = false; continue; }
 
@@ -421,15 +446,15 @@
 
         /* ── 9. WARP LINES ── */
         if (WARP > 0.02) {
-            const cx  = W * 0.5, cy = H * 0.5;
+            const cx = W * 0.5, cy = H * 0.5;
             const cnt = Math.ceil(WARP * 20);
             for (let i = 0; i < cnt; i++) {
-                const ang  = (i / cnt) * Math.PI * 2;
-                const sR   = rnd(20, 70);
-                const eR   = (sR + rnd(70, 200)) * WARP;
-                const c    = PALETTE[i % PALETTE.length];
+                const ang = (i / cnt) * Math.PI * 2;
+                const sR = rnd(20, 70);
+                const eR = (sR + rnd(70, 200)) * WARP;
+                const c = PALETTE[i % PALETTE.length];
                 ctx.strokeStyle = `rgba(${c.r},${c.g},${c.b},${(WARP * 0.5).toFixed(2)})`;
-                ctx.lineWidth   = rnd(0.4, 1.5);
+                ctx.lineWidth = rnd(0.4, 1.5);
                 ctx.beginPath();
                 ctx.moveTo(cx + Math.cos(ang) * sR, cy + Math.sin(ang) * sR);
                 ctx.lineTo(cx + Math.cos(ang) * eR, cy + Math.sin(ang) * eR);
@@ -446,13 +471,13 @@
     /* ── Card 3-D tilt ── */
     if (card) {
         card.addEventListener("mousemove", function (e) {
-            const r  = card.getBoundingClientRect();
-            const x  = (e.clientX - r.left) / r.width;
-            const y  = (e.clientY - r.top)  / r.height;
-            card.style.transform = `rotateX(${((0.5-y)*7).toFixed(1)}deg) rotateY(${((x-0.5)*9).toFixed(1)}deg) translateZ(0)`;
+            const r = card.getBoundingClientRect();
+            const x = (e.clientX - r.left) / r.width;
+            const y = (e.clientY - r.top) / r.height;
+            card.style.transform = `rotateX(${((0.5 - y) * 7).toFixed(1)}deg) rotateY(${((x - 0.5) * 9).toFixed(1)}deg) translateZ(0)`;
             card.querySelectorAll(".btn-auth").forEach(function (btn) {
                 const br = btn.getBoundingClientRect();
-                btn.style.setProperty("--mx", (((e.clientX-br.left)/br.width)*100).toFixed(1)+"%");
+                btn.style.setProperty("--mx", (((e.clientX - br.left) / br.width) * 100).toFixed(1) + "%");
             });
         }, { passive: true });
         card.addEventListener("mouseleave", function () { card.style.transform = ""; });
@@ -464,12 +489,12 @@
         card.querySelectorAll(".auth-header,.auth-tabs,.auth-alert,.auth-panel h3,.auth-panel p,.field,.row-meta,.btn-auth,.strength-wrap,.auth-foot")
             .forEach(function (el, i) {
                 if (el.classList.contains("auth-alert") && el.style.display === "none") return;
-                el.style.opacity   = "0";
+                el.style.opacity = "0";
                 el.style.transform = "translateY(14px)";
                 setTimeout(function () {
                     el.style.transition = "opacity 480ms ease, transform 540ms cubic-bezier(.2,.85,.2,1)";
-                    el.style.opacity    = "1";
-                    el.style.transform  = "translateY(0)";
+                    el.style.opacity = "1";
+                    el.style.transform = "translateY(0)";
                 }, 150 + i * 55);
             });
     });
@@ -479,18 +504,18 @@
     /* ── Public FX hooks ── */
     window.luxFX = window.luxFX || {};
     window.luxFX.success = function () { BURST = 1.2; PULSE = 1.0; WARP = 0.7; };
-    window.luxFX.error   = function () {
+    window.luxFX.error = function () {
         if (card) card.animate([
-            { transform: "translateX(0)"  },
+            { transform: "translateX(0)" },
             { transform: "translateX(-6px)" },
-            { transform: "translateX(7px)"  },
+            { transform: "translateX(7px)" },
             { transform: "translateX(-4px)" },
-            { transform: "translateX(0)"  }
+            { transform: "translateX(0)" }
         ], { duration: 380, easing: "cubic-bezier(.36,.07,.19,.97)" });
         BURST = 0.4;
         if (card) {
             const cr = card.getBoundingClientRect();
-            spawnSparks(cr.left + cr.width/2, cr.top + cr.height/2, 8);
+            spawnSparks(cr.left + cr.width / 2, cr.top + cr.height / 2, 8);
         }
     };
 
