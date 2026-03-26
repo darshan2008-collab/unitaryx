@@ -135,6 +135,39 @@ def establish_session_for_user(user, remember=False, profile_photo=None, auth_pr
     ) if role == 'admin' else ''
     session['user_profile_photo'] = (profile_photo or "").strip()
     session['auth_provider'] = (auth_provider or "password").strip().lower()
+    _register_user_session(user)
+
+
+def _register_user_session(user):
+    if not user or not getattr(user, 'id', None):
+        return
+
+    existing_token = str(session.get('session_token') or '').strip()
+    if existing_token:
+        active = UserSession.query.filter_by(
+            user_id=user.id,
+            session_token=existing_token,
+            is_active=True,
+        ).first()
+        if active:
+            active.last_seen = datetime.utcnow()
+            active.ip_address = (_extract_client_ip() or '')[:64] or None
+            active.user_agent = (request.user_agent.string or '')[:255] or None
+            db.session.commit()
+            return
+
+    fresh_token = os.urandom(24).hex()
+    device = UserSession(
+        user_id=user.id,
+        session_token=fresh_token,
+        ip_address=(_extract_client_ip() or '')[:64] or None,
+        user_agent=(request.user_agent.string or '')[:255] or None,
+        last_seen=datetime.utcnow(),
+        is_active=True,
+    )
+    session['session_token'] = fresh_token
+    db.session.add(device)
+    db.session.commit()
 
 # ─── Security Configuration ──────────────────────────────────────────────────
 
@@ -271,6 +304,20 @@ class User(db.Model):
 
     def check_password(self, raw):
         return check_password_hash(self.password, raw)
+
+
+class UserSession(db.Model):
+    """Tracks active login sessions for device management."""
+    __tablename__ = 'user_sessions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    session_token = db.Column(db.String(96), nullable=False, unique=True, index=True)
+    ip_address = db.Column(db.String(64))
+    user_agent = db.Column(db.String(255))
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False, index=True)
 
 
 class SiteTrafficEvent(db.Model):
@@ -767,6 +814,38 @@ def current_user():
     return db.session.get(User, uid) if uid else None
 
 
+@app.before_request
+def enforce_active_user_session():
+    if request.endpoint == 'static' or (request.path or '').startswith('/static/'):
+        return None
+
+    uid = session.get('user_id')
+    if not uid:
+        return None
+
+    user = db.session.get(User, uid)
+    if not user:
+        session.clear()
+        return redirect(url_for('login'))
+
+    token = str(session.get('session_token') or '').strip()
+    if not token:
+        _register_user_session(user)
+        return None
+
+    row = UserSession.query.filter_by(user_id=user.id, session_token=token).first()
+    if not row or not row.is_active:
+        session.clear()
+        flash('Your session was ended from Device Manager. Please sign in again.', 'warning')
+        return redirect(url_for('login'))
+
+    now = datetime.utcnow()
+    if not row.last_seen or (now - row.last_seen) > timedelta(seconds=60):
+        row.last_seen = now
+        db.session.commit()
+    return None
+
+
 def is_super_admin(user_obj=None):
     user_obj = user_obj or current_user()
     if not user_obj:
@@ -1025,6 +1104,10 @@ def _ensure_schema_columns():
     table_patch_map = {
         "users": [
             ("admin_scope", "VARCHAR(20) DEFAULT 'ops'"),
+        ],
+        "user_sessions": [
+            ("is_active", "BOOLEAN DEFAULT TRUE"),
+            ("last_seen", "TIMESTAMP"),
         ],
         "project_requests": [
             ("lead_score_value", "INTEGER DEFAULT 0"),
@@ -1445,6 +1528,14 @@ def google_login():
 
 @app.route("/logout")
 def logout():
+    token = str(session.get('session_token') or '').strip()
+    uid = session.get('user_id')
+    if token and uid:
+        row = UserSession.query.filter_by(user_id=uid, session_token=token).first()
+        if row:
+            row.is_active = False
+            row.last_seen = datetime.utcnow()
+            db.session.commit()
     session.clear()
     return redirect(url_for('login'))
 
@@ -1853,6 +1944,8 @@ def admin_panel():
     critical_pending_tasks = []
     admin_credentials = []
     admin_password_map = {}
+    my_device_sessions = []
+    fleet_active_sessions = []
 
     if is_super_admin(admin_user):
         now_utc = datetime.utcnow()
@@ -1929,6 +2022,11 @@ def admin_panel():
             if (rec.admin_email or "").strip()
         }
 
+        fleet_active_sessions = UserSession.query.filter_by(is_active=True).order_by(UserSession.last_seen.desc()).limit(120).all()
+
+    if admin_user:
+        my_device_sessions = UserSession.query.filter_by(user_id=admin_user.id).order_by(UserSession.last_seen.desc()).limit(20).all()
+
     return render_template("admin.html", 
                            requests=requests_list, 
                            stats=stats,
@@ -1951,7 +2049,64 @@ def admin_panel():
                            risk_admins=risk_admins,
                            critical_pending_tasks=critical_pending_tasks,
                            admin_credentials=admin_credentials,
-                           admin_password_map=admin_password_map)
+                           admin_password_map=admin_password_map,
+                           my_device_sessions=my_device_sessions,
+                           fleet_active_sessions=fleet_active_sessions)
+
+
+@app.route('/admin/sessions/revoke/<int:session_id>', methods=['POST'])
+@csrf.exempt
+@admin_required
+def revoke_device_session(session_id):
+    actor = current_user()
+    target = UserSession.query.get_or_404(session_id)
+
+    can_manage = is_super_admin(actor) or target.user_id == getattr(actor, 'id', None)
+    if not can_manage:
+        flash('You can only revoke your own sessions.', 'danger')
+        return redirect(url_for('admin_panel'))
+
+    target.is_active = False
+    target.last_seen = datetime.utcnow()
+    db.session.commit()
+
+    if is_super_admin(actor):
+        log_superadmin_action(
+            action='SESSION_REVOKED',
+            target=str(target.user_id),
+            details=f'session_id={target.id}',
+            actor=actor,
+        )
+
+    if str(session.get('session_token') or '') == str(target.session_token or ''):
+        session.clear()
+        flash('Current device session revoked. Please sign in again.', 'warning')
+        return redirect(url_for('login'))
+
+    flash('Device session revoked.', 'success')
+    return redirect(url_for('admin_panel'))
+
+
+@app.route('/admin/sessions/revoke-others', methods=['POST'])
+@csrf.exempt
+@admin_required
+def revoke_other_sessions():
+    actor = current_user()
+    if not actor:
+        return redirect(url_for('login'))
+
+    current_token = str(session.get('session_token') or '').strip()
+    q = UserSession.query.filter(
+        UserSession.user_id == actor.id,
+        UserSession.is_active.is_(True),
+    )
+    if current_token:
+        q = q.filter(UserSession.session_token != current_token)
+
+    revoked = q.update({"is_active": False, "last_seen": datetime.utcnow()}, synchronize_session=False)
+    db.session.commit()
+    flash(f'Revoked {revoked} other active session(s).', 'success')
+    return redirect(url_for('admin_panel'))
 
 
 @app.route("/admin/tasks/assign", methods=["POST"])
