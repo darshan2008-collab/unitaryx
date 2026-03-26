@@ -120,6 +120,9 @@
     <main class="dash-main">
         <header class="dash-topbar">
             <div class="dash-greeting">
+                <button id="mobile-menu-toggle" class="mobile-menu-btn" aria-label="Toggle Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
                 <div class="greeting-avatar">{{ user.name[0].upper() }}</div>
                 <div>
                     <h1>Welcome back, {{ user.name.split()[0] }}!</h1>
@@ -127,6 +130,10 @@
                 </div>
             </div>
             <div class="topbar-actions" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <a href="/" class="btn-primary" title="Back to Website"
+                    style="background:rgba(255,255,255,0.08); border:1px solid var(--line); color:var(--text);">
+                    <i class="fa-solid fa-house"></i> Website
+                </a>
                 <a href="/#contact" class="btn-primary"><i class="fas fa-plus"></i> New Request</a>
                 <a href="/logout" class="btn-primary"
                     style="background:linear-gradient(130deg, #ef4444, #f97316); color:#fff;"><i
@@ -521,6 +528,26 @@
                 `;
                 document.body.appendChild(roadmapModal);
             }
+            // --- MOBILE MENU TOGGLE (Optimized) ---
+            function initMobileMenu() {
+                const mobileToggle = document.getElementById('mobile-menu-toggle');
+                const sidebar = document.querySelector('.dash-sidebar');
+                
+                if (mobileToggle && sidebar) {
+                    // Remove any existing listeners to prevent duplicates
+                    mobileToggle.onclick = (e) => {
+                        e.stopPropagation();
+                        sidebar.classList.toggle('mobile-open');
+                    };
+                    
+                    document.addEventListener('click', (e) => {
+                        if (sidebar.classList.contains('mobile-open') && !sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
+                            sidebar.classList.remove('mobile-open');
+                        }
+                    });
+                }
+            }
+            initMobileMenu();
         })();
     </script>
 </body>

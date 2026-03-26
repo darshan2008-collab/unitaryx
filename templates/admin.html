@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Command Center | Unitary X</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}?v=20260321modesright2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}?v=20260326mobilefix3">
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
         rel="stylesheet">
@@ -108,19 +108,6 @@
         <div id="ai-cursor-beam" class="ai-cursor-beam"></div>
     </div>
 
-    <!-- Top Global Actions -->
-    <div class="top-actions">
-        <a id="top-pdf-download-btn" href="/admin/export/pdf?tab=dashboard" class="top-action-btn"
-            data-tooltip="Download PDF Report" title="Download PDF Report">
-            <i class="fa-solid fa-file-pdf"></i>
-        </a>
-        <div class="mode-switch" role="group" aria-label="Theme mode switch">
-            <button id="theme-light-btn" type="button" class="theme-mode-btn" data-theme="light"
-                aria-label="Enable light mode" title="Light mode">
-                <i class="fa-solid fa-sun"></i> Light
-            </button>
-            <button id="theme-dark-btn" type="button" class="theme-mode-btn" data-theme="dark"
-                aria-label="Enable dark mode" title="Dark mode">
                 <i class="fa-solid fa-moon"></i> Dark
             </button>
         </div>
@@ -200,6 +187,10 @@
         <main class="admin-main">
             <header class="admin-header">
                 <div class="admin-header-title-block">
+                    <button id="mobile-menu-toggle" class="top-action-btn mobile-only-btn" aria-label="Toggle Menu"
+                        title="Toggle Menu">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
                     <h1 class="admin-title" style="color: var(--text);">
                         <span class="superadmin-elite-badge" aria-label="Super Admin">
                             <i class="fas fa-crown superadmin-elite-icon" aria-hidden="true"></i>
@@ -220,6 +211,26 @@
                             Operational</span>
                         <span style="height: 15px; width: 1px; background: var(--glass-border-bright);"></span>
                         <i class="far fa-clock"></i> <span id="live-clock">--:--:--</span>
+                    </div>
+                </div>
+
+                <div class="top-actions-wrapper">
+                    <div class="top-actions">
+                        <a href="/" class="top-action-btn" title="Back to Website" data-tooltip="Back to Website">
+                            <i class="fa-solid fa-house"></i>
+                        </a>
+                        <a id="top-pdf-download-btn" href="/admin/export/pdf?tab=dashboard" class="top-action-btn"
+                            data-tooltip="Download PDF Report" title="Download PDF Report">
+                            <i class="fa-solid fa-file-pdf"></i>
+                        </a>
+                        <div class="mode-switch" role="group" aria-label="Theme mode switch">
+                            <button id="theme-light-btn" class="theme-mode-btn" title="Light Mode">
+                                <i class="fa-solid fa-sun"></i> <span>Light</span>
+                            </button>
+                            <button id="theme-dark-btn" class="theme-mode-btn" title="Dark Mode">
+                                <i class="fa-solid fa-moon"></i> <span>Dark</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -417,8 +428,8 @@
                     <h3 class="card-title"><i class="fas fa-user-shield"
                             style="color:var(--primary); margin-right:8px;"></i>Admin Account Control Desk</h3>
 
-                    <form method="POST" action="/admin/admins/create" class="admin-create-account-form"
-                        style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; align-items:end; margin-bottom:12px;">
+                    <form method="POST" action="/admin/admins/create" class="admin-create-account-form admin-grid-form"
+                        style="margin-bottom:12px;">
                         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                         <div>
                             <label
@@ -461,9 +472,8 @@
                         <div id="admin-account-{{ row.id }}" class="admin-account-card"
                             style="padding:10px; border:1px solid var(--glass-border); border-radius:12px; background:rgba(0,82,204,0.04);">
                             <form method="POST" action="/admin/admins/{{ row.id }}/update"
-                                class="admin-update-account-form" data-target-card="admin-account-{{ row.id }}"
-                                data-current-email="{{ row.email|lower }}"
-                                style="display:grid; grid-template-columns: 1.1fr 1.4fr 1fr auto auto; gap:8px; align-items:center;">
+                                class="admin-update-account-form admin-grid-form" data-target-card="admin-account-{{ row.id }}"
+                                data-current-email="{{ row.email|lower }}">
                                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                                 <input type="text" name="name" value="{{ row.name }}" required minlength="2"
                                     style="padding:8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
@@ -2050,8 +2060,7 @@
             card.style.cssText = 'padding:10px; border:1px solid var(--glass-border); border-radius:12px; background:rgba(0,82,204,0.04);';
             card.innerHTML = `
                 <form method="POST" action="/admin/admins/${admin.id}/update"
-                    class="admin-update-account-form" data-target-card="admin-account-${admin.id}" data-current-email="${escapeHtml(email.trim().toLowerCase())}"
-                    style="display:grid; grid-template-columns: 1.1fr 1.4fr 1fr auto auto; gap:8px; align-items:center;">
+                    class="admin-update-account-form admin-grid-form" data-target-card="admin-account-${admin.id}" data-current-email="${escapeHtml(email.trim().toLowerCase())}">
                     <input type="hidden" name="_csrf_token" value="${escapeHtml(csrfToken)}">
                     <input type="text" name="name" value="${escapeHtml(name)}" required minlength="2"
                         style="padding:8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
@@ -2158,12 +2167,29 @@
 
         // Sidebar Toggle
         const sidebarToggle = document.getElementById('sidebar-toggle');
+        const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
         const adminSidebar = document.querySelector('.admin-sidebar');
+        
         if (sidebarToggle && adminSidebar) {
             sidebarToggle.addEventListener('click', () => {
                 adminSidebar.classList.toggle('collapsed');
             });
         }
+        
+        if (mobileMenuToggle && adminSidebar) {
+            mobileMenuToggle.addEventListener('click', () => {
+                adminSidebar.classList.toggle('mobile-open');
+            });
+        }
+
+        // Close sidebar when clicking a link on mobile
+        adminSidebar.querySelectorAll('.adm-nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 980) {
+                    adminSidebar.classList.remove('mobile-open');
+                }
+            });
+        });
 
         // Message Modal Logic
         const msgModal = document.getElementById('msgModal');
@@ -2302,7 +2328,7 @@
                         entry.target.classList.add('ai-reveal-in');
                     }
                 });
-            }, { threshold: 0.16 });
+            }, { threshold: 0.05 });
             revealTargets.forEach((target) => revealObserver.observe(target));
 
             const canvas = document.getElementById('ai-particle-field');
