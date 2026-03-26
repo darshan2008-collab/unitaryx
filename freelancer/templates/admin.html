@@ -405,6 +405,20 @@
                             </div>
                             <div class="kpi-sub">Fresh opportunities in current cycle</div>
                         </div>
+                        <div class="kpi-chip">
+                            <div class="kpi-chip-head">
+                                <span>Stale Lead Follow-ups</span>
+                                <strong>{{ admin_metrics.stale_count }}</strong>
+                            </div>
+                            <div class="kpi-sub">Leads needing immediate follow-up</div>
+                        </div>
+                        <div class="kpi-chip">
+                            <div class="kpi-chip-head">
+                                <span>Auto Escalated (Cycle)</span>
+                                <strong>{{ admin_metrics.escalated_count }}</strong>
+                            </div>
+                            <div class="kpi-sub">Priority upgraded for stale leads</div>
+                        </div>
                     </div>
                 </section>
 
@@ -1385,6 +1399,7 @@
                                 <tr class="main-row" id="row-{{ r.id }}" data-id="{{ r.id }}"
                                     data-status="{{ r.status }}" data-priority="{{ r.priority }}"
                                     data-service="{{ r.service }}" data-value="{{ r.value }}" data-score="{{ r.lead_score_total or 0 }}"
+                                    data-stale="{{ 1 if r.stale_flag else 0 }}" data-escalation="{{ r.escalation_level or 0 }}"
                                     data-created="{{ r.created_at.timestamp() if r.created_at else 0 }}">
                                     <td class="select-col"><input type="checkbox" class="row-select" value="{{ r.id }}">
                                     </td>
@@ -1399,6 +1414,7 @@
                                     <td>
                                         <span class="prio-badge prio-{{ r.priority|lower }}">{{ r.priority }}</span>
                                         <div id="lead-score-{{ r.id }}" style="margin-top:6px; font-size:0.72rem; color:var(--text-dim); font-weight:700;">Lead {{ r.lead_tier or 'C' }} - {{ r.lead_score_total or 0 }}/100</div>
+                                        <div id="stale-indicator-{{ r.id }}" style="margin-top:4px; font-size:0.70rem; color:{% if r.stale_flag %}#ef4444{% else %}var(--text-dim){% endif %}; font-weight:700;">{% if r.stale_flag %}Stale Follow-up - Escalation L{{ r.escalation_level or 0 }}{% else %}Follow-up Healthy{% endif %}</div>
                                     </td>
                                     <td style="font-family:'JetBrains Mono';">₹{{ "{:,}".format(r.value) }}</td>
                                     <td class="control-cell">
@@ -2319,6 +2335,8 @@
                             row.dataset.priority = updatedPriority;
                             row.dataset.value = updatedValue;
                             row.dataset.score = Number(data.lead_score_total || 0);
+                            row.dataset.stale = data.stale_flag ? '1' : '0';
+                            row.dataset.escalation = String(data.escalation_level || 0);
 
                             // Update Priority Badge
                             const prioBadge = row.querySelector('.prio-badge');
@@ -2345,6 +2363,16 @@
                                 const tier = data.lead_tier || 'C';
                                 const total = Number(data.lead_score_total || 0);
                                 scoreEl.textContent = `Lead ${tier} - ${total}/100`;
+                            }
+
+                            const staleEl = document.getElementById(`stale-indicator-${data.id}`);
+                            if (staleEl) {
+                                const stale = !!data.stale_flag;
+                                const level = Number(data.escalation_level || 0);
+                                staleEl.textContent = stale
+                                    ? `Stale Follow-up - Escalation L${level}`
+                                    : 'Follow-up Healthy';
+                                staleEl.style.color = stale ? '#ef4444' : 'var(--text-dim)';
                             }
                         }
 

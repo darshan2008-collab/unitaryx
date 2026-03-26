@@ -402,6 +402,10 @@ class ProjectRequest(db.Model):
     lead_score_total = db.Column(db.Integer, default=0, index=True)
     lead_tier = db.Column(db.String(20), default='C')
     lead_last_scored_at = db.Column(db.DateTime)
+    stale_flag = db.Column(db.Boolean, default=False, index=True)
+    escalation_level = db.Column(db.Integer, default=0)
+    last_followup_at = db.Column(db.DateTime)
+    next_followup_at = db.Column(db.DateTime)
     internal_notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user       = db.relationship('User', backref='requests', lazy=True)
@@ -568,6 +572,70 @@ def _score_project_request(req):
     req.lead_score_total = total
     req.lead_tier = tier
     req.lead_last_scored_at = datetime.utcnow()
+
+
+def _apply_stale_followup_policy(rows):
+    now = datetime.utcnow()
+    stale_count = 0
+    escalated_count = 0
+    changed = False
+
+    for row in rows:
+        status = (row.status or "").strip().lower()
+        if status == "done":
+            if row.stale_flag:
+                row.stale_flag = False
+                changed = True
+            continue
+
+        priority = (row.priority or "Medium").strip().lower()
+        threshold = 4
+        if priority == "high":
+            threshold = 2
+        elif priority == "low":
+            threshold = 7
+
+        age_days = 0
+        if row.created_at:
+            age_days = max((now - row.created_at).days, 0)
+
+        is_stale = age_days >= threshold
+        if row.stale_flag != is_stale:
+            row.stale_flag = is_stale
+            changed = True
+
+        if not is_stale:
+            continue
+
+        stale_count += 1
+        next_follow = row.next_followup_at
+        followup_due = (not next_follow) or (next_follow <= now)
+        recent_followup = row.last_followup_at and (now - row.last_followup_at) < timedelta(hours=20)
+        can_escalate = (row.escalation_level or 0) < 3
+
+        if followup_due and can_escalate and not recent_followup:
+            row.escalation_level = int(row.escalation_level or 0) + 1
+            row.last_followup_at = now
+            row.next_followup_at = now + timedelta(days=1)
+            row.is_new_update = True
+
+            if priority == "low":
+                row.priority = "Medium"
+            elif priority == "medium":
+                row.priority = "High"
+
+            _score_project_request(row)
+            escalated_count += 1
+            changed = True
+        elif not row.next_followup_at:
+            row.next_followup_at = now + timedelta(days=1)
+            changed = True
+
+    return {
+        "stale_count": stale_count,
+        "escalated_count": escalated_count,
+        "changed": changed,
+    }
 
 
 def _extract_client_ip():
@@ -1605,12 +1673,14 @@ def admin_panel():
         ProjectRequest.created_at.desc()
     ).all()
 
+    followup_summary = _apply_stale_followup_policy(requests_list)
+
     scores_updated = False
     for row in requests_list:
         if row.lead_last_scored_at is None:
             _score_project_request(row)
             scores_updated = True
-    if scores_updated:
+    if scores_updated or followup_summary.get("changed"):
         db.session.commit()
 
     requests_list = sorted(
@@ -1667,6 +1737,8 @@ def admin_panel():
         'high_priority_count': high_priority_count,
         'avg_value': avg_value,
         'todays_inquiries': todays_inquiries,
+        'stale_count': int(followup_summary.get("stale_count", 0)),
+        'escalated_count': int(followup_summary.get("escalated_count", 0)),
     }
     
     # Distribution Analysis (Service counts)
@@ -2423,6 +2495,10 @@ def update_project():
     if message is not None:
         req.message = message
     req.is_new_update = True  # Notify student via dashboard sync too
+
+    if (req.status or "").strip().lower() == "done":
+        req.stale_flag = False
+        req.next_followup_at = None
     _score_project_request(req)
     
     db.session.commit()
@@ -2437,6 +2513,8 @@ def update_project():
             "lead_score_value": req.lead_score_value,
             "lead_score_urgency": req.lead_score_urgency,
             "lead_score_conversion": req.lead_score_conversion,
+            "stale_flag": bool(req.stale_flag),
+            "escalation_level": int(req.escalation_level or 0),
         })
         
     # Fallback to standard redirect if not AJAX
