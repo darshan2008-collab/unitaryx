@@ -2808,6 +2808,18 @@ textarea.adm-input::placeholder {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
 }
 
+/* Ensure active tabs never render as invisible placeholders.
+   Some animated states leave cards at opacity:0 while still occupying height,
+   which appears as large blank pages when scrolling. */
+.admin-tab-content.active .dash-card,
+.admin-tab-content.active .table-card,
+.admin-tab-content.active .adm-stat,
+.admin-tab-content.active .super-kpi,
+.admin-tab-content.active .kpi-chip {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+}
+
 .admin-grid {
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
 }

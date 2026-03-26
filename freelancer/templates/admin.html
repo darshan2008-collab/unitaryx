@@ -172,6 +172,8 @@
                             <span>Task Control Desk</span></a></li>
                     <li><a href="#" class="adm-nav-link" data-tab="super-lab"><i class="fas fa-bolt"></i>
                             <span>Super Lab</span></a></li>
+                        <li><a href="#" class="adm-nav-link" data-tab="super-controls"><i class="fas fa-sliders"></i>
+                            <span>Advanced Controls</span></a></li>
                 </ul>
                 {% endif %}
 
@@ -1226,6 +1228,9 @@
             </div>
             {% endif %}
 
+            {% if is_superadmin %}
+            <div id="tab-super-controls" class="admin-tab-content">
+
                 <section class="dash-card" style="margin-bottom: 18px;">
                     <h3 class="card-title"><i class="fas fa-laptop-code"
                             style="color:var(--primary); margin-right:8px;"></i>Session Device Manager</h3>
@@ -1504,8 +1509,8 @@
                         {% endfor %}
                     </div>
                 </section>
-                {% endif %}
             </div>
+            {% endif %}
 
             <div id="tab-analytics" class="admin-tab-content">
                 <!-- Enhanced Features Row -->
@@ -1860,6 +1865,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
         </main>
 
     </div> <!-- End Layout Wrapper -->
@@ -1891,47 +1897,82 @@
             topPdfBtn.style.display = shouldShow ? '' : 'none';
         }
 
-        const initialActiveLink = document.querySelector('.adm-nav-link[data-tab].active');
-        updateTopPdfLink(initialActiveLink ? initialActiveLink.getAttribute('data-tab') : 'dashboard');
+        function activateTab(targetTab, syncUrl = false) {
+            const requested = (targetTab || '').trim();
+            const linkByTab = {};
+            navLinks.forEach((l) => {
+                const key = (l.getAttribute('data-tab') || '').trim();
+                if (key) linkByTab[key] = l;
+            });
+
+            const contentByTab = {};
+            tabContents.forEach((c) => {
+                const key = (c.id || '').replace(/^tab-/, '').trim();
+                if (key) contentByTab[key] = c;
+            });
+
+            const canUse = requested && linkByTab[requested] && contentByTab[requested];
+            const fallback = (linkByTab.dashboard && contentByTab.dashboard)
+                ? 'dashboard'
+                : ((Object.keys(linkByTab).find((k) => contentByTab[k])) || 'dashboard');
+            const finalTab = canUse ? requested : fallback;
+
+            updateTopPdfLink(finalTab);
+
+            navLinks.forEach((l) => l.classList.remove('active'));
+            if (linkByTab[finalTab]) {
+                linkByTab[finalTab].classList.add('active');
+            }
+
+            tabContents.forEach((content) => {
+                content.classList.remove('active');
+                if (content.id === `tab-${finalTab}`) {
+                    content.classList.add('active');
+                }
+            });
+
+            const titles = {
+                'dashboard': "Dashboard Overview",
+                'mytasks': "My Task Desk",
+                'projects': "Project Inquiry Logs",
+                'traffic': "Traffic Intelligence",
+                'analytics': "Strategic Analytics",
+                'strategy': "Project Inquiry Strategies",
+                'admin-control': "Superadmin Admin Accounts",
+                'credentials-vault': "Saved Admin Credentials Vault",
+                'task-control': "Superadmin Task Control",
+                'super-lab': "Superadmin Super Lab",
+                'super-controls': "Superadmin Advanced Controls"
+            };
+            const titleEl = document.querySelector('.admin-title');
+            if (titleEl && titles[finalTab]) {
+                titleEl.innerText = titles[finalTab] + " Center";
+            }
+
+            if (syncUrl) {
+                const nextUrl = new URL(window.location.href);
+                nextUrl.searchParams.set('tab', finalTab);
+                window.history.replaceState(null, '', nextUrl.toString());
+            }
+
+            // Prevent landing in blank area when moving from a tall tab to a shorter tab.
+            const mainArea = document.querySelector('.admin-main');
+            if (mainArea) {
+                mainArea.scrollTop = 0;
+            }
+            window.scrollTo({ top: 0, behavior: 'auto' });
+
+            window.dispatchEvent(new Event('resize'));
+        }
+
+        const requestedTab = (new URLSearchParams(window.location.search).get('tab') || '').trim();
+        activateTab(requestedTab, false);
 
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const targetTab = link.getAttribute('data-tab');
-                updateTopPdfLink(targetTab);
-
-                // Update Active Link
-                navLinks.forEach(l => l.classList.remove('active'));
-                link.classList.add('active');
-
-                // Update Tab Visibility
-                tabContents.forEach(content => {
-                    content.classList.remove('active');
-                    if (content.id === `tab-${targetTab}`) {
-                        content.classList.add('active');
-                    }
-                });
-
-                // Trigger chart resize if needed
-                window.dispatchEvent(new Event('resize'));
-
-                // Update Header Title
-                const titles = {
-                    'dashboard': "Dashboard Overview",
-                    'mytasks': "My Task Desk",
-                    'projects': "Project Inquiry Logs",
-                    'traffic': "Traffic Intelligence",
-                    'analytics': "Strategic Analytics",
-                    'strategy': "Project Inquiry Strategies",
-                    'admin-control': "Superadmin Admin Accounts",
-                    'credentials-vault': "Saved Admin Credentials Vault",
-                    'task-control': "Superadmin Task Control",
-                    'super-lab': "Superadmin Super Lab"
-                };
-                const titleEl = document.querySelector('.admin-title');
-                if (titleEl && titles[targetTab]) {
-                    titleEl.innerText = titles[targetTab] + " Center";
-                }
+                activateTab(targetTab, true);
             });
         });
 

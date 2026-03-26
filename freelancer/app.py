@@ -2458,7 +2458,7 @@ def create_db_backup():
         actor=actor,
     )
     flash(f"Backup created: {file_name}", 'success')
-    return redirect(url_for('admin_panel', tab='super-lab'))
+    return redirect(url_for('admin_panel', tab='super-controls'))
 
 
 @app.route('/admin/db-backups/download/<filename>')
@@ -2468,12 +2468,12 @@ def download_db_backup(filename):
     safe = _safe_backup_filename(filename)
     if not safe:
         flash('Invalid backup file name.', 'danger')
-        return redirect(url_for('admin_panel', tab='super-lab'))
+        return redirect(url_for('admin_panel', tab='super-controls'))
 
     full_path = os.path.join(BACKUP_DIR, safe)
     if not os.path.isfile(full_path):
         flash('Backup file not found.', 'danger')
-        return redirect(url_for('admin_panel', tab='super-lab'))
+        return redirect(url_for('admin_panel', tab='super-controls'))
 
     from flask import send_file
     return send_file(full_path, as_attachment=True, download_name=safe, mimetype='application/json')
@@ -2490,15 +2490,15 @@ def restore_db_backup():
 
     if confirmation != 'RESTORE':
         flash("Type RESTORE to confirm restore action.", 'danger')
-        return redirect(url_for('admin_panel', tab='super-lab'))
+        return redirect(url_for('admin_panel', tab='super-controls'))
     if not file_name:
         flash('Please choose a valid backup file.', 'danger')
-        return redirect(url_for('admin_panel', tab='super-lab'))
+        return redirect(url_for('admin_panel', tab='super-controls'))
 
     full_path = os.path.join(BACKUP_DIR, file_name)
     if not os.path.isfile(full_path):
         flash('Backup file not found.', 'danger')
-        return redirect(url_for('admin_panel', tab='super-lab'))
+        return redirect(url_for('admin_panel', tab='super-controls'))
 
     try:
         with open(full_path, 'r', encoding='utf-8') as fp:
@@ -2509,7 +2509,7 @@ def restore_db_backup():
         db.session.rollback()
         app.logger.exception('Restore failed for backup %s', file_name)
         flash(f'Restore failed: {exc}', 'danger')
-        return redirect(url_for('admin_panel', tab='super-lab'))
+        return redirect(url_for('admin_panel', tab='super-controls'))
 
     log_superadmin_action(
         action='DB_BACKUP_RESTORED',
@@ -2518,7 +2518,7 @@ def restore_db_backup():
         actor=actor,
     )
     flash(f'Restore completed from {file_name}.', 'success')
-    return redirect(url_for('admin_panel', tab='super-lab'))
+    return redirect(url_for('admin_panel', tab='super-controls'))
 
 
 @app.route('/admin/ab-tests/update/<int:test_id>', methods=['POST'])
@@ -2537,7 +2537,7 @@ def update_ab_test(test_id):
     variant_b = str(request.form.get('variant_b', '')).strip()
     if not variant_a or not variant_b:
         flash('Both variants must have text.', 'danger')
-        return redirect(url_for('admin_panel', tab='super-lab'))
+        return redirect(url_for('admin_panel', tab='super-controls'))
 
     test.enabled = enabled
     test.allocation_b = max(0, min(100, allocation))
@@ -2553,7 +2553,7 @@ def update_ab_test(test_id):
         actor=current_user(),
     )
     flash(f'A/B test updated: {test.label}', 'success')
-    return redirect(url_for('admin_panel', tab='super-lab'))
+    return redirect(url_for('admin_panel', tab='super-controls'))
 
 
 @app.route('/admin/approvals/<int:ticket_id>/approve', methods=['POST'])
@@ -2566,7 +2566,7 @@ def approve_ticket(ticket_id):
 
     if ticket.status != 'pending':
         flash('Ticket already reviewed.', 'warning')
-        return redirect(url_for('admin_panel', tab='super-lab'))
+        return redirect(url_for('admin_panel', tab='super-controls'))
 
     try:
         result_note = _execute_approval_ticket(ticket)
@@ -2579,7 +2579,7 @@ def approve_ticket(ticket_id):
         db.session.rollback()
         app.logger.exception('Approval execution failed for ticket %s', ticket_id)
         flash(f'Approval failed: {exc}', 'danger')
-        return redirect(url_for('admin_panel', tab='super-lab'))
+        return redirect(url_for('admin_panel', tab='super-controls'))
 
     log_superadmin_action(
         action='APPROVAL_APPROVED',
@@ -2588,7 +2588,7 @@ def approve_ticket(ticket_id):
         actor=reviewer,
     )
     flash(f'Ticket #{ticket.id} approved and executed.', 'success')
-    return redirect(url_for('admin_panel', tab='super-lab'))
+    return redirect(url_for('admin_panel', tab='super-controls'))
 
 
 @app.route('/admin/approvals/<int:ticket_id>/reject', methods=['POST'])
@@ -2601,7 +2601,7 @@ def reject_ticket(ticket_id):
 
     if ticket.status != 'pending':
         flash('Ticket already reviewed.', 'warning')
-        return redirect(url_for('admin_panel', tab='super-lab'))
+        return redirect(url_for('admin_panel', tab='super-controls'))
 
     note = str(request.form.get('review_note', '')).strip()
     ticket.status = 'rejected'
@@ -2617,7 +2617,7 @@ def reject_ticket(ticket_id):
         actor=reviewer,
     )
     flash(f'Ticket #{ticket.id} rejected.', 'warning')
-    return redirect(url_for('admin_panel', tab='super-lab'))
+    return redirect(url_for('admin_panel', tab='super-controls'))
 
 
 @app.route("/admin/tasks/assign", methods=["POST"])
@@ -3660,3 +3660,4 @@ if __name__ == "__main__":
         debug=os.getenv("DEBUG", "True") == "True",
         port=int(os.getenv("PORT", 5005))
     )
+
