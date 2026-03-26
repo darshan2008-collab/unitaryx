@@ -715,80 +715,38 @@ body.dash-body {
     }
 }
 
-@media (max-width: 299px) {
+@media (max-width: 920px) {
     body.dash-body {
         grid-template-columns: 1fr !important;
+        overflow-x: hidden;
     }
 
     .mobile-menu-btn {
-        display: flex !important;
+        display: inline-flex !important;
     }
 
     .dash-sidebar {
         position: fixed !important;
-        left: -280px !important;
+        left: -300px !important;
         top: 0 !important;
         bottom: 0 !important;
         z-index: 2000 !important;
-        width: 260px !important;
-        min-height: 100vh !important;
+        width: min(84vw, 300px) !important;
+        min-height: 100dvh !important;
         display: flex !important;
-        transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        transition: left 0.32s cubic-bezier(0.4, 0, 0.2, 1) !important;
         background: linear-gradient(180deg, #071322, #0b1c2f) !important;
-        box-shadow: 10px 0 30px rgba(0,0,0,0.5) !important;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5) !important;
     }
 
     .dash-sidebar.mobile-open {
         left: 0 !important;
     }
-}
 
-@media (min-width: 300px) and (max-width: 920px) {
-    body.dash-body {
-        display: grid !important;
-        grid-template-columns: 130px 1fr !important;
+    body.dash-nav-open {
+        overflow: hidden;
     }
 
-    @media (min-width: 501px) {
-        body.dash-body {
-            grid-template-columns: 180px 1fr !important;
-        }
-    }
-
-    .dash-sidebar {
-        position: sticky !important;
-        top: 0 !important;
-        height: 100vh !important;
-        width: 130px !important;
-        display: flex !important;
-        left: 0 !important;
-    }
-
-    @media (min-width: 501px) {
-        .dash-sidebar {
-            width: 180px !important;
-        }
-    }
-
-    .nav-label {
-        font-size: 0.7rem !important;
-    }
-
-    .nav-link span {
-        font-size: 0.8rem !important;
-        display: block !important;
-    }
-
-    .sidebar-nav {
-        grid-template-columns: 1fr !important;
-    }
-
-    .mobile-menu-btn {
-        display: none !important;
-    }
-}
-
-@media (max-width: 920px) {
     .sidebar-nav {
         grid-template-columns: 1fr !important;
     }
@@ -1151,5 +1109,51 @@ body.dash-body {
     .roadmap-steps .step i {
         width: 48px;
         height: 48px;
+    }
+}
+
+@media (max-width: 920px) {
+    html,
+    body,
+    body.dash-body,
+    .dash-main {
+        overflow-x: hidden !important;
+        min-width: 0 !important;
+    }
+
+    .dash-topbar,
+    .topbar-actions,
+    .dash-section-header,
+    .section-actions,
+    .summary-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .dash-toolbar {
+        grid-template-columns: 1fr !important;
+    }
+
+    .toggle-chip,
+    .result-count,
+    .btn-chip,
+    .btn-primary {
+        white-space: normal !important;
+    }
+
+    .dash-input,
+    .dash-select,
+    .btn-chip,
+    .btn-primary {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .kpi-card,
+    .req-card,
+    .extra-card,
+    .dash-section {
+        min-width: 0;
     }
 }

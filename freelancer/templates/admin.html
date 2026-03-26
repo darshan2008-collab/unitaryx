@@ -116,6 +116,10 @@
         </a>
         <!-- Theme mode switch removed -->
     </div>
+    <button type="button" class="mobile-sidebar-fab" data-sidebar-toggle aria-label="Open menu" title="Open menu">
+        <i class="fa-solid fa-bars"></i>
+    </button>
+    <div class="admin-mobile-backdrop" data-sidebar-toggle aria-hidden="true"></div>
 
     <!-- Layout Wrapper -->
     <div class="admin-layout" style="display: flex; min-height: 100vh; width: 100%;">
@@ -130,6 +134,7 @@
                     <span class="logo-fallback-inline" style="display:none;">Unitary X</span>
                 </div>
                 <button id="sidebar-toggle" class="menu-toggle-btn"
+                    data-sidebar-toggle
                     style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted); display: flex;">
                     <i class="fa-solid fa-bars"></i>
                 </button>
@@ -144,6 +149,8 @@
                             <span>My Tasks</span></a></li>
                     <li><a href="#" class="adm-nav-link" data-tab="projects"><i class="fas fa-folder-open"></i>
                             <span>Projects</span></a></li>
+                    <li><a href="#" class="adm-nav-link" data-tab="traffic"><i class="fas fa-chart-area"></i>
+                        <span>Traffic Intelligence</span></a></li>
                 </ul>
 
                 {% if is_superadmin %}
@@ -434,14 +441,30 @@
                         <div style="display: flex; align-items:center; justify-content:space-between; flex:1; padding: 15px; background:rgba(236, 72, 153, 0.04); border:1px solid rgba(236, 72, 153, 0.15); border-radius:12px;">
                             <div>
                                 <div style="font-size:0.8rem; color:var(--text-dim); font-weight:700; text-transform:uppercase;">Active Users on Site</div>
-                                <div id="live-visitors-count" style="font-size: 3rem; font-weight: 900; color:var(--text); line-height:1; margin-top:5px; font-family:'JetBrains Mono', monospace;">142</div>
-                                <div style="font-size:0.75rem; color:#10b981; margin-top:5px; font-weight:700;"><i class="fas fa-arrow-trend-up"></i> High Volume Alert</div>
+                                <div id="live-visitors-count" style="font-size: 3rem; font-weight: 900; color:var(--text); line-height:1; margin-top:5px; font-family:'JetBrains Mono', monospace;">{{ traffic_seed.active_now }}</div>
+                                <div id="traffic-status-text" style="font-size:0.75rem; color:#10b981; margin-top:5px; font-weight:700;"><i class="fas fa-wave-square"></i> Live last 5 minutes</div>
                             </div>
                             <div style="text-align:right;">
-                                <div style="font-size:0.8rem; font-weight:700; margin-bottom:4px; color:var(--text);">Traffic Sources</div>
-                                <div style="font-size:0.75rem; color:var(--text-dim);">Direct: <span style="font-weight:700;">45%</span></div>
-                                <div style="font-size:0.75rem; color:var(--text-dim);">Organic: <span style="font-weight:700;">32%</span></div>
-                                <div style="font-size:0.75rem; color:var(--text-dim);">Social: <span style="font-weight:700;">23%</span></div>
+                                <div style="font-size:0.8rem; font-weight:700; margin-bottom:4px; color:var(--text);">Real-Time Summary</div>
+                                <div style="font-size:0.75rem; color:var(--text-dim);">Registered: <span id="registered-users-count" style="font-weight:700;">{{ registered_total }}</span></div>
+                                <div style="font-size:0.75rem; color:var(--text-dim);">Today's Opens: <span id="today-opens-count" style="font-weight:700;">{{ traffic_seed.today_page_views }}</span></div>
+                                <div style="font-size:0.75rem; color:var(--text-dim);">Scrolled (25%+): <span id="today-scroll-count" style="font-weight:700;">{{ traffic_seed.today_scrolled }}</span></div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 12px; padding: 12px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(0, 0, 0, 0.02);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <div style="font-size:0.8rem; font-weight:700; color:var(--text);">Recently Registered Users</div>
+                                <div id="avg-scroll-depth" style="font-size:0.75rem; color:var(--text-dim);">Avg scroll: --</div>
+                            </div>
+                            <div id="registered-users-list" style="display:grid; gap:6px; max-height:150px; overflow:auto;">
+                                {% for reg in registered_users %}
+                                <div style="display:flex; justify-content:space-between; gap:8px; font-size:0.75rem; border-bottom:1px dashed var(--glass-border); padding-bottom:4px;">
+                                    <span style="color:var(--text); font-weight:700;">{{ reg.name }}</span>
+                                    <span style="color:var(--text-dim);">{{ reg.email }}</span>
+                                </div>
+                                {% else %}
+                                <div style="font-size:0.75rem; color:var(--text-dim);">No users registered yet.</div>
+                                {% endfor %}
                             </div>
                         </div>
                     </section>
@@ -974,7 +997,7 @@
                 <section class="dash-card" style="margin-bottom: 18px;">
                     <h3 class="card-title"><i class="fas fa-rocket"
                             style="color:var(--primary); margin-right:8px;"></i>Bulk Task Launcher</h3>
-                    <form method="POST" action="/admin/tasks/assign-bulk"
+                    <form method="POST" action="/admin/tasks/assign-bulk" id="bulk-task-launcher-form"
                         style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; align-items:end; margin-top:10px;">
                         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                         <div>
@@ -985,11 +1008,23 @@
                                 placeholder="Publish weekly admin report"
                                 style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);">
                         </div>
+                        <div>
+                            <label
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Pick
+                                Admin Email</label>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <input type="email" id="bulk-admin-email-input" list="admin-email-list"
+                                    placeholder="Type or choose admin email"
+                                    style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);">
+                                <button type="button" id="bulk-admin-email-add"
+                                    style="padding:10px 12px; border:none; border-radius:10px; background:#0f766e; color:#fff; font-weight:700; cursor:pointer; white-space:nowrap;">Add</button>
+                            </div>
+                        </div>
                         <div style="grid-column: 1 / -1;">
                             <label
                                 style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Admin
                                 Emails (comma/new line separated)</label>
-                            <textarea name="admin_emails" rows="3" required
+                            <textarea name="admin_emails" id="bulk-admin-emails-textarea" rows="3" required
                                 placeholder="admin1@example.com, admin2@example.com"
                                 style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);"></textarea>
                         </div>
@@ -1205,6 +1240,76 @@
                             <span>Identity Proxy</span>
                             <span class="status-indicator"><i class="fa-solid fa-circle"></i> Secured</span>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-traffic" class="admin-tab-content">
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <div>
+                            <h3 class="card-title" style="margin:0;"><i class="fas fa-chart-area"
+                                    style="color:var(--primary); margin-right:8px;"></i>Traffic Intelligence Hub</h3>
+                            <p style="margin:6px 0 0; color:var(--text-dim); font-size:0.84rem;">Daily split by page path (Home, Login, Dashboard, Portfolio) and full raw event trail.</p>
+                        </div>
+                        <a href="/admin/export/traffic-csv" class="btn-primary"
+                            style="text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+                            <i class="fas fa-file-csv"></i> Export Traffic CSV
+                        </a>
+                    </div>
+                </section>
+
+                <div class="dashboard-grid" style="margin-bottom: 18px;">
+                    <div class="dash-card">
+                        <h3 class="card-title"><i class="fas fa-wave-square" style="color:var(--primary); margin-right:8px;"></i>Daily Opens by Page</h3>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="trafficDailyChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="dash-card">
+                        <h3 class="card-title"><i class="fas fa-scroll" style="color:var(--primary); margin-right:8px;"></i>Traffic Snapshot</h3>
+                        <div style="display:grid; gap:10px;">
+                            <div style="display:flex; justify-content:space-between; border:1px solid var(--glass-border); padding:10px; border-radius:10px;"><span style="color:var(--text-dim);">Active now</span><strong id="traffic-snap-active">{{ traffic_seed.active_now }}</strong></div>
+                            <div style="display:flex; justify-content:space-between; border:1px solid var(--glass-border); padding:10px; border-radius:10px;"><span style="color:var(--text-dim);">Today opens</span><strong id="traffic-snap-opens">{{ traffic_seed.today_page_views }}</strong></div>
+                            <div style="display:flex; justify-content:space-between; border:1px solid var(--glass-border); padding:10px; border-radius:10px;"><span style="color:var(--text-dim);">Today scrolled 25%+</span><strong id="traffic-snap-scroll">{{ traffic_seed.today_scrolled }}</strong></div>
+                            <div style="display:flex; justify-content:space-between; border:1px solid var(--glass-border); padding:10px; border-radius:10px;"><span style="color:var(--text-dim);">Registered users</span><strong id="traffic-snap-users">{{ registered_total }}</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3 class="card-title"><i class="fas fa-list"></i> Full Traffic Logs (Latest 300)</h3>
+                    </div>
+                    <div class="admin-table-wrap">
+                        <table class="adm-table">
+                            <thead>
+                                <tr>
+                                    <th>Time (UTC)</th>
+                                    <th>Visitor</th>
+                                    <th>Event</th>
+                                    <th>Page</th>
+                                    <th>Scroll %</th>
+                                    <th>User</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ev in traffic_logs %}
+                                <tr>
+                                    <td>{{ ev.created_at.strftime('%d %b %Y %H:%M:%S') if ev.created_at else '-' }}</td>
+                                    <td style="font-family:'JetBrains Mono', monospace;">{{ ev.visitor_id }}</td>
+                                    <td>{{ ev.event_type }}</td>
+                                    <td>{{ ev.page_path }}</td>
+                                    <td>{{ ev.scroll_percent if ev.scroll_percent is not none else '-' }}</td>
+                                    <td>{{ ev.user_email or '-' }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" style="text-align:center; color:var(--text-dim);">No traffic data yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -1451,6 +1556,9 @@
             topPdfBtn.href = `/admin/export/pdf?tab=${encodeURIComponent(safeTab)}`;
             topPdfBtn.setAttribute('data-tooltip', `Download ${safeTab} PDF`);
             topPdfBtn.setAttribute('title', `Download ${safeTab} PDF`);
+
+            const shouldShow = safeTab === 'projects';
+            topPdfBtn.style.display = shouldShow ? '' : 'none';
         }
 
         const initialActiveLink = document.querySelector('.adm-nav-link[data-tab].active');
@@ -1482,6 +1590,7 @@
                     'dashboard': "Dashboard Overview",
                     'mytasks': "My Task Desk",
                     'projects': "Project Inquiry Logs",
+                    'traffic': "Traffic Intelligence",
                     'analytics': "Strategic Analytics",
                     'strategy': "Project Inquiry Strategies",
                     'admin-control': "Superadmin Admin Accounts",
@@ -1539,19 +1648,65 @@
                     memBar.style.width = val + '%';
                     document.getElementById('mem-load-text').innerText = val + '%';
                 }
-
-                const visitorCounter = document.getElementById('live-visitors-count');
-                if(visitorCounter && Math.random() > 0.4) {
-                    let current = parseInt(visitorCounter.innerText || '142');
-                    const diff = Math.floor(Math.random() * 9) - 3;
-                    current += diff;
-                    if(current < 110) current = 110;
-                    if(current > 250) current = 250;
-                    visitorCounter.innerText = current;
-                }
             }
             setInterval(updateDynamicFeatures, 2500);
             updateDynamicFeatures();
+
+            function renderRegisteredUsers(users) {
+                const host = document.getElementById('registered-users-list');
+                if (!host) return;
+                if (!Array.isArray(users) || users.length === 0) {
+                    host.innerHTML = '<div style="font-size:0.75rem; color:var(--text-dim);">No users registered yet.</div>';
+                    return;
+                }
+                host.innerHTML = users.map((row) => {
+                    const name = (row && row.name ? String(row.name) : 'Unknown')
+                        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const email = (row && row.email ? String(row.email) : '-')
+                        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    return '<div style="display:flex; justify-content:space-between; gap:8px; font-size:0.75rem; border-bottom:1px dashed var(--glass-border); padding-bottom:4px;">'
+                        + '<span style="color:var(--text); font-weight:700;">' + name + '</span>'
+                        + '<span style="color:var(--text-dim);">' + email + '</span>'
+                        + '</div>';
+                }).join('');
+            }
+
+            async function refreshTrafficAnalytics() {
+                try {
+                    const res = await fetch('/admin/api/traffic-summary', { cache: 'no-store' });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    const liveEl = document.getElementById('live-visitors-count');
+                    if (liveEl) liveEl.textContent = String(data.active_now || 0);
+                    const snapActive = document.getElementById('traffic-snap-active');
+                    if (snapActive) snapActive.textContent = String(data.active_now || 0);
+
+                    const opensEl = document.getElementById('today-opens-count');
+                    if (opensEl) opensEl.textContent = String(data.today_opens || 0);
+                    const snapOpens = document.getElementById('traffic-snap-opens');
+                    if (snapOpens) snapOpens.textContent = String(data.today_opens || 0);
+
+                    const scrollEl = document.getElementById('today-scroll-count');
+                    if (scrollEl) scrollEl.textContent = String(data.today_scrolled || 0);
+                    const snapScroll = document.getElementById('traffic-snap-scroll');
+                    if (snapScroll) snapScroll.textContent = String(data.today_scrolled || 0);
+
+                    const regEl = document.getElementById('registered-users-count');
+                    if (regEl) regEl.textContent = String(data.registered_total || 0);
+                    const snapUsers = document.getElementById('traffic-snap-users');
+                    if (snapUsers) snapUsers.textContent = String(data.registered_total || 0);
+
+                    const avgEl = document.getElementById('avg-scroll-depth');
+                    if (avgEl) avgEl.textContent = 'Avg scroll: ' + String(data.avg_scroll_depth || 0) + '%';
+
+                    renderRegisteredUsers(data.registered_users || []);
+                } catch (err) {
+                    // Keep dashboard stable even if traffic endpoint is temporarily unavailable.
+                }
+            }
+
+            setInterval(refreshTrafficAnalytics, 15000);
+            refreshTrafficAnalytics();
         });
 
     </script>
@@ -1792,6 +1947,7 @@
                         if (oldTaskCtrl && newTaskCtrl) {
                             oldTaskCtrl.innerHTML = newTaskCtrl.innerHTML;
                             bindTaskForms(); // Rebind new forms!
+                            bindBulkEmailPicker();
                         }
 
                         // Swap Flashes
@@ -1811,7 +1967,11 @@
                             const newAssignForm = document.querySelector('form[action="/admin/tasks/assign"]');
                             if (newAssignForm) newAssignForm.reset();
                             const newBulkForm = document.querySelector('form[action="/admin/tasks/assign-bulk"]');
-                            if (newBulkForm) newBulkForm.reset();
+                            if (newBulkForm) {
+                                newBulkForm.reset();
+                                const bulkTextarea = document.getElementById('bulk-admin-emails-textarea');
+                                if (bulkTextarea) bulkTextarea.value = '';
+                            }
                         }
 
                     } catch (err) {
@@ -1829,6 +1989,89 @@
         
         bindTaskForms();
         applyAdvancedFilters();
+
+        // Traffic Daily Split Chart
+        const trafficDailyCanvas = document.getElementById('trafficDailyChart');
+        let trafficDailyChart = null;
+
+        function renderTrafficDailyChart(payload) {
+            if (!trafficDailyCanvas || !payload || !Array.isArray(payload.labels)) return;
+            const ctx = trafficDailyCanvas.getContext('2d');
+            const colorMap = {
+                Home: '#2563eb',
+                Login: '#f59e0b',
+                Dashboard: '#10b981',
+                Portfolio: '#8b5cf6',
+                Other: '#64748b'
+            };
+
+            const datasets = (payload.datasets || []).map((set) => {
+                const color = colorMap[set.label] || '#64748b';
+                return {
+                    label: set.label,
+                    data: set.data || [],
+                    borderColor: color,
+                    backgroundColor: color + '33',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.25,
+                    pointRadius: 2,
+                };
+            });
+
+            if (trafficDailyChart) {
+                trafficDailyChart.data.labels = payload.labels;
+                trafficDailyChart.data.datasets = datasets;
+                trafficDailyChart.update();
+                return;
+            }
+
+            trafficDailyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: payload.labels,
+                    datasets,
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#64748b',
+                                font: { family: 'Outfit', weight: '700' }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#64748b' },
+                            grid: { color: 'rgba(100, 116, 139, 0.12)' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#64748b', precision: 0 },
+                            grid: { color: 'rgba(100, 116, 139, 0.12)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function refreshTrafficDailyChart() {
+            try {
+                const res = await fetch('/admin/api/traffic-daily-pages?days=14', { cache: 'no-store' });
+                if (!res.ok) return;
+                const payload = await res.json();
+                renderTrafficDailyChart(payload);
+            } catch (err) {
+                // Non-blocking analytics refresh.
+            }
+        }
+
+        setInterval(refreshTrafficDailyChart, 30000);
+        refreshTrafficDailyChart();
 
         // Sector Momentum Chart (Line)
         const ctxSector = document.getElementById('sectorChart').getContext('2d');
@@ -2110,6 +2353,49 @@
         });
 
         const SUPERADMIN_LOCKED_EMAIL = 'harikavi1301@gmail.com';
+
+        function parseBulkEmailList(raw) {
+            const cleaned = String(raw || '').replace(/\n/g, ',').replace(/;/g, ',');
+            const values = [];
+            const seen = new Set();
+            cleaned.split(',').forEach((part) => {
+                const email = String(part || '').trim().toLowerCase();
+                if (!email || seen.has(email)) return;
+                seen.add(email);
+                values.push(email);
+            });
+            return values;
+        }
+
+        function bindBulkEmailPicker() {
+            const addBtn = document.getElementById('bulk-admin-email-add');
+            const input = document.getElementById('bulk-admin-email-input');
+            const textarea = document.getElementById('bulk-admin-emails-textarea');
+            if (!addBtn || !input || !textarea) return;
+            if (addBtn.dataset.boundBulkEmail === '1') return;
+            addBtn.dataset.boundBulkEmail = '1';
+
+            function addCurrentEmail() {
+                const picked = String(input.value || '').trim().toLowerCase();
+                if (!picked) {
+                    input.focus();
+                    return;
+                }
+
+                const merged = parseBulkEmailList(textarea.value + ',' + picked);
+                textarea.value = merged.join(', ');
+                input.value = '';
+                input.focus();
+            }
+
+            addBtn.addEventListener('click', addCurrentEmail);
+            input.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addCurrentEmail();
+                }
+            });
+        }
 
         function escapeHtml(value) {
             return String(value || '')
@@ -2562,14 +2848,91 @@
         document.querySelectorAll('.admin-delete-account-form').forEach(bindAdminDeleteForm);
         document.querySelectorAll('.admin-update-account-form').forEach(bindAdminUpdateForm);
         document.querySelectorAll('.admin-pass-toggle').forEach(bindAdminPasswordToggle);
+        bindBulkEmailPicker();
 
         // Sidebar Toggle
-        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebarToggles = Array.from(document.querySelectorAll('[data-sidebar-toggle]'));
         const adminSidebar = document.querySelector('.admin-sidebar');
-        if (sidebarToggle && adminSidebar) {
-            sidebarToggle.addEventListener('click', () => {
+        if (sidebarToggles.length && adminSidebar) {
+            const MOBILE_BREAKPOINT = 980;
+            let mobileScrollY = 0;
+
+            const lockMobilePageScroll = () => {
+                if (document.body.classList.contains('mobile-nav-open')) return;
+                mobileScrollY = window.scrollY || window.pageYOffset || 0;
+                document.documentElement.classList.add('mobile-nav-open');
+                document.body.classList.add('mobile-nav-open');
+                document.body.style.top = `-${mobileScrollY}px`;
+                document.body.style.position = 'fixed';
+                document.body.style.width = '100%';
+            };
+
+            const unlockMobilePageScroll = () => {
+                const top = document.body.style.top;
+                document.documentElement.classList.remove('mobile-nav-open');
+                document.body.classList.remove('mobile-nav-open');
+                document.body.style.position = '';
+                document.body.style.top = '';
+                document.body.style.width = '';
+                const restoreY = Math.abs(parseInt(top || '0', 10)) || mobileScrollY;
+                window.scrollTo(0, restoreY);
+            };
+
+            const setMobileSidebar = (isOpen) => {
+                adminSidebar.classList.toggle('mobile-open', isOpen);
+                if (window.innerWidth <= MOBILE_BREAKPOINT) {
+                    if (isOpen) {
+                        lockMobilePageScroll();
+                    } else {
+                        unlockMobilePageScroll();
+                    }
+                }
+            };
+
+            const toggleSidebar = () => {
+                if (window.innerWidth <= MOBILE_BREAKPOINT) {
+                    const isOpen = !adminSidebar.classList.contains('mobile-open');
+                    setMobileSidebar(isOpen);
+                    return;
+                }
                 adminSidebar.classList.toggle('collapsed');
+            };
+
+            sidebarToggles.forEach((toggle) => {
+                toggle.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    if (window.innerWidth <= MOBILE_BREAKPOINT && toggle.classList.contains('admin-mobile-backdrop')) {
+                        setMobileSidebar(false);
+                        return;
+                    }
+                    toggleSidebar();
+                });
             });
+
+            document.addEventListener('click', (event) => {
+                if (window.innerWidth > MOBILE_BREAKPOINT) return;
+                if (!adminSidebar.classList.contains('mobile-open')) return;
+
+                const clickedInsideSidebar = adminSidebar.contains(event.target);
+                const clickedToggle = sidebarToggles.some((toggle) => toggle.contains(event.target));
+                if (!clickedInsideSidebar && !clickedToggle) {
+                    setMobileSidebar(false);
+                }
+            });
+
+            document.querySelectorAll('.adm-nav-link[data-tab]').forEach((link) => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= MOBILE_BREAKPOINT) {
+                        setMobileSidebar(false);
+                    }
+                });
+            });
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > MOBILE_BREAKPOINT) {
+                    setMobileSidebar(false);
+                }
+            }, { passive: true });
         }
 
         // Message Modal Logic
@@ -2628,6 +2991,18 @@
                     rafPointer = requestAnimationFrame(applyPointer);
                 }
             }, { passive: true });
+
+            window.addEventListener('touchmove', (event) => {
+                const touch = event.touches && event.touches[0];
+                if (!touch) return;
+                pointerX = touch.clientX;
+                pointerY = touch.clientY;
+                if (!rafPointer) {
+                    rafPointer = requestAnimationFrame(applyPointer);
+                }
+            }, { passive: true });
+
+            applyPointer();
 
             let rafParallax = 0;
             function updateParallax() {
@@ -2691,7 +3066,9 @@
             const canvas = document.getElementById('ai-particle-field');
             const context = canvas ? canvas.getContext('2d') : null;
             const particles = [];
-            const particleCount = Math.min(110, Math.max(40, Math.round(window.innerWidth / 14)));
+            const particleCount = window.matchMedia('(max-width: 980px)').matches
+                ? 54
+                : Math.min(110, Math.max(40, Math.round(window.innerWidth / 14)));
 
             function resizeCanvas() {
                 if (!canvas) return;

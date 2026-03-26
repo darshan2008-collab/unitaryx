@@ -347,6 +347,7 @@
         </section>
     </main>
 
+    <script src="{{ url_for('static', filename='traffic_tracker.js') }}"></script>
     <script>
         (function () {
             const grid = document.getElementById('requestGrid');
@@ -532,19 +533,38 @@
             function initMobileMenu() {
                 const mobileToggle = document.getElementById('mobile-menu-toggle');
                 const sidebar = document.querySelector('.dash-sidebar');
+                const MOBILE_BREAKPOINT = 920;
                 
                 if (mobileToggle && sidebar) {
                     // Remove any existing listeners to prevent duplicates
                     mobileToggle.onclick = (e) => {
                         e.stopPropagation();
-                        sidebar.classList.toggle('mobile-open');
+                        const isOpen = sidebar.classList.toggle('mobile-open');
+                        document.body.classList.toggle('dash-nav-open', isOpen);
                     };
                     
                     document.addEventListener('click', (e) => {
                         if (sidebar.classList.contains('mobile-open') && !sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
                             sidebar.classList.remove('mobile-open');
+                            document.body.classList.remove('dash-nav-open');
                         }
                     });
+
+                    document.querySelectorAll('.sidebar-link, .sidebar-logout').forEach((link) => {
+                        link.addEventListener('click', () => {
+                            if (window.innerWidth <= MOBILE_BREAKPOINT) {
+                                sidebar.classList.remove('mobile-open');
+                                document.body.classList.remove('dash-nav-open');
+                            }
+                        });
+                    });
+
+                    window.addEventListener('resize', () => {
+                        if (window.innerWidth > MOBILE_BREAKPOINT) {
+                            sidebar.classList.remove('mobile-open');
+                            document.body.classList.remove('dash-nav-open');
+                        }
+                    }, { passive: true });
                 }
             }
             initMobileMenu();

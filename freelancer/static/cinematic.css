@@ -2186,3 +2186,30 @@ body * {
         transform: translate(-50%, -50%) scale(0.8);
     }
 }
+
+@media (max-width: 768px) {
+    html,
+    body,
+    .cinematic-body,
+    .navbar,
+    main,
+    section {
+        overflow-x: hidden !important;
+        min-width: 0 !important;
+    }
+
+    .navbar {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .custom-cursor,
+    .cursor-glow {
+        display: none !important;
+    }
+
+    body,
+    body * {
+        cursor: auto !important;
+    }
+}

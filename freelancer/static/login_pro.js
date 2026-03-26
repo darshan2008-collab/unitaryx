@@ -26,8 +26,8 @@
     const prefersRed = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const QUALITY = prefersRed ? 0.3 : lowEnd ? 0.55 : 1.0;
 
-    // Mobile-lite mode: skip the expensive background renderer for smoother phones.
-    const mobileLite = prefersRed || window.matchMedia("(max-width: 768px)").matches;
+    // Honor reduced-motion preference, but keep visuals active on mobile devices.
+    const mobileLite = prefersRed;
     if (mobileLite) {
         canvas.style.display = "none";
         if (intro) {

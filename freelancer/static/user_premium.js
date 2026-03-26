@@ -27,10 +27,7 @@
     };
 
     const mobileLite =
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-        window.matchMedia("(max-width: 768px)").matches ||
-        /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-        (navigator.hardwareConcurrency || 8) <= 4;
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (mobileLite && document.body) {
         document.body.classList.add("ux-mobile-lite");
@@ -265,7 +262,7 @@
         const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         if (prefersReduced) return;
 
-        const lowPower = (navigator.hardwareConcurrency || 8) <= 4 || window.matchMedia("(max-width: 900px)").matches;
+        const lowPower = (navigator.hardwareConcurrency || 8) <= 4;
         /* Increased node count for heavy graphics */
         const nodeCount = lowPower ? 55 : 120;
         const repelRadius = lowPower ? 180 : 250;

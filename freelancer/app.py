@@ -263,6 +263,23 @@ class User(db.Model):
         return check_password_hash(self.password, raw)
 
 
+class SiteTrafficEvent(db.Model):
+    """Stores anonymous and signed-in traffic events for analytics."""
+    __tablename__ = 'site_traffic_events'
+
+    id = db.Column(db.Integer, primary_key=True)
+    visitor_id = db.Column(db.String(80), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    user_email = db.Column(db.String(150), nullable=True, index=True)
+    event_type = db.Column(db.String(20), nullable=False, index=True)  # page_view | scroll
+    page_path = db.Column(db.String(260), nullable=False)
+    scroll_percent = db.Column(db.Integer, nullable=True)
+    referrer = db.Column(db.String(260), nullable=True)
+    ip_address = db.Column(db.String(64), nullable=True)
+    user_agent = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
 class PasswordResetOTP(db.Model):
     """Stores OTP codes for password reset flow."""
     __tablename__ = 'password_reset_otps'
@@ -472,6 +489,71 @@ def admin_required(f):
 
 def validate_email(email):
     return bool(re.match(r'^[\w\.-]+@[\w\.-]+\.\w{2,}$', email))
+
+
+def _extract_client_ip():
+    forwarded = (request.headers.get("X-Forwarded-For") or "").strip()
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    real_ip = (request.headers.get("X-Real-IP") or "").strip()
+    if real_ip:
+        return real_ip
+    return (request.remote_addr or "").strip()
+
+
+def _resolve_visitor_id(payload):
+    payload = payload if isinstance(payload, dict) else {}
+    candidate = str(payload.get("visitor_id") or request.cookies.get("ux_vid") or "").strip()
+    if candidate and re.match(r"^[A-Za-z0-9._-]{8,80}$", candidate):
+        return candidate
+    return os.urandom(12).hex()
+
+
+def _record_traffic_event(event_type, payload):
+    payload = payload if isinstance(payload, dict) else {}
+    visitor_id = _resolve_visitor_id(payload)
+    current = current_user()
+
+    raw_path = str(payload.get("page_path") or request.path or "/").strip()
+    page_path = raw_path if raw_path.startswith("/") else f"/{raw_path}"
+    page_path = page_path[:260]
+
+    scroll_percent = payload.get("scroll_percent")
+    if scroll_percent is not None:
+        try:
+            scroll_percent = max(0, min(100, int(scroll_percent)))
+        except (TypeError, ValueError):
+            scroll_percent = None
+
+    client_ip = _extract_client_ip()
+    event = SiteTrafficEvent(
+        visitor_id=visitor_id,
+        user_id=getattr(current, "id", None),
+        user_email=(getattr(current, "email", "") or "").strip().lower() or None,
+        event_type=event_type,
+        page_path=page_path,
+        scroll_percent=scroll_percent,
+        referrer=(str(payload.get("referrer") or request.referrer or "").strip() or None),
+        ip_address=client_ip[:64] if client_ip else None,
+        user_agent=(request.user_agent.string or "")[:255] or None,
+    )
+
+    db.session.add(event)
+    db.session.commit()
+    return visitor_id
+
+
+def _traffic_bucket_for_path(page_path):
+    path = (page_path or "").strip().lower()
+    if path in {"/", ""}:
+        return "Home"
+    if path.startswith("/login") or path.startswith("/register"):
+        return "Login"
+    if path.startswith("/dashboard"):
+        return "Dashboard"
+    if path.startswith("/cinematic") or path.startswith("/portfolio"):
+        return "Portfolio"
+    return "Other"
 
 
 def _normalize_origin(origin):
@@ -1247,6 +1329,193 @@ def api_projects():
     return jsonify([p.to_dict() for p in projects])
 
 
+@app.route("/api/traffic/page-view", methods=["POST"])
+@csrf.exempt
+@limiter.limit("1200 per hour", methods=["POST"])
+def api_track_page_view():
+    payload = request.get_json(silent=True) or {}
+    try:
+        visitor_id = _record_traffic_event("page_view", payload)
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Failed to track page view")
+        return jsonify({"success": False}), 500
+
+    response = jsonify({"success": True})
+    response.set_cookie(
+        "ux_vid",
+        visitor_id,
+        max_age=60 * 60 * 24 * 365,
+        samesite="Lax",
+        secure=False,
+        httponly=False,
+    )
+    return response
+
+
+@app.route("/api/traffic/scroll", methods=["POST"])
+@csrf.exempt
+@limiter.limit("3600 per hour", methods=["POST"])
+def api_track_scroll():
+    payload = request.get_json(silent=True) or {}
+    try:
+        visitor_id = _record_traffic_event("scroll", payload)
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Failed to track scroll")
+        return jsonify({"success": False}), 500
+
+    response = jsonify({"success": True})
+    response.set_cookie(
+        "ux_vid",
+        visitor_id,
+        max_age=60 * 60 * 24 * 365,
+        samesite="Lax",
+        secure=False,
+        httponly=False,
+    )
+    return response
+
+
+@app.route("/admin/api/traffic-summary")
+@admin_required
+def admin_traffic_summary():
+    now_utc = datetime.utcnow()
+    five_minutes_ago = now_utc - timedelta(minutes=5)
+    today_start = datetime.combine(now_utc.date(), datetime.min.time())
+
+    active_now = db.session.query(db.func.count(db.distinct(SiteTrafficEvent.visitor_id))).filter(
+        SiteTrafficEvent.created_at >= five_minutes_ago
+    ).scalar() or 0
+    today_opens = SiteTrafficEvent.query.filter(
+        SiteTrafficEvent.event_type == "page_view",
+        SiteTrafficEvent.created_at >= today_start,
+    ).count()
+    unique_visitors_today = db.session.query(db.func.count(db.distinct(SiteTrafficEvent.visitor_id))).filter(
+        SiteTrafficEvent.event_type == "page_view",
+        SiteTrafficEvent.created_at >= today_start,
+    ).scalar() or 0
+    today_scrolled = db.session.query(db.func.count(db.distinct(SiteTrafficEvent.visitor_id))).filter(
+        SiteTrafficEvent.event_type == "scroll",
+        SiteTrafficEvent.scroll_percent >= 25,
+        SiteTrafficEvent.created_at >= today_start,
+    ).scalar() or 0
+
+    scroll_max_subq = db.session.query(
+        SiteTrafficEvent.visitor_id.label("visitor_id"),
+        db.func.max(SiteTrafficEvent.scroll_percent).label("max_scroll"),
+    ).filter(
+        SiteTrafficEvent.event_type == "scroll",
+        SiteTrafficEvent.created_at >= today_start,
+        SiteTrafficEvent.scroll_percent.isnot(None),
+    ).group_by(SiteTrafficEvent.visitor_id).subquery()
+
+    avg_scroll_depth = db.session.query(db.func.avg(scroll_max_subq.c.max_scroll)).scalar() or 0
+
+    users = User.query.order_by(User.created_at.desc()).all()
+    recent_users = [
+        {
+            "name": (u.name or "").strip() or "Unknown",
+            "email": (u.email or "").strip(),
+            "created_at": u.created_at.strftime("%d %b %Y %H:%M") if u.created_at else "",
+        }
+        for u in users
+    ]
+
+    return jsonify({
+        "active_now": int(active_now),
+        "today_opens": int(today_opens),
+        "unique_visitors_today": int(unique_visitors_today),
+        "today_scrolled": int(today_scrolled),
+        "avg_scroll_depth": round(float(avg_scroll_depth), 1),
+        "registered_total": len(users),
+        "registered_users": recent_users,
+    })
+
+
+@app.route("/admin/api/traffic-daily-pages")
+@admin_required
+def admin_traffic_daily_pages():
+    days = request.args.get("days", default=14, type=int)
+    if not days or days < 1:
+        days = 14
+    days = min(days, 60)
+
+    today = datetime.utcnow().date()
+    start_day = today - timedelta(days=days - 1)
+    start_ts = datetime.combine(start_day, datetime.min.time())
+
+    events = SiteTrafficEvent.query.filter(
+        SiteTrafficEvent.event_type == "page_view",
+        SiteTrafficEvent.created_at >= start_ts,
+    ).all()
+
+    labels = [
+        (start_day + timedelta(days=idx)).strftime("%d %b")
+        for idx in range(days)
+    ]
+    iso_days = [
+        (start_day + timedelta(days=idx)).isoformat()
+        for idx in range(days)
+    ]
+
+    bucket_names = ["Home", "Login", "Dashboard", "Portfolio", "Other"]
+    day_index = {iso: idx for idx, iso in enumerate(iso_days)}
+    series = {name: [0] * days for name in bucket_names}
+
+    for ev in events:
+        if not ev.created_at:
+            continue
+        day_key = ev.created_at.date().isoformat()
+        idx = day_index.get(day_key)
+        if idx is None:
+            continue
+        bucket = _traffic_bucket_for_path(ev.page_path)
+        series[bucket][idx] += 1
+
+    return jsonify({
+        "labels": labels,
+        "datasets": [
+            {"label": name, "data": series[name]}
+            for name in bucket_names
+        ]
+    })
+
+
+@app.route("/admin/export/traffic-csv")
+@admin_required
+def export_traffic_csv():
+    logs = SiteTrafficEvent.query.order_by(SiteTrafficEvent.created_at.desc()).all()
+
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "ID", "Visitor ID", "User ID", "User Email", "Event Type", "Page", "Page Bucket",
+        "Scroll Percent", "Referrer", "IP Address", "User Agent", "Created At (UTC)"
+    ])
+
+    for ev in logs:
+        writer.writerow([
+            ev.id,
+            ev.visitor_id,
+            ev.user_id or "",
+            ev.user_email or "",
+            ev.event_type,
+            ev.page_path,
+            _traffic_bucket_for_path(ev.page_path),
+            ev.scroll_percent if ev.scroll_percent is not None else "",
+            ev.referrer or "",
+            ev.ip_address or "",
+            ev.user_agent or "",
+            ev.created_at.strftime("%Y-%m-%d %H:%M:%S") if ev.created_at else "",
+        ])
+
+    response = make_response(output.getvalue())
+    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+    response.headers["Content-Disposition"] = "attachment; filename=unitaryx_traffic_logs.csv"
+    return response
+
+
 # ─── Admin Routes ─────────────────────────────────────────────────────────────
 
 @app.route("/admin")
@@ -1267,6 +1536,30 @@ def admin_panel():
     high_priority_count = sum(1 for r in requests_list if (r.priority or "").lower() == "high")
     today_utc = datetime.utcnow().date()
     todays_inquiries = sum(1 for r in requests_list if r.created_at and r.created_at.date() == today_utc)
+
+    now_utc = datetime.utcnow()
+    five_minutes_ago = now_utc - timedelta(minutes=5)
+    today_start = datetime.combine(now_utc.date(), datetime.min.time())
+    active_now = db.session.query(db.func.count(db.distinct(SiteTrafficEvent.visitor_id))).filter(
+        SiteTrafficEvent.created_at >= five_minutes_ago
+    ).scalar() or 0
+    today_page_views = SiteTrafficEvent.query.filter(
+        SiteTrafficEvent.event_type == "page_view",
+        SiteTrafficEvent.created_at >= today_start,
+    ).count()
+    today_scrolled = db.session.query(db.func.count(db.distinct(SiteTrafficEvent.visitor_id))).filter(
+        SiteTrafficEvent.event_type == "scroll",
+        SiteTrafficEvent.scroll_percent >= 25,
+        SiteTrafficEvent.created_at >= today_start,
+    ).scalar() or 0
+    traffic_seed = {
+        "active_now": int(active_now),
+        "today_page_views": int(today_page_views),
+        "today_scrolled": int(today_scrolled),
+    }
+    registered_users = User.query.order_by(User.created_at.desc()).all()
+    registered_total = User.query.count()
+    traffic_logs = SiteTrafficEvent.query.order_by(SiteTrafficEvent.created_at.desc()).limit(300).all()
 
     stats = {
         'total_requests': ProjectRequest.query.count(),
@@ -1382,6 +1675,10 @@ def admin_panel():
                            requests=requests_list, 
                            stats=stats,
                            admin_metrics=admin_metrics,
+                           traffic_seed=traffic_seed,
+                           registered_users=registered_users,
+                           registered_total=registered_total,
+                           traffic_logs=traffic_logs,
                            dist_data=dist_data,
                            admin=admin_user,
                            is_superadmin=is_super_admin(admin_user),

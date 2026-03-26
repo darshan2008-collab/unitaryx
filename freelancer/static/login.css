@@ -1826,7 +1826,21 @@ body {
     .lux-grain,
     .lux-overlay,
     #lux-canvas {
-        display: none !important;
+        display: block !important;
+    }
+
+    #lux-canvas {
+        opacity: 0.52;
+    }
+
+    .meteor-field {
+        opacity: 0.52;
+    }
+
+    .geo-field,
+    .energy-field,
+    .aurora-field {
+        opacity: 0.62;
     }
 
     .auth-scene {
@@ -1870,8 +1884,7 @@ body {
     }
 }
 
-@media (prefers-reduced-motion: reduce),
-(max-width: 768px) {
+@media (prefers-reduced-motion: reduce) {
 
     *,
     *::before,
@@ -1887,5 +1900,53 @@ body {
     .scene-panel,
     .card-glint {
         animation: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    html,
+    body,
+    .lux-auth-body,
+    .auth-scene,
+    .auth-card {
+        overflow-x: hidden !important;
+        min-width: 0 !important;
+    }
+
+    .auth-card,
+    .scene-panel,
+    .field,
+    .field input,
+    .password-field,
+    .btn-auth,
+    .auth-tab {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .auth-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .back-site-btn span {
+        display: none;
+    }
+
+    .back-site-btn {
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        justify-content: center;
+    }
+
+    .google-signin-wrap,
+    .g_id_signin,
+    iframe[title*="Sign in with Google"] {
+        width: 100% !important;
+        max-width: 100% !important;
     }
 }

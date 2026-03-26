@@ -3912,3 +3912,84 @@ footer {
     transform: translateY(20px);
     transition: all 0.8s ease;
 }
+
+@media (max-width: 700px) {
+    html,
+    body,
+    .ux-body,
+    .ux-shell,
+    .ux-section,
+    .ux-hero-wrap,
+    .ux-contact-wrap {
+        overflow-x: hidden !important;
+        min-width: 0 !important;
+    }
+
+    .ux-nav-inner {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .ux-links {
+        display: flex !important;
+        width: 100%;
+        order: 3;
+        gap: 8px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+    }
+
+    .ux-links::-webkit-scrollbar {
+        display: none;
+    }
+
+    .ux-links li {
+        flex: 0 0 auto;
+        list-style: none;
+    }
+
+    .ux-links a {
+        white-space: nowrap;
+        padding: 8px 10px;
+    }
+
+    .ux-brand {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .ux-nav-actions {
+        width: 100% !important;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 8px;
+    }
+
+    .ux-nav-actions > * {
+        flex: 1 1 140px;
+        min-width: 0;
+    }
+
+    .ux-user-chip {
+        max-width: 100% !important;
+    }
+
+    .ux-user-meta strong,
+    .ux-user-meta small {
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ux-btn,
+    .ux-nav-ghost,
+    .ux-nav-cta {
+        white-space: normal !important;
+    }
+}

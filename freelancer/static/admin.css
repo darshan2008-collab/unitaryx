@@ -3207,3 +3207,295 @@ body,
 .admin-header .superadmin-badge-word-b {
     color: #f59e0b;
 }
+
+/* ============================================================
+   MOBILE CINEMATIC RESTORE (FINAL PRIORITY)
+   ============================================================ */
+
+@media (max-width: 980px) {
+    .admin-layout {
+        display: block !important;
+        width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    .admin-sidebar {
+        display: flex !important;
+        position: fixed !important;
+        left: -86vw !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        width: min(82vw, 320px) !important;
+        min-width: 260px !important;
+        max-width: 320px !important;
+        height: 100dvh !important;
+        z-index: 2100 !important;
+        overflow-y: auto !important;
+        box-shadow: 16px 0 36px rgba(2, 6, 23, 0.28) !important;
+        transition: left 0.32s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    .admin-sidebar.collapsed {
+        display: flex !important;
+        width: min(82vw, 320px) !important;
+        min-width: 260px !important;
+        max-width: 320px !important;
+        padding: 20px 16px 14px !important;
+    }
+
+    .admin-sidebar.mobile-open {
+        left: 0 !important;
+    }
+
+    .admin-sidebar.collapsed .menu-label,
+    .admin-sidebar.collapsed .adm-nav-link span,
+    .admin-sidebar.collapsed .logo-text,
+    .admin-sidebar.collapsed .admin-profile .adm-info {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+    .admin-sidebar.collapsed .adm-nav-link {
+        justify-content: flex-start !important;
+        padding: 11px 12px !important;
+    }
+
+    .admin-main {
+        width: 100% !important;
+        margin-left: 0 !important;
+        padding: 16px !important;
+    }
+
+    .admin-sidebar .menu-label,
+    .admin-sidebar .adm-nav-link span,
+    .admin-sidebar .logo-text,
+    .admin-sidebar .admin-profile .adm-info {
+        display: block !important;
+    }
+
+    .mobile-only-btn {
+        display: flex !important;
+    }
+
+    .admin-bg-blobs,
+    .ai-cosmos,
+    .ai-particle-field,
+    .ai-parallax,
+    .ai-neural-grid {
+        display: block !important;
+    }
+
+    .ai-cursor-beam {
+        display: none !important;
+    }
+
+    .ai-particle-field {
+        opacity: 0.36 !important;
+    }
+
+    .ai-parallax {
+        inset: -24% !important;
+        filter: blur(14px) !important;
+    }
+
+    .admin-layout,
+    .admin-main,
+    .admin-tab-content {
+        contain: none !important;
+        will-change: auto !important;
+    }
+
+    .adm-stat,
+    .dash-card,
+    .table-card,
+    .super-kpi,
+    .kpi-chip {
+        opacity: 0;
+        transform: translateY(12px);
+        transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.19, 1, 0.22, 1);
+        animation: none !important;
+    }
+
+    .adm-stat.ai-reveal-in,
+    .dash-card.ai-reveal-in,
+    .table-card.ai-reveal-in,
+    .super-kpi.ai-reveal-in,
+    .kpi-chip.ai-reveal-in {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+body.mobile-nav-open {
+    overflow: hidden;
+}
+
+html.mobile-nav-open,
+body.mobile-nav-open {
+    overflow: hidden !important;
+    height: 100%;
+    overscroll-behavior: none;
+}
+
+@media (max-width: 980px) {
+    html,
+    body,
+    .admin-body,
+    .admin-layout,
+    .admin-main,
+    .admin-tab-content {
+        overflow-x: hidden !important;
+        min-width: 0 !important;
+    }
+
+    .admin-create-account-form,
+    .admin-update-account-form,
+    form[action="/admin/tasks/assign"],
+    form[action="/admin/tasks/assign-bulk"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    .admin-pass-wrap,
+    .admin-pass-input,
+    .vault-pw-input,
+    .adm-input,
+    .adm-select,
+    textarea,
+    input[type="email"],
+    input[type="text"],
+    input[type="password"] {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .admin-table-wrap,
+    #credentials-vault-table-wrap,
+    .table-card,
+    .dash-card {
+        max-width: 100% !important;
+    }
+
+    .admin-table-wrap,
+    #credentials-vault-table-wrap,
+    .table-card,
+    .dash-card {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .admin-table-wrap table,
+    #credentials-vault-table-wrap table {
+        min-width: 640px !important;
+    }
+
+    .admin-toast {
+        min-width: 0 !important;
+        width: min(92vw, 420px) !important;
+    }
+
+    .top-action-btn,
+    .action-btn,
+    .btn-update-cmd,
+    .bulk-btn,
+    .btn-primary,
+    .btn-toast-reload {
+        white-space: normal !important;
+    }
+}
+
+.mobile-sidebar-fab {
+    display: none;
+}
+
+@media (max-width: 980px) {
+    body.mobile-nav-open {
+        position: fixed;
+        left: 0;
+        right: 0;
+        width: 100%;
+    }
+
+    .top-actions {
+        position: fixed !important;
+        top: 12px !important;
+        right: 12px !important;
+        left: auto !important;
+        z-index: 2300 !important;
+    }
+
+    .mobile-sidebar-fab {
+        display: inline-flex !important;
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        width: 42px;
+        height: 42px;
+        border: 1px solid var(--glass-border);
+        border-radius: 10px;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-surface);
+        color: var(--primary);
+        box-shadow: 0 6px 18px rgba(0, 82, 204, 0.16);
+        z-index: 2300;
+        cursor: pointer;
+    }
+
+    .mobile-nav-open .mobile-sidebar-fab {
+        left: min(82vw, 320px);
+        transform: translateX(8px);
+    }
+
+    .admin-mobile-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(3, 7, 18, 0.44);
+        opacity: 0;
+        pointer-events: none;
+        touch-action: none;
+        transition: opacity 0.24s ease;
+        z-index: 2250;
+    }
+
+    body.mobile-nav-open .admin-mobile-backdrop {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .admin-sidebar {
+        inset: 0 auto 0 0 !important;
+        left: 0 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+        transform: translateX(-105%);
+        transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        z-index: 2300 !important;
+    }
+
+    .admin-sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    #sidebar-toggle {
+        display: none !important;
+    }
+
+    .top-actions,
+    .mobile-sidebar-fab {
+        position: fixed !important;
+    }
+
+    .top-actions {
+        z-index: 2400 !important;
+    }
+
+    .mobile-sidebar-fab {
+        z-index: 2400;
+    }
+}
