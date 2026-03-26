@@ -45,14 +45,6 @@
             transform: translateY(0);
         }
 
-        .super-lab-feature {
-            display: none !important;
-        }
-
-        body.super-lab-open .super-lab-feature {
-            display: block !important;
-        }
-
         .pulse-dot {
             width: 8px;
             height: 8px;
@@ -1232,7 +1224,7 @@
                     </div>
                 </section>
 
-                <section class="dash-card super-lab-feature" style="margin-bottom: 18px;">
+                <section class="dash-card" style="margin-bottom: 18px;">
                     <h3 class="card-title"><i class="fas fa-laptop-code"
                             style="color:var(--primary); margin-right:8px;"></i>Session Device Manager</h3>
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-top:10px;">
@@ -1286,7 +1278,7 @@
                     </div>
                 </section>
 
-                <section class="dash-card super-lab-feature" style="margin-bottom: 18px;">
+                <section class="dash-card" style="margin-bottom: 18px;">
                     <h3 class="card-title"><i class="fas fa-mobile-screen-button"
                             style="color:var(--primary); margin-right:8px;"></i>PWA Admin Mode</h3>
                     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px;">
@@ -1302,7 +1294,7 @@
                 </section>
 
                 {% if is_superadmin %}
-                <section class="dash-card super-lab-feature" style="margin-bottom: 18px;">
+                <section class="dash-card" style="margin-bottom: 18px;">
                     <h3 class="card-title"><i class="fas fa-stamp"
                             style="color:var(--primary); margin-right:8px;"></i>Approval Workflow Queue</h3>
                     <div style="overflow:auto; margin-top:10px; max-height:320px;">
@@ -1378,7 +1370,7 @@
                 {% endif %}
 
                 {% if is_superadmin %}
-                <section class="dash-card super-lab-feature" style="margin-bottom: 18px;">
+                <section class="dash-card" style="margin-bottom: 18px;">
                     <h3 class="card-title"><i class="fas fa-network-wired"
                             style="color:var(--primary); margin-right:8px;"></i>Global Active Session Fleet</h3>
                     <div style="overflow:auto; margin-top:10px; max-height:300px;">
@@ -1407,7 +1399,7 @@
                     </div>
                 </section>
 
-                <section class="dash-card super-lab-feature" style="margin-bottom: 18px;">
+                <section class="dash-card" style="margin-bottom: 18px;">
                     <h3 class="card-title"><i class="fas fa-database"
                             style="color:var(--primary); margin-right:8px;"></i>Database Backup & Restore</h3>
                     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px; margin-top:10px;">
@@ -1464,7 +1456,7 @@
                     </div>
                 </section>
 
-                <section class="dash-card super-lab-feature" style="margin-bottom: 18px;">
+                <section class="dash-card" style="margin-bottom: 18px;">
                     <h3 class="card-title"><i class="fas fa-flask"
                             style="color:var(--primary); margin-right:8px;"></i>A/B Testing Controls</h3>
                     <div style="display:grid; gap:12px; margin-top:10px;">
@@ -1897,21 +1889,14 @@
             topPdfBtn.style.display = shouldShow ? '' : 'none';
         }
 
-        function updateSuperLabVisibility(tabKey) {
-            const isSuperLab = (tabKey || '').trim() === 'super-lab';
-            document.body.classList.toggle('super-lab-open', isSuperLab);
-        }
-
         const initialActiveLink = document.querySelector('.adm-nav-link[data-tab].active');
         updateTopPdfLink(initialActiveLink ? initialActiveLink.getAttribute('data-tab') : 'dashboard');
-        updateSuperLabVisibility(initialActiveLink ? initialActiveLink.getAttribute('data-tab') : 'dashboard');
 
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const targetTab = link.getAttribute('data-tab');
                 updateTopPdfLink(targetTab);
-                updateSuperLabVisibility(targetTab);
 
                 // Update Active Link
                 navLinks.forEach(l => l.classList.remove('active'));
