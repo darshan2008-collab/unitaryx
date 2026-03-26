@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Command Center | Unitary X</title>
+    <meta name="theme-color" content="#0052cc">
+    <link rel="manifest" href="{{ url_for('static', filename='admin_manifest.webmanifest') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/logo.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}?v=20260321modesright2">
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
@@ -1277,6 +1280,21 @@
                     </div>
                 </section>
 
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-mobile-screen-button"
+                            style="color:var(--primary); margin-right:8px;"></i>PWA Admin Mode</h3>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px;">
+                        <button type="button" id="pwa-install-btn"
+                            style="display:none; padding:8px 12px; border:none; border-radius:8px; background:#0f766e; color:#fff; font-weight:700; cursor:pointer;">Install Admin App</button>
+                        <button type="button" id="pwa-offline-btn"
+                            style="padding:8px 12px; border:none; border-radius:8px; background:#1d4ed8; color:#fff; font-weight:700; cursor:pointer;">Enable Offline Cache</button>
+                        <span id="pwa-status" style="font-size:0.84rem; color:var(--text-dim);">PWA status: checking...</span>
+                    </div>
+                    <div style="margin-top:10px; font-size:0.82rem; color:var(--text-dim);">
+                        Install this admin panel as a home-screen app for faster launch and limited offline support.
+                    </div>
+                </section>
+
                 {% if is_superadmin %}
                 <section class="dash-card" style="margin-bottom: 18px;">
                     <h3 class="card-title"><i class="fas fa-network-wired"
@@ -1972,6 +1990,65 @@
         }
 
         function getSelectedIds() {
+    <script>
+        (function () {
+            const statusEl = document.getElementById('pwa-status');
+            const installBtn = document.getElementById('pwa-install-btn');
+            const offlineBtn = document.getElementById('pwa-offline-btn');
+            let deferredPrompt = null;
+
+            function setStatus(msg, ok) {
+                if (!statusEl) return;
+                statusEl.textContent = msg;
+                statusEl.style.color = ok ? '#059669' : 'var(--text-dim)';
+            }
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/static/admin_sw.js')
+                    .then(() => setStatus('PWA ready. Service worker active.', true))
+                    .catch(() => setStatus('PWA install available, but service worker failed.', false));
+            } else {
+                setStatus('Service workers are not supported in this browser.', false);
+            }
+
+            window.addEventListener('beforeinstallprompt', (event) => {
+                event.preventDefault();
+                deferredPrompt = event;
+                if (installBtn) installBtn.style.display = 'inline-block';
+                setStatus('Install prompt ready.', true);
+            });
+
+            if (installBtn) {
+                installBtn.addEventListener('click', async () => {
+                    if (!deferredPrompt) {
+                        setStatus('Install prompt not available yet.', false);
+                        return;
+                    }
+                    deferredPrompt.prompt();
+                    const choice = await deferredPrompt.userChoice;
+                    if (choice && choice.outcome === 'accepted') {
+                        setStatus('Admin app installed.', true);
+                    } else {
+                        setStatus('Install cancelled.', false);
+                    }
+                    deferredPrompt = null;
+                    installBtn.style.display = 'none';
+                });
+            }
+
+            if (offlineBtn) {
+                offlineBtn.addEventListener('click', async () => {
+                    try {
+                        const c = await caches.open('unitaryx-admin-pwa-v1');
+                        await c.add('/admin');
+                        setStatus('Offline cache primed for /admin.', true);
+                    } catch (e) {
+                        setStatus('Unable to pre-cache admin page.', false);
+                    }
+                });
+            }
+        })();
+    </script>
             return Array.from(document.querySelectorAll('.row-select:checked')).map(cb => cb.value);
         }
 

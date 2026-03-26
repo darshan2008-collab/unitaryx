@@ -1,0 +1,22 @@
+{
+  "name": "Unitary X Admin",
+  "short_name": "UX Admin",
+  "start_url": "/admin?mode=pwa",
+  "scope": "/admin",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#0052cc",
+  "description": "Installable admin control center for Unitary X with quick-access workflows.",
+  "icons": [
+    {
+      "src": "/static/img/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/img/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
