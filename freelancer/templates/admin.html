@@ -1348,6 +1348,7 @@
                             <select id="sortMode" class="filter-control" title="Sort inquiries">
                                 <option value="latest">Sort: Latest First</option>
                                 <option value="oldest">Sort: Oldest First</option>
+                                <option value="score_high">Sort: Lead Score High to Low</option>
                                 <option value="value_high">Sort: Value High to Low</option>
                                 <option value="value_low">Sort: Value Low to High</option>
                             </select>
@@ -1383,7 +1384,7 @@
                                 {% for r in requests %}
                                 <tr class="main-row" id="row-{{ r.id }}" data-id="{{ r.id }}"
                                     data-status="{{ r.status }}" data-priority="{{ r.priority }}"
-                                    data-service="{{ r.service }}" data-value="{{ r.value }}"
+                                    data-service="{{ r.service }}" data-value="{{ r.value }}" data-score="{{ r.lead_score_total or 0 }}"
                                     data-created="{{ r.created_at.timestamp() if r.created_at else 0 }}">
                                     <td class="select-col"><input type="checkbox" class="row-select" value="{{ r.id }}">
                                     </td>
@@ -1397,6 +1398,7 @@
                                     </td>
                                     <td>
                                         <span class="prio-badge prio-{{ r.priority|lower }}">{{ r.priority }}</span>
+                                        <div id="lead-score-{{ r.id }}" style="margin-top:6px; font-size:0.72rem; color:var(--text-dim); font-weight:700;">Lead {{ r.lead_tier or 'C' }} - {{ r.lead_score_total or 0 }}/100</div>
                                     </td>
                                     <td style="font-family:'JetBrains Mono';">₹{{ "{:,}".format(r.value) }}</td>
                                     <td class="control-cell">
@@ -1773,10 +1775,13 @@
             pairs.sort((a, b) => {
                 const aValue = Number(a.main.dataset.value || 0);
                 const bValue = Number(b.main.dataset.value || 0);
+                const aScore = Number(a.main.dataset.score || 0);
+                const bScore = Number(b.main.dataset.score || 0);
                 const aCreated = Number(a.main.dataset.created || 0);
                 const bCreated = Number(b.main.dataset.created || 0);
 
                 if (mode === 'oldest') return aCreated - bCreated;
+                if (mode === 'score_high') return bScore - aScore;
                 if (mode === 'value_high') return bValue - aValue;
                 if (mode === 'value_low') return aValue - bValue;
                 return bCreated - aCreated;
@@ -2313,6 +2318,7 @@
                             row.dataset.status = updatedStatus;
                             row.dataset.priority = updatedPriority;
                             row.dataset.value = updatedValue;
+                            row.dataset.score = Number(data.lead_score_total || 0);
 
                             // Update Priority Badge
                             const prioBadge = row.querySelector('.prio-badge');
@@ -2332,6 +2338,13 @@
                             const msgTextEl = document.getElementById(`msg-text-${data.id}`);
                             if (msgTextEl) {
                                 msgTextEl.innerText = updatedMessage;
+                            }
+
+                            const scoreEl = document.getElementById(`lead-score-${data.id}`);
+                            if (scoreEl) {
+                                const tier = data.lead_tier || 'C';
+                                const total = Number(data.lead_score_total || 0);
+                                scoreEl.textContent = `Lead ${tier} - ${total}/100`;
                             }
                         }
 

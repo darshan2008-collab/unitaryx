@@ -396,6 +396,12 @@ class ProjectRequest(db.Model):
     is_new_update = db.Column(db.Boolean, default=False)
     priority   = db.Column(db.String(20), default='Medium')
     value      = db.Column(db.Integer, default=0)
+    lead_score_value = db.Column(db.Integer, default=0)
+    lead_score_urgency = db.Column(db.Integer, default=0)
+    lead_score_conversion = db.Column(db.Integer, default=0)
+    lead_score_total = db.Column(db.Integer, default=0, index=True)
+    lead_tier = db.Column(db.String(20), default='C')
+    lead_last_scored_at = db.Column(db.DateTime)
     internal_notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user       = db.relationship('User', backref='requests', lazy=True)
@@ -406,6 +412,8 @@ class ProjectRequest(db.Model):
             "phone": self.phone, "service": self.service,
             "deadline": self.deadline, "message": self.message,
             "status": self.status,
+            "lead_score_total": self.lead_score_total,
+            "lead_tier": self.lead_tier,
             "created_at": self.created_at.strftime("%d %b %Y, %I:%M %p"),
         }
 
@@ -489,6 +497,77 @@ def admin_required(f):
 
 def validate_email(email):
     return bool(re.match(r'^[\w\.-]+@[\w\.-]+\.\w{2,}$', email))
+
+
+def _parse_deadline_days(deadline_value):
+    raw = (deadline_value or "").strip()
+    if not raw:
+        return None
+
+    formats = ["%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%m/%d/%Y"]
+    for fmt in formats:
+        try:
+            target = datetime.strptime(raw, fmt).date()
+            return (target - datetime.utcnow().date()).days
+        except ValueError:
+            continue
+    return None
+
+
+def _clamp_score(value):
+    try:
+        return max(0, min(100, int(round(float(value)))))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _score_project_request(req):
+    # Value score (higher budget usually signals stronger intent).
+    value = int(req.value or 0)
+    value_score = _clamp_score((value / 50000.0) * 100)
+
+    # Urgency score from priority + deadline proximity.
+    priority_text = (req.priority or "Medium").strip().lower()
+    priority_base = {"high": 80, "medium": 55, "low": 30}.get(priority_text, 50)
+    urgency_bonus = 0
+    days_to_deadline = _parse_deadline_days(req.deadline)
+    if days_to_deadline is not None:
+        if days_to_deadline <= 2:
+            urgency_bonus = 20
+        elif days_to_deadline <= 7:
+            urgency_bonus = 12
+        elif days_to_deadline <= 14:
+            urgency_bonus = 6
+    urgency_score = _clamp_score(priority_base + urgency_bonus)
+
+    # Conversion score from message quality + service fit + urgency signal.
+    msg_len = len((req.message or "").strip())
+    message_component = min(22, msg_len // 14)
+    service_text = (req.service or "").strip().lower()
+    service_bonus = 0
+    if any(k in service_text for k in ["web", "app", "ai", "software"]):
+        service_bonus = 10
+    elif any(k in service_text for k in ["iot", "hardware", "report"]):
+        service_bonus = 6
+    urgency_component = 12 if priority_text == "high" else (7 if priority_text == "medium" else 3)
+    conversion_score = _clamp_score(40 + message_component + service_bonus + urgency_component)
+
+    total = _clamp_score((value_score * 0.40) + (urgency_score * 0.30) + (conversion_score * 0.30))
+    if total >= 80:
+        tier = "A"
+    elif total >= 65:
+        tier = "B"
+    elif total >= 45:
+        tier = "C"
+    else:
+        tier = "D"
+
+    req.lead_score_value = value_score
+    req.lead_score_urgency = urgency_score
+    req.lead_score_conversion = conversion_score
+    req.lead_score_total = total
+    req.lead_tier = tier
+    req.lead_last_scored_at = datetime.utcnow()
 
 
 def _extract_client_ip():
@@ -1285,6 +1364,7 @@ def api_contact():
     uid = session.get('user_id')
     req = ProjectRequest(user_id=uid, name=name, email=email, phone=phone,
                          service=service, deadline=deadline, message=message)
+    _score_project_request(req)
     db.session.add(req)
     db.session.commit()
 
@@ -1524,6 +1604,20 @@ def admin_panel():
     requests_list = ProjectRequest.query.order_by(
         ProjectRequest.created_at.desc()
     ).all()
+
+    scores_updated = False
+    for row in requests_list:
+        if row.lead_last_scored_at is None:
+            _score_project_request(row)
+            scores_updated = True
+    if scores_updated:
+        db.session.commit()
+
+    requests_list = sorted(
+        requests_list,
+        key=lambda r: ((r.lead_score_total or 0), (r.created_at or datetime.min)),
+        reverse=True,
+    )
     
     # Calculate more advanced stats
     total_req = len(requests_list)
@@ -2220,22 +2314,27 @@ def admin_bulk_update():
             for row in rows:
                 row.status = "Done"
                 row.is_new_update = True
+                _score_project_request(row)
         elif action == "mark_progress":
             for row in rows:
                 row.status = "In Progress"
                 row.is_new_update = True
+                _score_project_request(row)
         elif action == "priority_high":
             for row in rows:
                 row.priority = "High"
                 row.is_new_update = True
+                _score_project_request(row)
         elif action == "priority_medium":
             for row in rows:
                 row.priority = "Medium"
                 row.is_new_update = True
+                _score_project_request(row)
         elif action == "priority_low":
             for row in rows:
                 row.priority = "Low"
                 row.is_new_update = True
+                _score_project_request(row)
         elif action == "delete":
             for row in rows:
                 db.session.delete(row)
@@ -2324,6 +2423,7 @@ def update_project():
     if message is not None:
         req.message = message
     req.is_new_update = True  # Notify student via dashboard sync too
+    _score_project_request(req)
     
     db.session.commit()
     
@@ -2331,7 +2431,12 @@ def update_project():
         return jsonify({
             "success": True, 
             "message": f"Project #{req.id:04d} updated to {status} successfully.",
-            "id": req.id
+            "id": req.id,
+            "lead_score_total": req.lead_score_total,
+            "lead_tier": req.lead_tier,
+            "lead_score_value": req.lead_score_value,
+            "lead_score_urgency": req.lead_score_urgency,
+            "lead_score_conversion": req.lead_score_conversion,
         })
         
     # Fallback to standard redirect if not AJAX
