@@ -389,6 +389,23 @@ class AdminAuditLog(db.Model):
     target = db.Column(db.String(180))
     details = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
+class ApprovalTicket(db.Model):
+    """Approval queue for sensitive admin operations."""
+    __tablename__ = 'approval_tickets'
+
+    id = db.Column(db.Integer, primary_key=True)
+    action_key = db.Column(db.String(60), nullable=False, index=True)
+    payload_json = db.Column(db.Text, nullable=False)
+    requested_by_email = db.Column(db.String(150), nullable=False, index=True)
+    requested_by_scope = db.Column(db.String(20), nullable=False, default='ops')
+    reason = db.Column(db.String(240))
+    status = db.Column(db.String(20), nullable=False, default='pending', index=True)  # pending | approved | rejected
+    reviewed_by_email = db.Column(db.String(150))
+    review_note = db.Column(db.String(300))
+    reviewed_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
     
 class AdminCredentialRecord(db.Model):
     """Stores superadmin-managed admin credential references."""
@@ -1008,6 +1025,108 @@ def log_superadmin_action(action, target="", details="", actor=None):
         target=(target or "").strip()[:180],
         details=(details or "").strip()[:2000],
     ))
+
+
+def _queue_approval_ticket(action_key, payload, actor, reason=""):
+    actor_email = (getattr(actor, 'email', '') or '').strip().lower()
+    actor_scope = normalize_admin_scope(getattr(actor, 'admin_scope', 'ops'))
+    ticket = ApprovalTicket(
+        action_key=(action_key or '').strip()[:60],
+        payload_json=json.dumps(payload or {}, ensure_ascii=True),
+        requested_by_email=actor_email,
+        requested_by_scope=actor_scope,
+        reason=(reason or '').strip()[:240] or None,
+        status='pending',
+    )
+    db.session.add(ticket)
+    db.session.commit()
+    return ticket
+
+
+def _apply_project_update_values(req, status, priority, value, message):
+    req.status = status
+    req.priority = priority
+    req.value = int(value or 0)
+    if message is not None:
+        req.message = message
+    req.is_new_update = True
+
+    if (req.status or '').strip().lower() == 'done':
+        req.stale_flag = False
+        req.next_followup_at = None
+    _score_project_request(req)
+
+
+def _apply_bulk_action_rows(rows, action):
+    if action == "mark_done":
+        for row in rows:
+            row.status = "Done"
+            row.is_new_update = True
+            _score_project_request(row)
+    elif action == "mark_progress":
+        for row in rows:
+            row.status = "In Progress"
+            row.is_new_update = True
+            _score_project_request(row)
+    elif action == "priority_high":
+        for row in rows:
+            row.priority = "High"
+            row.is_new_update = True
+            _score_project_request(row)
+    elif action == "priority_medium":
+        for row in rows:
+            row.priority = "Medium"
+            row.is_new_update = True
+            _score_project_request(row)
+    elif action == "priority_low":
+        for row in rows:
+            row.priority = "Low"
+            row.is_new_update = True
+            _score_project_request(row)
+    elif action == "delete":
+        for row in rows:
+            db.session.delete(row)
+    else:
+        raise ValueError("Unsupported bulk action")
+
+
+def _execute_approval_ticket(ticket):
+    payload = json.loads(ticket.payload_json or "{}")
+    action_key = (ticket.action_key or '').strip().lower()
+
+    if action_key == 'project_update':
+        req_id = int(payload.get('req_id'))
+        req = ProjectRequest.query.get(req_id)
+        if not req:
+            raise ValueError(f"Inquiry #{req_id} no longer exists.")
+        _apply_project_update_values(
+            req,
+            str(payload.get('status') or '').strip(),
+            str(payload.get('priority') or '').strip(),
+            int(payload.get('value') or 0),
+            payload.get('message'),
+        )
+        return f"Project #{req.id:04d} updated."
+
+    if action_key == 'project_delete':
+        req_id = int(payload.get('req_id'))
+        req = ProjectRequest.query.get(req_id)
+        if not req:
+            raise ValueError(f"Inquiry #{req_id} already removed.")
+        db.session.delete(req)
+        return f"Inquiry #{req_id:04d} deleted."
+
+    if action_key == 'bulk_action':
+        action = str(payload.get('action') or '').strip().lower()
+        ids = payload.get('ids') or []
+        parsed_ids = [int(x) for x in ids]
+        rows = ProjectRequest.query.filter(ProjectRequest.id.in_(parsed_ids)).all()
+        if not rows:
+            raise ValueError("No matching inquiries for bulk action.")
+        _apply_bulk_action_rows(rows, action)
+        return f"Bulk action '{action}' applied to {len(rows)} inquiries."
+
+    raise ValueError("Unsupported approval action.")
 
 
 OTP_TTL_MINUTES = 5
@@ -2140,6 +2259,8 @@ def admin_panel():
     fleet_active_sessions = []
     db_backups = []
     ab_tests = []
+    pending_approvals = []
+    recent_approvals = []
 
     if is_super_admin(admin_user):
         now_utc = datetime.utcnow()
@@ -2224,6 +2345,8 @@ def admin_panel():
     if is_super_admin(admin_user):
         db_backups = _list_db_backups()
         ab_tests = ABTestConfig.query.order_by(ABTestConfig.test_key.asc()).all()
+        pending_approvals = ApprovalTicket.query.filter_by(status='pending').order_by(ApprovalTicket.created_at.desc()).limit(80).all()
+        recent_approvals = ApprovalTicket.query.filter(ApprovalTicket.status != 'pending').order_by(ApprovalTicket.reviewed_at.desc(), ApprovalTicket.created_at.desc()).limit(80).all()
 
     return render_template("admin.html", 
                            requests=requests_list, 
@@ -2251,7 +2374,9 @@ def admin_panel():
                            my_device_sessions=my_device_sessions,
                            fleet_active_sessions=fleet_active_sessions,
                            db_backups=db_backups,
-                           ab_tests=ab_tests)
+                           ab_tests=ab_tests,
+                           pending_approvals=pending_approvals,
+                           recent_approvals=recent_approvals)
 
 
 @app.route('/admin/sessions/revoke/<int:session_id>', methods=['POST'])
@@ -2428,6 +2553,70 @@ def update_ab_test(test_id):
         actor=current_user(),
     )
     flash(f'A/B test updated: {test.label}', 'success')
+    return redirect(url_for('admin_panel', tab='super-lab'))
+
+
+@app.route('/admin/approvals/<int:ticket_id>/approve', methods=['POST'])
+@csrf.exempt
+@admin_required
+@admin_capability_required('admin_control')
+def approve_ticket(ticket_id):
+    reviewer = current_user()
+    ticket = ApprovalTicket.query.get_or_404(ticket_id)
+
+    if ticket.status != 'pending':
+        flash('Ticket already reviewed.', 'warning')
+        return redirect(url_for('admin_panel', tab='super-lab'))
+
+    try:
+        result_note = _execute_approval_ticket(ticket)
+        ticket.status = 'approved'
+        ticket.reviewed_by_email = (getattr(reviewer, 'email', '') or '').strip().lower()
+        ticket.review_note = result_note[:300]
+        ticket.reviewed_at = datetime.utcnow()
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        app.logger.exception('Approval execution failed for ticket %s', ticket_id)
+        flash(f'Approval failed: {exc}', 'danger')
+        return redirect(url_for('admin_panel', tab='super-lab'))
+
+    log_superadmin_action(
+        action='APPROVAL_APPROVED',
+        target=f'ticket:{ticket.id}',
+        details=f'action={ticket.action_key}',
+        actor=reviewer,
+    )
+    flash(f'Ticket #{ticket.id} approved and executed.', 'success')
+    return redirect(url_for('admin_panel', tab='super-lab'))
+
+
+@app.route('/admin/approvals/<int:ticket_id>/reject', methods=['POST'])
+@csrf.exempt
+@admin_required
+@admin_capability_required('admin_control')
+def reject_ticket(ticket_id):
+    reviewer = current_user()
+    ticket = ApprovalTicket.query.get_or_404(ticket_id)
+
+    if ticket.status != 'pending':
+        flash('Ticket already reviewed.', 'warning')
+        return redirect(url_for('admin_panel', tab='super-lab'))
+
+    note = str(request.form.get('review_note', '')).strip()
+    ticket.status = 'rejected'
+    ticket.reviewed_by_email = (getattr(reviewer, 'email', '') or '').strip().lower()
+    ticket.review_note = note[:300] if note else 'Rejected by superadmin.'
+    ticket.reviewed_at = datetime.utcnow()
+    db.session.commit()
+
+    log_superadmin_action(
+        action='APPROVAL_REJECTED',
+        target=f'ticket:{ticket.id}',
+        details=f'action={ticket.action_key}',
+        actor=reviewer,
+    )
+    flash(f'Ticket #{ticket.id} rejected.', 'warning')
     return redirect(url_for('admin_panel', tab='super-lab'))
 
 
@@ -2941,6 +3130,7 @@ def superadmin_delete_task(task_id):
 @admin_capability_required("lead_manage")
 def admin_bulk_update():
     data = request.get_json(silent=True) or request.form
+    actor = current_user()
     ids = data.get("ids", [])
     action = str(data.get("action", "")).strip().lower()
 
@@ -2959,37 +3149,23 @@ def admin_bulk_update():
     if not rows:
         return jsonify({"success": False, "message": "No matching inquiries found."}), 404
 
+    requires_approval = (not is_super_admin(actor)) and action in {"delete", "mark_done", "priority_high"}
+    if requires_approval:
+        ticket = _queue_approval_ticket(
+            action_key='bulk_action',
+            payload={"action": action, "ids": parsed_ids},
+            actor=actor,
+            reason=f"Bulk action {action} on {len(parsed_ids)} inquiries",
+        )
+        return jsonify({
+            "success": True,
+            "queued": True,
+            "ticket_id": ticket.id,
+            "message": f"Bulk action queued for superadmin approval (ticket #{ticket.id})."
+        })
+
     try:
-        if action == "mark_done":
-            for row in rows:
-                row.status = "Done"
-                row.is_new_update = True
-                _score_project_request(row)
-        elif action == "mark_progress":
-            for row in rows:
-                row.status = "In Progress"
-                row.is_new_update = True
-                _score_project_request(row)
-        elif action == "priority_high":
-            for row in rows:
-                row.priority = "High"
-                row.is_new_update = True
-                _score_project_request(row)
-        elif action == "priority_medium":
-            for row in rows:
-                row.priority = "Medium"
-                row.is_new_update = True
-                _score_project_request(row)
-        elif action == "priority_low":
-            for row in rows:
-                row.priority = "Low"
-                row.is_new_update = True
-                _score_project_request(row)
-        elif action == "delete":
-            for row in rows:
-                db.session.delete(row)
-        else:
-            return jsonify({"success": False, "message": "Unsupported bulk action."}), 400
+        _apply_bulk_action_rows(rows, action)
 
         db.session.commit()
     except Exception:
@@ -3053,6 +3229,7 @@ def admin_create_user():
 @admin_required
 @admin_capability_required("lead_manage")
 def update_project():
+    actor = current_user()
     # Support both JSON and Form Data for testing/compatibility
     if request.is_json:
         data = request.get_json()
@@ -3069,18 +3246,32 @@ def update_project():
         message = request.form.get("message")
 
     req = ProjectRequest.query.get_or_404(req_id)
-    
-    req.status = status
-    req.priority = priority
-    req.value = value
-    if message is not None:
-        req.message = message
-    req.is_new_update = True  # Notify student via dashboard sync too
+    requires_approval = (not is_super_admin(actor)) and (
+        (str(status or '').strip().lower() == 'done')
+        or (str(priority or '').strip().lower() == 'high')
+        or int(value or 0) >= 20000
+    )
 
-    if (req.status or "").strip().lower() == "done":
-        req.stale_flag = False
-        req.next_followup_at = None
-    _score_project_request(req)
+    if requires_approval:
+        ticket = _queue_approval_ticket(
+            action_key='project_update',
+            payload={
+                "req_id": int(req.id),
+                "status": str(status or '').strip(),
+                "priority": str(priority or '').strip(),
+                "value": int(value or 0),
+                "message": message,
+            },
+            actor=actor,
+            reason=f"Sensitive update for inquiry #{req.id:04d}",
+        )
+        queued_msg = f"Update queued for superadmin approval (ticket #{ticket.id})."
+        if request.is_json or request.headers.get("Accept") == "application/json":
+            return jsonify({"success": True, "queued": True, "ticket_id": ticket.id, "message": queued_msg})
+        flash(queued_msg, "warning")
+        return redirect(url_for("admin_panel"))
+
+    _apply_project_update_values(req, status, priority, value, message)
     
     db.session.commit()
     
@@ -3108,6 +3299,20 @@ def update_project():
 @admin_required
 @admin_capability_required("lead_manage")
 def delete_request(req_id):
+    actor = current_user()
+    if not is_super_admin(actor):
+        ticket = _queue_approval_ticket(
+            action_key='project_delete',
+            payload={"req_id": int(req_id)},
+            actor=actor,
+            reason=f"Delete inquiry #{req_id:04d}",
+        )
+        queued_msg = f"Delete request queued for superadmin approval (ticket #{ticket.id})."
+        if request.is_json or request.headers.get("Accept") == "application/json":
+            return jsonify({"success": True, "queued": True, "ticket_id": ticket.id, "message": queued_msg})
+        flash(queued_msg, "warning")
+        return redirect(url_for("admin_panel"))
+
     req = ProjectRequest.query.get_or_404(req_id)
     db.session.delete(req)
     db.session.commit()
