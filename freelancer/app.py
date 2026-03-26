@@ -15,6 +15,7 @@ from email.message import EmailMessage
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy import inspect, text
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Security & Config
@@ -75,6 +76,11 @@ def normalize_role(value):
     return role if role in {"user", "admin"} else "user"
 
 
+def normalize_admin_scope(value):
+    scope = (value or "ops").strip().lower()
+    return scope if scope in {"superadmin", "ops", "finance", "support"} else "ops"
+
+
 def find_user_by_email(email):
     normalized = normalize_email(email)
     if not normalized:
@@ -124,6 +130,9 @@ def establish_session_for_user(user, remember=False, profile_photo=None, auth_pr
     session['user_email'] = user_email
     session['role'] = role
     session['is_superadmin'] = user_email == normalize_email(SUPERADMIN_EMAIL)
+    session['admin_scope'] = normalize_admin_scope(
+        'superadmin' if session['is_superadmin'] else getattr(user, 'admin_scope', 'ops')
+    ) if role == 'admin' else ''
     session['user_profile_photo'] = (profile_photo or "").strip()
     session['auth_provider'] = (auth_provider or "password").strip().lower()
 
@@ -253,6 +262,7 @@ class User(db.Model):
     email        = db.Column(db.String(150), unique=True, nullable=False)
     password     = db.Column(db.String(200), nullable=False)
     role         = db.Column(db.String(20), default='user')   # 'user' | 'admin'
+    admin_scope  = db.Column(db.String(20), default='ops')     # superadmin | ops | finance | support
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
     is_active    = db.Column(db.Boolean, default=True)
 
@@ -764,6 +774,39 @@ def is_super_admin(user_obj=None):
     return normalize_email(user_obj.email) == normalize_email(SUPERADMIN_EMAIL)
 
 
+ADMIN_SCOPE_CAPABILITIES = {
+    "superadmin": {"lead_manage", "analytics_view", "task_ops", "export_data", "admin_control"},
+    "ops": {"lead_manage", "analytics_view", "task_ops", "export_data"},
+    "finance": {"analytics_view", "export_data"},
+    "support": {"lead_manage", "analytics_view"},
+}
+
+
+def has_admin_capability(capability, user_obj=None):
+    user_obj = user_obj or current_user()
+    if not user_obj or normalize_role(getattr(user_obj, 'role', 'user')) != 'admin':
+        return False
+    if is_super_admin(user_obj):
+        return True
+    scope = normalize_admin_scope(getattr(user_obj, 'admin_scope', 'ops'))
+    return capability in ADMIN_SCOPE_CAPABILITIES.get(scope, set())
+
+
+def admin_capability_required(capability):
+    def wrapper(fn):
+        @wraps(fn)
+        def decorated(*args, **kwargs):
+            actor = current_user()
+            if not has_admin_capability(capability, actor):
+                if request.is_json or request.headers.get('Accept') == 'application/json':
+                    return jsonify({"success": False, "message": "Insufficient permission for this action."}), 403
+                flash("Insufficient permission for this action.", "danger")
+                return redirect(url_for('admin_panel'))
+            return fn(*args, **kwargs)
+        return decorated
+    return wrapper
+
+
 def log_superadmin_action(action, target="", details="", actor=None):
     actor = actor or current_user()
     if not actor or not is_super_admin(actor):
@@ -901,17 +944,18 @@ def seed_data():
     
     if not User.query.filter_by(email=admin_email).first():
         admin = User(name='Unitary X Admin',
-                     email=admin_email, role='admin')
+                     email=admin_email, role='admin', admin_scope='ops')
         admin.set_password(admin_pass)
         db.session.add(admin)
 
     # Ensure superadmin credentials are always available for the fixed email.
     super_admin = User.query.filter(db.func.lower(User.email) == SUPERADMIN_EMAIL).first()
     if not super_admin:
-        super_admin = User(name='Super Admin', email=SUPERADMIN_EMAIL, role='admin')
+        super_admin = User(name='Super Admin', email=SUPERADMIN_EMAIL, role='admin', admin_scope='superadmin')
         super_admin.set_password(SUPERADMIN_PASSWORD)
         db.session.add(super_admin)
     super_admin.role = 'admin'
+    super_admin.admin_scope = 'superadmin'
     super_admin.is_active = True
 
     if Project.query.count() == 0:
@@ -970,6 +1014,41 @@ def seed_data():
                         review="School science expo winning project! The line-follower robot was amazing — real working model, poster, and everything!",
                         rating=5, avatar="S", av_class="av-4"),
         ])
+
+    db.session.commit()
+
+
+def _ensure_schema_columns():
+    inspector = inspect(db.engine)
+    table_names = set(inspector.get_table_names())
+
+    table_patch_map = {
+        "users": [
+            ("admin_scope", "VARCHAR(20) DEFAULT 'ops'"),
+        ],
+        "project_requests": [
+            ("lead_score_value", "INTEGER DEFAULT 0"),
+            ("lead_score_urgency", "INTEGER DEFAULT 0"),
+            ("lead_score_conversion", "INTEGER DEFAULT 0"),
+            ("lead_score_total", "INTEGER DEFAULT 0"),
+            ("lead_tier", "VARCHAR(20) DEFAULT 'C'"),
+            ("lead_last_scored_at", "TIMESTAMP"),
+            ("stale_flag", "BOOLEAN DEFAULT FALSE"),
+            ("escalation_level", "INTEGER DEFAULT 0"),
+            ("last_followup_at", "TIMESTAMP"),
+            ("next_followup_at", "TIMESTAMP"),
+        ],
+    }
+
+    for table_name, columns in table_patch_map.items():
+        if table_name not in table_names:
+            continue
+        existing = {col["name"] for col in inspector.get_columns(table_name)}
+        for col_name, col_ddl in columns:
+            if col_name in existing:
+                continue
+            db.session.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_ddl}"))
+            app.logger.info("Added missing column %s.%s", table_name, col_name)
 
     db.session.commit()
 
@@ -1060,6 +1139,8 @@ def login():
                 normalized_role = 'admin'
             if user.role != normalized_role:
                 user.role = normalized_role
+            if normalized_role == 'admin':
+                user.admin_scope = 'superadmin' if normalize_email(user.email) == normalize_email(SUPERADMIN_EMAIL) else normalize_admin_scope(user.admin_scope)
                 db.session.commit()
 
             establish_session_for_user(user, remember=remember)
@@ -1307,7 +1388,12 @@ def google_login():
         
         user = find_user_by_email(email)
         if not user:
-            user = User(name=name, email=email, role='admin' if is_oauth_admin else 'user')
+            user = User(
+                name=name,
+                email=email,
+                role='admin' if is_oauth_admin else 'user',
+                admin_scope='superadmin' if email == normalize_email(SUPERADMIN_EMAIL) else ('ops' if is_oauth_admin else 'ops'),
+            )
             user.set_password(os.urandom(24).hex())
             db.session.add(user)
             db.session.commit()
@@ -1319,6 +1405,9 @@ def google_login():
 
             if is_admin_identity(email, existing_user=user) and user.role != 'admin':
                 user.role = 'admin'
+
+            if normalize_role(user.role) == 'admin':
+                user.admin_scope = 'superadmin' if email == normalize_email(SUPERADMIN_EMAIL) else normalize_admin_scope(user.admin_scope)
 
             if normalize_email(user.email) != email:
                 user.email = email
@@ -1527,6 +1616,7 @@ def api_track_scroll():
 
 @app.route("/admin/api/traffic-summary")
 @admin_required
+@admin_capability_required("analytics_view")
 def admin_traffic_summary():
     now_utc = datetime.utcnow()
     five_minutes_ago = now_utc - timedelta(minutes=5)
@@ -1583,6 +1673,7 @@ def admin_traffic_summary():
 
 @app.route("/admin/api/traffic-daily-pages")
 @admin_required
+@admin_capability_required("analytics_view")
 def admin_traffic_daily_pages():
     days = request.args.get("days", default=14, type=int)
     if not days or days < 1:
@@ -1632,6 +1723,7 @@ def admin_traffic_daily_pages():
 
 @app.route("/admin/export/traffic-csv")
 @admin_required
+@admin_capability_required("export_data")
 def export_traffic_csv():
     logs = SiteTrafficEvent.query.order_by(SiteTrafficEvent.created_at.desc()).all()
 
@@ -2031,6 +2123,7 @@ def superadmin_create_admin():
     name = str(request.form.get("name", "")).strip()
     email = str(request.form.get("email", "")).strip().lower()
     permanent_password = str(request.form.get("permanent_password", "")).strip()
+    admin_scope = normalize_admin_scope(request.form.get("admin_scope", "ops"))
 
     if len(name) < 2:
         if is_ajax:
@@ -2058,7 +2151,7 @@ def superadmin_create_admin():
         flash("An account with this email already exists.", "warning")
         return redirect(url_for("admin_panel"))
 
-    user = User(name=name, email=email, role='admin', is_active=True)
+    user = User(name=name, email=email, role='admin', admin_scope=admin_scope, is_active=True)
     user.set_password(permanent_password)
     db.session.add(user)
     db.session.flush()
@@ -2086,6 +2179,7 @@ def superadmin_create_admin():
                 "name": user.name,
                 "email": user.email,
                 "is_active": user.is_active,
+                "admin_scope": user.admin_scope,
                 "permanent_password": permanent_password,
             }
         })
@@ -2119,6 +2213,7 @@ def superadmin_update_admin(uid):
     email = str(request.form.get("email", "")).strip().lower()
     new_password = str(request.form.get("password", "")).strip()
     is_active = str(request.form.get("is_active", "")).strip() == "1"
+    admin_scope = normalize_admin_scope(request.form.get("admin_scope", "ops"))
 
     if len(name) < 2:
         if is_ajax:
@@ -2163,6 +2258,10 @@ def superadmin_update_admin(uid):
     target.name = name
     target.email = email
     target.is_active = True if target_is_superadmin else is_active
+    if target_is_superadmin:
+        target.admin_scope = "superadmin"
+    else:
+        target.admin_scope = admin_scope
     if new_password:
         target.set_password(new_password)
 
@@ -2195,6 +2294,7 @@ def superadmin_update_admin(uid):
             "name": target.name,
             "email": target.email,
             "is_active": bool(target.is_active),
+            "admin_scope": target.admin_scope,
             "new_password": new_password,   # ← vault UI uses this to auto-update
 
         })
@@ -2361,6 +2461,7 @@ def superadmin_delete_task(task_id):
 @app.route("/admin/bulk-update", methods=["POST"])
 @csrf.exempt
 @admin_required
+@admin_capability_required("lead_manage")
 def admin_bulk_update():
     data = request.get_json(silent=True) or request.form
     ids = data.get("ids", [])
@@ -2460,6 +2561,8 @@ def admin_create_user():
         return redirect(url_for("admin_panel"))
 
     user = User(name=name, email=email, role=role)
+    if role == 'admin':
+        user.admin_scope = 'ops'
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
@@ -2471,6 +2574,7 @@ def admin_create_user():
 @app.route("/admin/update-project", methods=["POST"])
 @csrf.exempt
 @admin_required
+@admin_capability_required("lead_manage")
 def update_project():
     # Support both JSON and Form Data for testing/compatibility
     if request.is_json:
@@ -2525,6 +2629,7 @@ def update_project():
 @app.route("/admin/delete/<int:req_id>", methods=["POST"])
 @csrf.exempt
 @admin_required
+@admin_capability_required("lead_manage")
 def delete_request(req_id):
     req = ProjectRequest.query.get_or_404(req_id)
     db.session.delete(req)
@@ -2559,6 +2664,7 @@ def api_latest_updates():
 
 @app.route("/admin/export/pdf")
 @admin_required
+@admin_capability_required("export_data")
 def export_pdf():
     from fpdf import FPDF
 
@@ -2781,6 +2887,7 @@ def export_pdf():
 
 @app.route("/admin/export/csv")
 @admin_required
+@admin_capability_required("export_data")
 def export_csv():
     requests_list = ProjectRequest.query.order_by(ProjectRequest.created_at.desc()).all()
 
@@ -2812,6 +2919,7 @@ def export_csv():
 
 @app.route("/admin/chart-data")
 @admin_required
+@admin_capability_required("analytics_view")
 def chart_data():
     requests_list = ProjectRequest.query.all()
     services_count = {}
@@ -2837,6 +2945,7 @@ def initialize_database():
     with app.app_context():
         try:
             db.create_all()
+            _ensure_schema_columns()
             seed_data()
             AdminCredentialRecord.query.filter(AdminCredentialRecord.temporary_password != "").update(
                 {"temporary_password": ""}, synchronize_session=False

@@ -141,16 +141,21 @@
             </div>
 
             <nav class="sidebar-menu">
+                {% set admin_scope = (session.get('admin_scope') or 'ops')|lower %}
                 <div class="menu-label">Operations Console</div>
                 <ul class="adm-nav">
                     <li><a href="#" class="adm-nav-link active" data-tab="dashboard"><i class="fas fa-th-large"></i>
                             <span>Dashboard Overview</span></a></li>
                     <li><a href="#" class="adm-nav-link" data-tab="mytasks"><i class="fas fa-list-check"></i>
                             <span>My Tasks</span></a></li>
+                    {% if admin_scope in ['ops', 'support', 'superadmin'] %}
                     <li><a href="#" class="adm-nav-link" data-tab="projects"><i class="fas fa-folder-open"></i>
                             <span>Projects</span></a></li>
+                    {% endif %}
+                    {% if admin_scope in ['ops', 'finance', 'support', 'superadmin'] %}
                     <li><a href="#" class="adm-nav-link" data-tab="traffic"><i class="fas fa-chart-area"></i>
                         <span>Traffic Intelligence</span></a></li>
+                    {% endif %}
                 </ul>
 
                 {% if is_superadmin %}
@@ -602,6 +607,17 @@
                             </div>
                         </div>
                         <div>
+                            <label
+                                style="display:block; font-size:0.82rem; color:var(--text-dim); margin-bottom:6px;">Admin
+                                Scope</label>
+                            <select name="admin_scope"
+                                style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);">
+                                <option value="ops">Ops Admin</option>
+                                <option value="finance">Finance Admin</option>
+                                <option value="support">Support Admin</option>
+                            </select>
+                        </div>
+                        <div>
                             <button type="submit"
                                 style="width:100%; padding:10px 12px; border:none; border-radius:10px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer;">Create
                                 Admin</button>
@@ -616,7 +632,7 @@
                             <form method="POST" action="/admin/admins/{{ row.id }}/update"
                                 class="admin-update-account-form" data-target-card="admin-account-{{ row.id }}"
                                 data-current-email="{{ row.email|lower }}"
-                                style="display:grid; grid-template-columns: 1.1fr 1.4fr 1fr auto auto; gap:8px; align-items:center;">
+                                style="display:grid; grid-template-columns: 1.1fr 1.4fr 1fr 1fr auto auto; gap:8px; align-items:center;">
                                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                                 <input type="text" name="name" value="{{ row.name }}" required minlength="2"
                                     style="padding:8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
@@ -632,6 +648,15 @@
                                         <i class="fas fa-eye"></i>
                                     </button>
                                 </div>
+                                <select name="admin_scope"
+                                    style="padding:8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
+                                    <option value="ops" {{ 'selected' if (row.admin_scope or 'ops')|lower == 'ops' else '' }}>Ops</option>
+                                    <option value="finance" {{ 'selected' if (row.admin_scope or 'ops')|lower == 'finance' else '' }}>Finance</option>
+                                    <option value="support" {{ 'selected' if (row.admin_scope or 'ops')|lower == 'support' else '' }}>Support</option>
+                                    {% if row.email|lower == 'harikavi1301@gmail.com' %}
+                                    <option value="superadmin" selected>Superadmin</option>
+                                    {% endif %}
+                                </select>
                                 <label
                                     style="display:flex; align-items:center; gap:6px; font-size:0.84rem; color:var(--text-dim); white-space:nowrap;">
                                     <input type="checkbox" name="is_active" value="1" {{ 'checked' if row.is_active
@@ -646,6 +671,9 @@
                                 <div style="font-size:0.8rem; color:var(--text-dim);">
                                     {{ 'Superadmin account' if row.email|lower == 'harikavi1301@gmail.com' else 'Admin
                                     account' }}
+                                    {% if row.email|lower != 'harikavi1301@gmail.com' %}
+                                    | Scope: {{ (row.admin_scope or 'ops')|title }}
+                                    {% endif %}
                                     | Created: {{ row.created_at.strftime('%d %b %Y') if row.created_at else 'N/A' }}
                                 </div>
                                 <div style="display:flex; gap:8px; align-items:center;">
@@ -2774,6 +2802,7 @@
             const email = String(admin.email || '');
             const name = String(admin.name || '');
             const permanentPassword = String(admin.permanent_password || '');
+            const adminScope = String(admin.admin_scope || 'ops').toLowerCase();
             const isActiveChecked = admin.is_active ? 'checked' : '';
             const isSuperAdmin = email.trim().toLowerCase() === SUPERADMIN_LOCKED_EMAIL;
             const csrfToken = getAdminCsrfToken();
@@ -2785,7 +2814,7 @@
             card.innerHTML = `
                 <form method="POST" action="/admin/admins/${admin.id}/update"
                     class="admin-update-account-form" data-target-card="admin-account-${admin.id}" data-current-email="${escapeHtml(email.trim().toLowerCase())}"
-                    style="display:grid; grid-template-columns: 1.1fr 1.4fr 1fr auto auto; gap:8px; align-items:center;">
+                    style="display:grid; grid-template-columns: 1.1fr 1.4fr 1fr 1fr auto auto; gap:8px; align-items:center;">
                     <input type="hidden" name="_csrf_token" value="${escapeHtml(csrfToken)}">
                     <input type="text" name="name" value="${escapeHtml(name)}" required minlength="2"
                         style="padding:8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
@@ -2800,6 +2829,13 @@
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
+                    <select name="admin_scope"
+                        style="padding:8px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
+                        <option value="ops" ${adminScope === 'ops' ? 'selected' : ''}>Ops</option>
+                        <option value="finance" ${adminScope === 'finance' ? 'selected' : ''}>Finance</option>
+                        <option value="support" ${adminScope === 'support' ? 'selected' : ''}>Support</option>
+                        ${isSuperAdmin ? '<option value="superadmin" selected>Superadmin</option>' : ''}
+                    </select>
                     <label style="display:flex; align-items:center; gap:6px; font-size:0.84rem; color:var(--text-dim); white-space:nowrap;">
                         <input type="checkbox" name="is_active" value="1" ${isActiveChecked}>
                         Active
@@ -2809,7 +2845,7 @@
                 </form>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px; flex-wrap:wrap;">
                     <div style="font-size:0.8rem; color:var(--text-dim);">
-                        ${isSuperAdmin ? 'Superadmin account' : 'Admin account'} | Created: Just now
+                        ${isSuperAdmin ? 'Superadmin account' : 'Admin account'}${isSuperAdmin ? '' : (' | Scope: ' + escapeHtml(adminScope.charAt(0).toUpperCase() + adminScope.slice(1)))} | Created: Just now
                     </div>
                     <div style="display:flex; gap:8px; align-items:center;">
                         ${isSuperAdmin ? '' : `
