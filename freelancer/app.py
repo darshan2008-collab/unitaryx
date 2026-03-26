@@ -9,7 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from functools import wraps
-import os, re, urllib.parse, random, smtplib, ssl, csv
+import os, re, urllib.parse, random, smtplib, ssl, csv, json
 from io import StringIO
 from email.message import EmailMessage
 from google.oauth2 import id_token
@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 
 # Keep container/host env vars authoritative while still supporting local .env defaults.
 APP_DIR = os.path.abspath(os.path.dirname(__file__))
+BACKUP_DIR = os.path.join(APP_DIR, "instance", "db_backups")
 load_dotenv(os.path.join(APP_DIR, ".env"), override=False)
 # Also support launching from workspace root where SMTP/OAuth vars are often stored.
 load_dotenv(os.path.join(os.path.dirname(APP_DIR), ".env"), override=False)
@@ -520,6 +521,94 @@ class Testimonial(db.Model):
     active   = db.Column(db.Boolean, default=True)
 
 
+DB_BACKUP_MODELS = {
+    "projects": Project,
+    "testimonials": Testimonial,
+    "project_requests": ProjectRequest,
+    "admin_tasks": AdminTask,
+    "admin_audit_logs": AdminAuditLog,
+    "site_traffic_events": SiteTrafficEvent,
+}
+
+
+def _serialize_db_value(value):
+    if isinstance(value, datetime):
+        return {"__type": "datetime", "value": value.isoformat()}
+    return value
+
+
+def _deserialize_db_value(value):
+    if isinstance(value, dict) and value.get("__type") == "datetime":
+        raw = str(value.get("value") or "").strip()
+        if raw:
+            try:
+                return datetime.fromisoformat(raw)
+            except ValueError:
+                return None
+        return None
+    return value
+
+
+def _safe_backup_filename(raw_name):
+    raw = str(raw_name or "").strip()
+    if not raw or len(raw) > 140:
+        return ""
+    if not re.match(r"^[A-Za-z0-9._-]+\.json$", raw):
+        return ""
+    return raw
+
+
+def _build_backup_payload(actor_email):
+    payload = {
+        "created_at": datetime.utcnow().isoformat(),
+        "created_by": (actor_email or "").strip().lower(),
+        "tables": {},
+    }
+    row_count = 0
+    for table_name, model in DB_BACKUP_MODELS.items():
+        rows = []
+        for obj in model.query.order_by(model.id.asc()).all():
+            row = {}
+            for col in model.__table__.columns:
+                row[col.name] = _serialize_db_value(getattr(obj, col.name))
+            rows.append(row)
+        payload["tables"][table_name] = rows
+        row_count += len(rows)
+    payload["row_count"] = row_count
+    return payload
+
+
+def _restore_backup_payload(payload):
+    tables = payload.get("tables") if isinstance(payload, dict) else {}
+    if not isinstance(tables, dict):
+        raise ValueError("Invalid backup payload format.")
+
+    for model in DB_BACKUP_MODELS.values():
+        model.query.delete(synchronize_session=False)
+
+    user_ids = {u.id for u in User.query.with_entities(User.id).all()}
+
+    for table_name, model in DB_BACKUP_MODELS.items():
+        rows = tables.get(table_name, [])
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            clean = {}
+            for col in model.__table__.columns:
+                if col.name not in row:
+                    continue
+                clean[col.name] = _deserialize_db_value(row.get(col.name))
+
+            if model is ProjectRequest:
+                uid = clean.get("user_id")
+                if uid and uid not in user_ids:
+                    clean["user_id"] = None
+
+            db.session.add(model(**clean))
+
+
 # ─── Template Filters ─────────────────────────────────────────────────────────
 
 @app.template_filter('format_id')
@@ -910,6 +999,26 @@ def _safe_commit():
         db.session.rollback()
         app.logger.exception("Database commit failed in OTP flow")
         return False
+
+
+def _list_db_backups():
+    os.makedirs(BACKUP_DIR, exist_ok=True)
+    items = []
+    for name in os.listdir(BACKUP_DIR):
+        safe = _safe_backup_filename(name)
+        if not safe:
+            continue
+        full_path = os.path.join(BACKUP_DIR, safe)
+        if not os.path.isfile(full_path):
+            continue
+        stat = os.stat(full_path)
+        items.append({
+            "name": safe,
+            "size": int(stat.st_size or 0),
+            "updated_at": datetime.utcfromtimestamp(stat.st_mtime),
+        })
+    items.sort(key=lambda x: x["updated_at"], reverse=True)
+    return items
 
 
 def _cleanup_expired_otps():
@@ -1946,6 +2055,7 @@ def admin_panel():
     admin_password_map = {}
     my_device_sessions = []
     fleet_active_sessions = []
+    db_backups = []
 
     if is_super_admin(admin_user):
         now_utc = datetime.utcnow()
@@ -2027,6 +2137,9 @@ def admin_panel():
     if admin_user:
         my_device_sessions = UserSession.query.filter_by(user_id=admin_user.id).order_by(UserSession.last_seen.desc()).limit(20).all()
 
+    if is_super_admin(admin_user):
+        db_backups = _list_db_backups()
+
     return render_template("admin.html", 
                            requests=requests_list, 
                            stats=stats,
@@ -2051,7 +2164,8 @@ def admin_panel():
                            admin_credentials=admin_credentials,
                            admin_password_map=admin_password_map,
                            my_device_sessions=my_device_sessions,
-                           fleet_active_sessions=fleet_active_sessions)
+                           fleet_active_sessions=fleet_active_sessions,
+                           db_backups=db_backups)
 
 
 @app.route('/admin/sessions/revoke/<int:session_id>', methods=['POST'])
@@ -2107,6 +2221,93 @@ def revoke_other_sessions():
     db.session.commit()
     flash(f'Revoked {revoked} other active session(s).', 'success')
     return redirect(url_for('admin_panel'))
+
+
+@app.route('/admin/db-backups/create', methods=['POST'])
+@csrf.exempt
+@admin_required
+@admin_capability_required('admin_control')
+def create_db_backup():
+    actor = current_user()
+    actor_email = (getattr(actor, 'email', '') or '').strip().lower()
+
+    os.makedirs(BACKUP_DIR, exist_ok=True)
+    stamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+    file_name = f'unitaryx_backup_{stamp}.json'
+    full_path = os.path.join(BACKUP_DIR, file_name)
+
+    payload = _build_backup_payload(actor_email)
+    with open(full_path, 'w', encoding='utf-8') as fp:
+        json.dump(payload, fp, ensure_ascii=True, indent=2)
+
+    log_superadmin_action(
+        action='DB_BACKUP_CREATED',
+        target=file_name,
+        details=f"rows={payload.get('row_count', 0)}",
+        actor=actor,
+    )
+    flash(f"Backup created: {file_name}", 'success')
+    return redirect(url_for('admin_panel', tab='super-lab'))
+
+
+@app.route('/admin/db-backups/download/<filename>')
+@admin_required
+@admin_capability_required('admin_control')
+def download_db_backup(filename):
+    safe = _safe_backup_filename(filename)
+    if not safe:
+        flash('Invalid backup file name.', 'danger')
+        return redirect(url_for('admin_panel', tab='super-lab'))
+
+    full_path = os.path.join(BACKUP_DIR, safe)
+    if not os.path.isfile(full_path):
+        flash('Backup file not found.', 'danger')
+        return redirect(url_for('admin_panel', tab='super-lab'))
+
+    from flask import send_file
+    return send_file(full_path, as_attachment=True, download_name=safe, mimetype='application/json')
+
+
+@app.route('/admin/db-backups/restore', methods=['POST'])
+@csrf.exempt
+@admin_required
+@admin_capability_required('admin_control')
+def restore_db_backup():
+    actor = current_user()
+    file_name = _safe_backup_filename(request.form.get('backup_file', ''))
+    confirmation = str(request.form.get('confirm_restore', '')).strip().upper()
+
+    if confirmation != 'RESTORE':
+        flash("Type RESTORE to confirm restore action.", 'danger')
+        return redirect(url_for('admin_panel', tab='super-lab'))
+    if not file_name:
+        flash('Please choose a valid backup file.', 'danger')
+        return redirect(url_for('admin_panel', tab='super-lab'))
+
+    full_path = os.path.join(BACKUP_DIR, file_name)
+    if not os.path.isfile(full_path):
+        flash('Backup file not found.', 'danger')
+        return redirect(url_for('admin_panel', tab='super-lab'))
+
+    try:
+        with open(full_path, 'r', encoding='utf-8') as fp:
+            payload = json.load(fp)
+        _restore_backup_payload(payload)
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        app.logger.exception('Restore failed for backup %s', file_name)
+        flash(f'Restore failed: {exc}', 'danger')
+        return redirect(url_for('admin_panel', tab='super-lab'))
+
+    log_superadmin_action(
+        action='DB_BACKUP_RESTORED',
+        target=file_name,
+        details=f"by={(getattr(actor, 'email', '') or '').strip().lower()}",
+        actor=actor,
+    )
+    flash(f'Restore completed from {file_name}.', 'success')
+    return redirect(url_for('admin_panel', tab='super-lab'))
 
 
 @app.route("/admin/tasks/assign", methods=["POST"])
