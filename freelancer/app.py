@@ -9,7 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from functools import wraps
-import os, re, urllib.parse, random, smtplib, ssl, csv, json
+import os, re, urllib.parse, random, smtplib, ssl, csv, json, hashlib
 from io import StringIO
 from email.message import EmailMessage
 from google.oauth2 import id_token
@@ -321,6 +321,20 @@ class UserSession(db.Model):
     is_active = db.Column(db.Boolean, default=True, nullable=False, index=True)
 
 
+class ABTestConfig(db.Model):
+    """Stores configurable A/B experiments for landing content."""
+    __tablename__ = 'ab_test_configs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    test_key = db.Column(db.String(60), unique=True, nullable=False, index=True)
+    label = db.Column(db.String(120), nullable=False)
+    enabled = db.Column(db.Boolean, default=True, nullable=False)
+    allocation_b = db.Column(db.Integer, default=50, nullable=False)
+    variant_a = db.Column(db.String(300), nullable=False)
+    variant_b = db.Column(db.String(300), nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
 class SiteTrafficEvent(db.Model):
     """Stores anonymous and signed-in traffic events for analytics."""
     __tablename__ = 'site_traffic_events'
@@ -522,6 +536,7 @@ class Testimonial(db.Model):
 
 
 DB_BACKUP_MODELS = {
+    "ab_test_configs": ABTestConfig,
     "projects": Project,
     "testimonials": Testimonial,
     "project_requests": ProjectRequest,
@@ -847,6 +862,14 @@ def _traffic_bucket_for_path(page_path):
     if path.startswith("/cinematic") or path.startswith("/portfolio"):
         return "Portfolio"
     return "Other"
+
+
+def _resolve_ab_variant(visitor_id, test_key, allocation_b):
+    safe_vid = str(visitor_id or "").strip() or os.urandom(8).hex()
+    safe_key = str(test_key or "").strip()
+    joined = f"{safe_vid}:{safe_key}".encode("utf-8")
+    bucket = int(hashlib.sha256(joined).hexdigest()[:8], 16) % 100
+    return "B" if bucket < max(0, min(100, int(allocation_b or 0))) else "A"
 
 
 def _normalize_origin(origin):
@@ -1203,6 +1226,34 @@ def seed_data():
                         rating=5, avatar="S", av_class="av-4"),
         ])
 
+    if ABTestConfig.query.count() == 0:
+        db.session.add_all([
+            ABTestConfig(
+                test_key="hero_headline",
+                label="Hero Headline",
+                enabled=True,
+                allocation_b=50,
+                variant_a="We Don't Just Build Projects. We Engineer Experiences.",
+                variant_b="From Idea to Impact: Premium Projects Built for Results.",
+            ),
+            ABTestConfig(
+                test_key="hero_primary_cta",
+                label="Hero Primary CTA",
+                enabled=True,
+                allocation_b=50,
+                variant_a="Start Your Project",
+                variant_b="Book a Free Strategy Call",
+            ),
+            ABTestConfig(
+                test_key="hire_cta",
+                label="Navigation Hire CTA",
+                enabled=True,
+                allocation_b=50,
+                variant_a="Hire Us",
+                variant_b="Get Proposal",
+            ),
+        ])
+
     db.session.commit()
 
 
@@ -1217,6 +1268,13 @@ def _ensure_schema_columns():
         "user_sessions": [
             ("is_active", "BOOLEAN DEFAULT TRUE"),
             ("last_seen", "TIMESTAMP"),
+        ],
+        "ab_test_configs": [
+            ("enabled", "BOOLEAN DEFAULT TRUE"),
+            ("allocation_b", "INTEGER DEFAULT 50"),
+            ("variant_a", "VARCHAR(300) DEFAULT ''"),
+            ("variant_b", "VARCHAR(300) DEFAULT ''"),
+            ("updated_at", "TIMESTAMP"),
         ],
         "project_requests": [
             ("lead_score_value", "INTEGER DEFAULT 0"),
@@ -1956,6 +2014,31 @@ def export_traffic_csv():
     return response
 
 
+@app.route('/api/ab-tests/resolve')
+@csrf.exempt
+def resolve_ab_tests():
+    visitor_id = _resolve_visitor_id(request.args.to_dict() if request.args else {})
+    tests = ABTestConfig.query.filter_by(enabled=True).all()
+
+    assignments = {}
+    for test in tests:
+        variant = _resolve_ab_variant(visitor_id, test.test_key, test.allocation_b)
+        text_value = test.variant_b if variant == 'B' else test.variant_a
+        assignments[test.test_key] = {
+            'variant': variant,
+            'text': text_value,
+            'allocation_b': int(test.allocation_b or 0),
+        }
+
+    res = jsonify({
+        'success': True,
+        'visitor_id': visitor_id,
+        'assignments': assignments,
+    })
+    res.set_cookie('ux_vid', visitor_id, max_age=86400 * 180, samesite='Lax')
+    return res
+
+
 # ─── Admin Routes ─────────────────────────────────────────────────────────────
 
 @app.route("/admin")
@@ -2056,6 +2139,7 @@ def admin_panel():
     my_device_sessions = []
     fleet_active_sessions = []
     db_backups = []
+    ab_tests = []
 
     if is_super_admin(admin_user):
         now_utc = datetime.utcnow()
@@ -2139,6 +2223,7 @@ def admin_panel():
 
     if is_super_admin(admin_user):
         db_backups = _list_db_backups()
+        ab_tests = ABTestConfig.query.order_by(ABTestConfig.test_key.asc()).all()
 
     return render_template("admin.html", 
                            requests=requests_list, 
@@ -2165,7 +2250,8 @@ def admin_panel():
                            admin_password_map=admin_password_map,
                            my_device_sessions=my_device_sessions,
                            fleet_active_sessions=fleet_active_sessions,
-                           db_backups=db_backups)
+                           db_backups=db_backups,
+                           ab_tests=ab_tests)
 
 
 @app.route('/admin/sessions/revoke/<int:session_id>', methods=['POST'])
@@ -2307,6 +2393,41 @@ def restore_db_backup():
         actor=actor,
     )
     flash(f'Restore completed from {file_name}.', 'success')
+    return redirect(url_for('admin_panel', tab='super-lab'))
+
+
+@app.route('/admin/ab-tests/update/<int:test_id>', methods=['POST'])
+@csrf.exempt
+@admin_required
+@admin_capability_required('admin_control')
+def update_ab_test(test_id):
+    test = ABTestConfig.query.get_or_404(test_id)
+    enabled = str(request.form.get('enabled', 'off')).strip().lower() in {'1', 'true', 'on', 'yes'}
+    try:
+        allocation = int(request.form.get('allocation_b', 50))
+    except (TypeError, ValueError):
+        allocation = 50
+
+    variant_a = str(request.form.get('variant_a', '')).strip()
+    variant_b = str(request.form.get('variant_b', '')).strip()
+    if not variant_a or not variant_b:
+        flash('Both variants must have text.', 'danger')
+        return redirect(url_for('admin_panel', tab='super-lab'))
+
+    test.enabled = enabled
+    test.allocation_b = max(0, min(100, allocation))
+    test.variant_a = variant_a[:300]
+    test.variant_b = variant_b[:300]
+    test.updated_at = datetime.utcnow()
+    db.session.commit()
+
+    log_superadmin_action(
+        action='AB_TEST_UPDATED',
+        target=test.test_key,
+        details=f'enabled={test.enabled},allocation_b={test.allocation_b}',
+        actor=current_user(),
+    )
+    flash(f'A/B test updated: {test.label}', 'success')
     return redirect(url_for('admin_panel', tab='super-lab'))
 
 

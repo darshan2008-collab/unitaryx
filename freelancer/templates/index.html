@@ -190,7 +190,7 @@
                     {% else %}
                     <a href="/login" class="ux-nav-ghost ux-ripple ux-magnetic">Login</a>
                     {% endif %}
-                    <a href="#contact" class="ux-nav-cta ux-ripple ux-magnetic">Hire Us</a>
+                    <a href="#contact" id="ux-nav-cta" class="ux-nav-cta ux-ripple ux-magnetic">Hire Us</a>
                 </div>
             </div>
         </nav>
@@ -206,7 +206,7 @@
                         Connected.</p>
 
                     <div class="ux-cta-row">
-                        <a href="#contact" class="ux-btn ux-btn-primary ux-ripple ux-magnetic">Start Your Project <span
+                        <a href="#contact" id="ux-hero-primary-cta" class="ux-btn ux-btn-primary ux-ripple ux-magnetic">Start Your Project <span
                                 class="sweep"></span></a>
                         <a href="#projects" class="ux-btn ux-ripple ux-magnetic">Explore Work <span
                                 class="sweep"></span></a>
@@ -900,7 +900,7 @@
         </footer>
     </div>
 
-    <a class="ux-mobile-cta ux-ripple" href="#contact">Hire Us</a>
+    <a class="ux-mobile-cta ux-ripple" id="ux-mobile-cta" href="#contact">Hire Us</a>
     <button class="ux-progress" id="ux-progress" type="button" aria-label="Back to top">
         <span id="ux-progress-val">0%</span>
     </button>
@@ -924,6 +924,41 @@
 
     <div id="ux-easter" class="ux-easter">Easter Egg: Premium Mode Enabled</div>
 
+    <script>
+        (function () {
+            async function applyAbTests() {
+                try {
+                    const res = await fetch('/api/ab-tests/resolve', { cache: 'no-store' });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    const a = (data && data.assignments) || {};
+
+                    const headline = document.getElementById('ux-headline');
+                    if (headline && a.hero_headline && a.hero_headline.text) {
+                        headline.textContent = a.hero_headline.text;
+                    }
+
+                    const heroCta = document.getElementById('ux-hero-primary-cta');
+                    if (heroCta && a.hero_primary_cta && a.hero_primary_cta.text) {
+                        heroCta.childNodes[0].textContent = a.hero_primary_cta.text + ' ';
+                    }
+
+                    const navCta = document.getElementById('ux-nav-cta');
+                    if (navCta && a.hire_cta && a.hire_cta.text) {
+                        navCta.textContent = a.hire_cta.text;
+                    }
+
+                    const mobileCta = document.getElementById('ux-mobile-cta');
+                    if (mobileCta && a.hire_cta && a.hire_cta.text) {
+                        mobileCta.textContent = a.hire_cta.text;
+                    }
+                } catch (e) {
+                    // Keep page stable if A/B endpoint is unreachable.
+                }
+            }
+            applyAbTests();
+        })();
+    </script>
     <script src="{{ url_for('static', filename='user_premium.js') }}?v=20260320cinematic7"></script>
     <script src="{{ url_for('static', filename='traffic_tracker.js') }}"></script>
 </body>
