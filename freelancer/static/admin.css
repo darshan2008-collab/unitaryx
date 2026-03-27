@@ -3511,3 +3511,21 @@ body.mobile-nav-open {
         z-index: 2400;
     }
 }
+
+/* Final safety guard: keep only active tab visible and prevent hidden-opacity layout gaps. */
+.admin-tab-content {
+    display: none !important;
+}
+
+.admin-tab-content.active {
+    display: block !important;
+}
+
+.admin-tab-content.active .dash-card,
+.admin-tab-content.active .table-card,
+.admin-tab-content.active .adm-stat,
+.admin-tab-content.active .super-kpi,
+.admin-tab-content.active .kpi-chip {
+    opacity: 1 !important;
+    transform: none !important;
+}
