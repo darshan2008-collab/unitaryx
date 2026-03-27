@@ -3529,3 +3529,13 @@ body.mobile-nav-open {
     opacity: 1 !important;
     transform: none !important;
 }
+
+/* Absolute fallback: never allow core cards to remain invisible. */
+.dash-card,
+.table-card,
+.adm-stat,
+.super-kpi,
+.kpi-chip {
+    opacity: 1 !important;
+    transform: none !important;
+}

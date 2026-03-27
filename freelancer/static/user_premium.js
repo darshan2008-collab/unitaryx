@@ -438,16 +438,37 @@
 
 
     const initReveals = () => {
+        const revealNodes = qa(".ux-reveal");
+        if (!revealNodes.length) return;
+
+        const showAll = () => {
+            revealNodes.forEach((node) => node.classList.add("is-visible"));
+        };
+
+        if (typeof window.IntersectionObserver !== "function") {
+            showAll();
+            return;
+        }
+
+        let hasIntersected = false;
+        const fallbackTimer = setTimeout(() => {
+            if (!hasIntersected) showAll();
+        }, 1200);
+
         const obs = new IntersectionObserver((entries) => {
             entries.forEach((e) => {
-                if (e.isIntersecting) {
-                    e.target.classList.add("is-visible");
-                } else {
-                    e.target.classList.remove("is-visible");
-                }
+                if (!e.isIntersecting) return;
+                hasIntersected = true;
+                e.target.classList.add("is-visible");
+                obs.unobserve(e.target);
             });
+
+            if (hasIntersected) {
+                clearTimeout(fallbackTimer);
+            }
         }, { threshold: 0.14 });
-        qa(".ux-reveal").forEach((n) => obs.observe(n));
+
+        revealNodes.forEach((node) => obs.observe(node));
     };
 
     const initNavActive = () => {
