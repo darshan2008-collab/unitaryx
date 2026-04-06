@@ -26,7 +26,7 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='user_premium.css') }}?v=20260406bgline1" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='user_premium.css') }}?v=20260406tophero1" />
     <meta name="csrf-token" content="{{ csrf_token() }}" />
 </head>
 
@@ -208,7 +208,44 @@
             </div>
         </nav>
 
-        <section class="ux-section ux-hero" id="home">
+        <section class="ux-brand-hero" id="home">
+            <div class="ux-brand-hero-grid" aria-hidden="true"></div>
+            <div class="ux-brand-hero-network" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <div class="ux-brand-hero-glow" aria-hidden="true"></div>
+
+            <div class="ux-brand-hero-inner">
+                <h1 class="ux-brand-hero-title" aria-label="UNITARY X">
+                    <span class="ux-brand-hero-letter" style="--i:0;">U</span>
+                    <span class="ux-brand-hero-letter" style="--i:1;">N</span>
+                    <span class="ux-brand-hero-letter" style="--i:2;">I</span>
+                    <span class="ux-brand-hero-letter" style="--i:3;">T</span>
+                    <span class="ux-brand-hero-letter" style="--i:4;">A</span>
+                    <span class="ux-brand-hero-letter" style="--i:5;">R</span>
+                    <span class="ux-brand-hero-letter" style="--i:6;">Y</span>
+                    <span class="ux-brand-hero-space" aria-hidden="true"> </span>
+                    <span class="ux-brand-hero-letter ux-brand-hero-x" style="--i:7;">X</span>
+                </h1>
+                <p class="ux-brand-hero-tag">We dont compete we lead</p>
+                <div class="ux-brand-hero-actions">
+                    <a href="#home-content" class="ux-brand-hero-cta ux-ripple ux-magnetic">Enter Experience</a>
+                    <a href="#contact" class="ux-brand-hero-cta ux-brand-hero-cta-secondary ux-ripple ux-magnetic">Build With Us</a>
+                </div>
+            </div>
+
+            <a href="#home-content" class="ux-brand-hero-scroll" aria-label="Scroll to next section">
+                <span>Scroll Down</span>
+                <i class="fas fa-angle-down" aria-hidden="true"></i>
+            </a>
+        </section>
+
+        <section class="ux-section ux-hero ux-hero-secondary" id="home-content">
             <div class="ux-hero-wrap">
                 <div class="ux-hero-main ux-reveal">
                     <h1 class="ux-headline" id="ux-headline">From Idea to Impact: Premium Projects Built for Results.</h1>
