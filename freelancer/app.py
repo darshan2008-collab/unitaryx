@@ -14,7 +14,7 @@ from io import StringIO
 from email.message import EmailMessage
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
-from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 from sqlalchemy import inspect, text
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -1004,7 +1004,13 @@ def enforce_active_user_session():
     if not uid:
         return None
 
-    user = db.session.get(User, uid)
+    try:
+        user = db.session.get(User, uid)
+    except SQLAlchemyError:
+        db.session.rollback()
+        app.logger.exception("Session precheck failed while loading user.")
+        session.clear()
+        return redirect(url_for('login'))
     if not user:
         session.clear()
         return redirect(url_for('login'))
@@ -1014,7 +1020,13 @@ def enforce_active_user_session():
         _register_user_session(user)
         return None
 
-    row = UserSession.query.filter_by(user_id=user.id, session_token=token).first()
+    try:
+        row = UserSession.query.filter_by(user_id=user.id, session_token=token).first()
+    except SQLAlchemyError:
+        db.session.rollback()
+        app.logger.exception("Session precheck failed while loading device session.")
+        session.clear()
+        return redirect(url_for('login'))
     if not row or not row.is_active:
         session.clear()
         flash('Your session was ended from Device Manager. Please sign in again.', 'warning')
@@ -2021,8 +2033,17 @@ def api_contact():
 @login_required
 @limiter.limit("20 per day", methods=["POST"])
 def submit_public_feedback():
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
+              'application/json' in (request.headers.get('Accept') or '').lower()
+
     actor = current_user()
     if not actor:
+        if is_ajax:
+            return jsonify({
+                'success': False,
+                'message': 'Please log in to post feedback.',
+                'redirect': url_for('login')
+            }), 401
         flash('Please log in to post feedback.', 'warning')
         return redirect(url_for('login'))
 
@@ -2034,10 +2055,14 @@ def submit_public_feedback():
     rating = max(1, min(5, rating))
 
     if len(message) < 4:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Feedback must be at least 4 characters.'}), 400
         flash('Feedback must be at least 4 characters.', 'danger')
         return redirect(url_for('index', _anchor='feedback-corner'))
 
     if len(message) > 1500:
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Feedback must be at most 1500 characters.'}), 400
         flash('Feedback must be at most 1500 characters.', 'danger')
         return redirect(url_for('index', _anchor='feedback-corner'))
 
@@ -2049,7 +2074,28 @@ def submit_public_feedback():
         message=message,
     )
     db.session.add(feedback)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        app.logger.exception('Failed to save public feedback.')
+        if is_ajax:
+            return jsonify({'success': False, 'message': 'Database is temporarily busy. Please retry in a moment.'}), 503
+        flash('Database is temporarily busy. Please try again in a moment.', 'danger')
+        return redirect(url_for('index', _anchor='feedback-corner'))
+
+    if is_ajax:
+        return jsonify({
+            'success': True,
+            'message': 'Thanks for your feedback. It is now visible in the public feed.',
+            'post': {
+                'id': feedback.id,
+                'author_name': feedback.author_name,
+                'rating': int(feedback.rating or 5),
+                'message': feedback.message,
+                'created_at': feedback.created_at.strftime('%d %b %Y') if feedback.created_at else ''
+            }
+        }), 201
 
     flash('Thanks for your feedback. It is now visible in the public feed.', 'success')
     return redirect(url_for('index', _anchor='feedback-corner'))

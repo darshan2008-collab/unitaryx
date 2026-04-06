@@ -1068,8 +1068,122 @@
                 paint(ratingInput.value);
             }
 
+            function initPublicFeedbackSubmit() {
+                const form = document.querySelector('.ux-public-feedback-form');
+                if (!form) return;
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const messageInput = document.getElementById('ux-public-feedback-message');
+
+                const ensureFlashHost = () => {
+                    let host = document.querySelector('.ux-public-feedback-flashes');
+                    if (host) return host;
+
+                    const section = document.getElementById('feedback-corner');
+                    const layout = section ? section.querySelector('.ux-public-feedback-layout') : null;
+                    if (!section || !layout) return null;
+
+                    host = document.createElement('div');
+                    host.className = 'ux-public-feedback-flashes';
+                    section.insertBefore(host, layout);
+                    return host;
+                };
+
+                const showFeedbackFlash = (message, type) => {
+                    const host = ensureFlashHost();
+                    if (!host) return;
+                    host.innerHTML = '';
+
+                    const box = document.createElement('div');
+                    box.className = `ux-public-feedback-flash ${type || ''}`.trim();
+                    box.textContent = String(message || '');
+                    host.appendChild(box);
+                };
+
+                const prependFeedbackPost = (post) => {
+                    const feed = document.querySelector('.ux-public-feedback-feed');
+                    if (!feed || !post) return;
+
+                    const empty = feed.querySelector('.ux-public-feedback-empty');
+                    if (empty) empty.remove();
+
+                    let list = feed.querySelector('.ux-public-feedback-list');
+                    if (!list) {
+                        list = document.createElement('div');
+                        list.className = 'ux-public-feedback-list';
+                        feed.appendChild(list);
+                    }
+
+                    const article = document.createElement('article');
+                    article.className = 'ux-public-feedback-item';
+
+                    const stars = Math.max(1, Math.min(5, Number(post.rating) || 5));
+                    const starIcons = '<i class="fas fa-star"></i>'.repeat(stars);
+
+                    article.innerHTML = `
+                        <div class="ux-public-feedback-head">
+                            <strong>${String(post.author_name || 'User')}</strong>
+                            <span>${String(post.created_at || '')}</span>
+                        </div>
+                        <div class="ux-public-feedback-stars" aria-label="${stars} star rating">${starIcons}</div>
+                        <p>${String(post.message || '')}</p>
+                    `;
+
+                    list.prepend(article);
+                };
+
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+
+                    const formData = new FormData(form);
+                    const originalText = submitBtn ? submitBtn.innerHTML : '';
+
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = 'Posting...';
+                    }
+
+                    try {
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRFToken': formData.get('csrf_token') || ''
+                            },
+                            body: formData
+                        });
+
+                        const payload = await response.json().catch(() => ({}));
+                        if (!response.ok || payload.success === false) {
+                            if (payload.redirect) {
+                                window.location.href = payload.redirect;
+                                return;
+                            }
+                            showFeedbackFlash(payload.message || 'Unable to post feedback right now.', 'danger');
+                            return;
+                        }
+
+                        prependFeedbackPost(payload.post || null);
+                        showFeedbackFlash(payload.message || 'Feedback posted.', 'success');
+
+                        if (messageInput) {
+                            messageInput.value = '';
+                        }
+                    } catch (error) {
+                        showFeedbackFlash('Network error while posting feedback.', 'danger');
+                    } finally {
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                        }
+                    }
+                });
+            }
+
             applyAbTests();
             initPublicFeedbackRating();
+            initPublicFeedbackSubmit();
         })();
     </script>
     <script src="{{ url_for('static', filename='user_premium.js') }}?v=20260327textfix1"></script>

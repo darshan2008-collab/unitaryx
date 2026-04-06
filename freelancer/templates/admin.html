@@ -2590,7 +2590,6 @@
 
                     if (payload.success) {
                         showNotification(payload.message, '', 0, false);
-                        setTimeout(() => window.location.reload(), 900);
                     } else {
                         alert(payload.message || 'Bulk action failed.');
                     }
@@ -2882,7 +2881,7 @@
                         <div class="toast-title">New Request Alert</div>
                         <div class="toast-desc"><strong>${nameOrTitle}</strong> requested <span>${serviceOrDesc}</span></div>
                         <div class="toast-actions">
-                            <button onclick="window.location.reload()" class="btn-toast-reload">Reload Dashboard</button>
+                            <button type="button" onclick="checkNewRequests();" class="btn-toast-reload">Check Again</button>
                         </div>
                     </div>
                     <button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
@@ -2907,6 +2906,61 @@
                 }
             }, TOAST_DURATION);
         }
+
+        document.addEventListener('submit', async (event) => {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement)) return;
+            if (event.defaultPrevented) return;
+            if (!form.action || !form.action.includes('/admin/')) return;
+            if (form.dataset.allowFullSubmit === '1') return;
+
+            event.preventDefault();
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalHtml = submitBtn ? submitBtn.innerHTML : '';
+            const originalDisabled = submitBtn ? submitBtn.disabled : false;
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            }
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch(form.action, {
+                    method: (form.method || 'POST').toUpperCase(),
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': formData.get('_csrf_token') || formData.get('csrf_token') || ''
+                    },
+                    body: formData,
+                    redirect: 'follow'
+                });
+
+                const contentType = response.headers.get('content-type') || '';
+                let payload = {};
+                if (contentType.includes('application/json')) {
+                    payload = await response.json();
+                }
+
+                if (response.ok && payload.success !== false) {
+                    const message = payload.message || 'Saved successfully.';
+                    if (typeof showNotification === 'function') {
+                        showNotification(message, '', payload.id || 0, false);
+                    }
+                } else {
+                    alert((payload && payload.message) ? payload.message : 'Action failed.');
+                }
+            } catch (error) {
+                console.error('Admin form submit failed:', error);
+                alert('Network error while saving changes.');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = originalDisabled;
+                    submitBtn.innerHTML = originalHtml;
+                }
+            }
+        });
 
         // Poll every 15 seconds
         setInterval(checkNewRequests, 15000);
