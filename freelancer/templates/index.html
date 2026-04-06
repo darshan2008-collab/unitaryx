@@ -151,8 +151,7 @@
         <nav class="ux-nav" id="ux-nav">
             <div class="ux-nav-inner">
                 <a href="#home" class="ux-brand">
-                    <span class="ux-brand-mark">U</span>
-                    <span class="ux-brand-text">Unitary X</span>
+                    <span class="ux-brand-text">UNITARY X</span>
                 </a>
 
                 <ul class="ux-links">
@@ -198,7 +197,7 @@
         <section class="ux-section ux-hero" id="home">
             <div class="ux-hero-wrap">
                 <div class="ux-hero-main ux-reveal">
-                    <h1 class="ux-headline" id="ux-headline">We Don't Just Build Projects. We Engineer Experiences.</h1>
+                    <h1 class="ux-headline" id="ux-headline">From Idea to Impact: Premium Projects Built for Results.</h1>
                     <p class="ux-sub" id="ux-sub">A new generation of digital and real-world solutions crafted with
                         precision,
                         powered by innovation, and designed to perform.</p>
@@ -729,7 +728,7 @@
                             34565</a>
                         <a class="ux-email-row" href="mailto:xunitary@gmail.com"><i class="fas fa-envelope"></i>
                             xunitary@gmail.com</a>
-                        <span><i class="fab fa-instagram"></i> @unitaryx__official</span>
+                        <a href="https://www.instagram.com/unitaryx__official/" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i> @unitaryx__official</a>
                         <span><i class="fab fa-telegram"></i> @unitaryx</span>
                     </div>
                 </aside>
@@ -876,8 +875,7 @@
         <footer class="ux-footer">
             <div class="ux-footer-inner">
                 <div class="ux-footer-brand">
-                    <span class="ux-brand-mark" style="font-size:1.4rem;">U</span>
-                    <span style="font-weight:800; letter-spacing:0.08em;" class="ux-brand-text">UNITARY X</span>
+                    <span class="ux-brand-text ux-brand-text-footer">UNITARY X</span>
                 </div>
                 <p style="color:var(--text-dim); font-size:0.85rem; margin:10px 0;">Innovating the Digital &amp;
                     Physical Future</p>
@@ -935,7 +933,12 @@
 
                     const headline = document.getElementById('ux-headline');
                     if (headline && a.hero_headline && a.hero_headline.text) {
-                        headline.textContent = a.hero_headline.text;
+                        if (typeof window.refreshUxHeadline === 'function') {
+                            window.refreshUxHeadline(a.hero_headline.text);
+                        } else {
+                            headline.classList.remove('is-char-animated');
+                            headline.textContent = a.hero_headline.text;
+                        }
                     }
 
                     const heroCta = document.getElementById('ux-hero-primary-cta');

@@ -1352,7 +1352,7 @@ def seed_data():
                 label="Hero Headline",
                 enabled=True,
                 allocation_b=50,
-                variant_a="We Don't Just Build Projects. We Engineer Experiences.",
+                variant_a="From Idea to Impact: Premium Projects Built for Results.",
                 variant_b="From Idea to Impact: Premium Projects Built for Results.",
             ),
             ABTestConfig(

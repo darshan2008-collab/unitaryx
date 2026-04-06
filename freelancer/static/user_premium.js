@@ -377,6 +377,11 @@
         const el = q("#ux-headline");
         if (!el) return;
         const text = el.textContent.trim() || "";
+        if (!text) {
+            el.classList.remove("is-char-animated");
+            return;
+        }
+        el.classList.add("is-char-animated");
         el.textContent = "";
 
         const words = text.split(" ");
@@ -393,15 +398,8 @@
                 span.textContent = ch;
                 span.style.opacity = "0";
                 span.style.display = "inline-block";
-                span.style.transform = "translateY(50px) scale(0.4) rotateX(-70deg)";
-                span.style.filter = "blur(8px)";
-
-                /* Transition has NO delay — the setTimeout below controls timing */
-                span.style.transition = [
-                    "opacity 0.7s cubic-bezier(0.2,1.2,0.3,1)",
-                    "transform 0.8s cubic-bezier(0.2,1.2,0.3,1)",
-                    "filter 0.6s ease"
-                ].join(", ");
+                /* Transition has no delay; setTimeout controls the stagger. */
+                span.style.transition = "opacity 0.6s ease";
 
                 wordSpan.appendChild(span);
 
@@ -409,8 +407,6 @@
                 const triggerAt = 4500 + totalIdx * 26;
                 setTimeout(() => {
                     span.style.opacity = "1";
-                    span.style.transform = "translateY(0) scale(1) rotateX(0deg)";
-                    span.style.filter = "blur(0)";
                 }, triggerAt);
 
                 totalIdx++;
@@ -434,6 +430,16 @@
                 ctaRow.style.transform = "translateY(0)";
             }
         }, 4500 + 900);
+    };
+
+    window.refreshUxHeadline = (text) => {
+        const el = q("#ux-headline");
+        if (!el) return;
+        const nextText = (text || el.textContent || "").trim();
+        if (!nextText) return;
+        el.classList.remove("is-char-animated");
+        el.textContent = nextText;
+        initHeadline();
     };
 
 
@@ -1172,6 +1178,54 @@
     const initScrambleText = () => {
         const els = qa(".ux-scramble-text");
         const chars = "!<>-_\\/[]{}—=+*^?#_";
+        const loaderExitDelay = mobileLite ? 120 : 4600;
+
+        const isInViewport = (el) => {
+            const rect = el.getBoundingClientRect();
+            return rect.top < window.innerHeight * 0.95 && rect.bottom > window.innerHeight * 0.1;
+        };
+
+        const runScramble = (el, final, delayMs = 0) => {
+            if (!final || el.dataset.scrambling) return;
+            el.dataset.scrambling = "true";
+
+            const start = () => {
+                if (!el.isConnected) {
+                    el.dataset.scrambling = "";
+                    return;
+                }
+
+                let iteration = 0;
+                const len = final.length;
+
+                const scrambler = setInterval(() => {
+                    el.textContent = final.split("").map((letter, index) => {
+                        if (index < iteration) return final[index];
+                        return chars[Math.floor(Math.random() * chars.length)];
+                    }).join("");
+
+                    iteration += 0.5;
+                    if (iteration >= len) {
+                        clearInterval(scrambler);
+                        el.textContent = final;
+                        el.dataset.scrambling = "";
+                    }
+                }, 35);
+            };
+
+            if (delayMs > 0) {
+                setTimeout(() => {
+                    if (!isInViewport(el)) {
+                        el.dataset.scrambling = "";
+                        return;
+                    }
+                    start();
+                }, delayMs);
+                return;
+            }
+
+            start();
+        };
 
         /* Cache the true text FIRST, before any observer fires */
         els.forEach(el => {
@@ -1185,30 +1239,19 @@
                 if (!final) return;
 
                 if (entry.isIntersecting && !el.dataset.scrambling) {
-                    el.dataset.scrambling = "true";
-                    let iteration = 0;
-                    const len = final.length;
-
-                    const scrambler = setInterval(() => {
-                        el.textContent = final.split("").map((letter, index) => {
-                            if (index < iteration) return final[index];
-                            return chars[Math.floor(Math.random() * chars.length)];
-                        }).join("");
-
-                        iteration += 0.5;
-                        if (iteration >= len) {
-                            clearInterval(scrambler);
-                            el.textContent = final; /* restore exact text */
-                            el.dataset.scrambling = "";
-                        }
-                    }, 35);
+                    runScramble(el, final);
                 } else if (!entry.isIntersecting) {
                     el.dataset.scrambling = "";
                     el.textContent = final; /* reset to real text when out of view */
                 }
             });
         }, { threshold: 0.3 });
-        els.forEach(el => obs.observe(el));
+        els.forEach(el => {
+            obs.observe(el);
+            if (isInViewport(el)) {
+                runScramble(el, el.dataset.text || "", loaderExitDelay);
+            }
+        });
     };
 
     const init = () => {
