@@ -64,7 +64,7 @@ OAUTH_ADMIN_EMAILS = {
     "darshankannan2008@gmail.com",
 }
 
-SUPERADMIN_EMAIL = normalize_email(os.getenv("SUPERADMIN_EMAIL", "harikavi1301@gmail.com"))
+SUPERADMIN_EMAIL = (os.getenv("SUPERADMIN_EMAIL", "harikavi1301@gmail.com") or "").strip().lower()
 SUPERADMIN_PASSWORD = os.getenv("SUPERADMIN_PASSWORD", "hari@123")
 SUPERADMIN_NAME = (os.getenv("SUPERADMIN_NAME") or "Super Admin").strip() or "Super Admin"
 
