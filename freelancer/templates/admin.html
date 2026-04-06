@@ -2115,7 +2115,9 @@
         }
 
         function getSelectedIds() {
-    <script>
+            return Array.from(document.querySelectorAll('.row-select:checked')).map(cb => cb.value);
+        }
+
         (function () {
             const statusEl = document.getElementById('pwa-status');
             const installBtn = document.getElementById('pwa-install-btn');
@@ -2173,9 +2175,6 @@
                 });
             }
         })();
-    </script>
-            return Array.from(document.querySelectorAll('.row-select:checked')).map(cb => cb.value);
-        }
 
         function updateBulkActionBar() {
             const bulkBar = document.getElementById('bulkActionBar');

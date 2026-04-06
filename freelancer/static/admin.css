@@ -3539,3 +3539,29 @@ body.mobile-nav-open {
     opacity: 1 !important;
     transform: none !important;
 }
+
+/* Desktop scroll stabilization: keep only one vertical scroller to prevent
+   phantom/infinite blank scrolling in long superadmin views. */
+@media (min-width: 981px) {
+    html,
+    body,
+    .admin-body {
+        height: 100%;
+        overflow: hidden !important;
+    }
+
+    .admin-layout {
+        min-height: 100vh !important;
+        height: 100vh !important;
+        overflow: hidden !important;
+    }
+
+    .admin-main {
+        height: 100vh !important;
+        min-height: 0 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        overscroll-behavior-y: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+}
