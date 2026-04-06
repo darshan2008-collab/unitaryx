@@ -105,8 +105,8 @@ body {
     inset: 0;
     z-index: 1;
     pointer-events: none;
-    opacity: 0.25;
-    /* Dialled down canvas intensity */
+    opacity: 0.34;
+    /* Slightly stronger so network lines stay visible */
 }
 
 /* ══ POWERFUL 3D HYPER-GRID & LIGHT BEAMS ════════════════════════════════════════ */
@@ -117,8 +117,8 @@ body {
     pointer-events: none;
     perspective: 600px;
     overflow: hidden;
-    opacity: 0.25;
-    /* Dialled down grid intensity */
+    opacity: 0.34;
+    /* Slightly stronger grid visibility */
 }
 
 .ux-grid-floor {
@@ -128,8 +128,8 @@ body {
     left: -50vw;
     bottom: -30vh;
     background-image:
-        linear-gradient(rgba(34, 211, 238, 0.15) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(34, 211, 238, 0.15) 1px, transparent 1px);
+        linear-gradient(rgba(255, 255, 255, 0.28) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.28) 1px, transparent 1px);
     background-size: 60px 60px;
     transform: rotateX(75deg);
     transform-origin: bottom center;
@@ -236,14 +236,31 @@ body {
 html.ux-mobile-lite .ux-loader,
 body.ux-mobile-lite .ux-loader,
 html.ux-mobile-lite .ux-bg-canvas,
-html.ux-mobile-lite .ux-grid-overlay,
 html.ux-mobile-lite .ux-bg-orbs,
 html.ux-mobile-lite .ux-light-beam,
 body.ux-mobile-lite .ux-bg-canvas,
-body.ux-mobile-lite .ux-grid-overlay,
 body.ux-mobile-lite .ux-bg-orbs,
 body.ux-mobile-lite .ux-light-beam {
     display: none !important;
+}
+
+html.ux-mobile-lite .ux-grid-overlay,
+body.ux-mobile-lite .ux-grid-overlay {
+    display: block !important;
+    opacity: 0.42;
+}
+
+html.ux-mobile-lite .ux-grid-floor,
+body.ux-mobile-lite .ux-grid-floor {
+    width: 220vw;
+    left: -60vw;
+    bottom: -20vh;
+    transform: rotateX(73deg);
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.34) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.34) 1px, transparent 1px);
+    background-size: 46px 46px;
+    animation: none;
 }
 
 html.ux-mobile-lite .ux-shell,
@@ -1277,8 +1294,9 @@ body.ux-mobile-lite *::after {
 
 .ux-brand {
     display: inline-flex;
-    align-items: center;
-    gap: 4px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
     color: #f8fafc;
     text-decoration: none;
     font-weight: 800;
@@ -1295,6 +1313,16 @@ body.ux-mobile-lite *::after {
     background-clip: text;
     animation: uxBrandGradient 3s linear infinite;
     display: inline-block;
+}
+
+.ux-brand-quote {
+    margin-top: -2px;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(226, 232, 240, 0.92);
+    text-shadow: 0 0 12px rgba(56, 189, 248, 0.18);
 }
 
 .ux-brand-text-footer {
@@ -4164,6 +4192,12 @@ footer {
     .ux-brand {
         justify-content: center;
         text-align: center;
+        align-items: center;
+    }
+
+    .ux-brand-quote {
+        letter-spacing: 0.11em;
+        font-size: 0.52rem;
     }
 
     .ux-links {

@@ -129,13 +129,18 @@
         <aside class="admin-sidebar">
             <div class="sidebar-logo-container"
                 style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; width: 100%;">
-                <div class="sidebar-logo"
-                    style="font-size: 1.5rem; font-weight: 800; color: var(--sidebar-text); display: flex; align-items: center; gap: 12px; white-space: nowrap;">
-                    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Unitary X"
-                        style="height: 30px; width: auto; max-width: 120px; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0, 82, 204, 0.4));"
-                        onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
-                    <span class="logo-fallback-inline" style="display:none;">Unitary X</span>
-                </div>
+                <a href="/admin" class="sidebar-logo" aria-label="Unitary X admin home">
+                    <span class="sidebar-logo-mark">
+                        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Unitary X"
+                            onerror="this.style.display='none'; this.parentElement.nextElementSibling.style.display='flex';">
+                        <span class="sidebar-logo-fallback" style="display:none;">UX</span>
+                    </span>
+                    <span class="sidebar-logo-copy">
+                        <span class="sidebar-logo-name"><span class="sidebar-logo-word">UNITARY</span><span class="sidebar-logo-x">X</span></span>
+                        <span class="sidebar-logo-subtitle">Command Center</span>
+                        <span class="sidebar-logo-quote">We dont compete we lead</span>
+                    </span>
+                </a>
                 <button id="sidebar-toggle" class="menu-toggle-btn"
                     data-sidebar-toggle
                     style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted); display: flex;">

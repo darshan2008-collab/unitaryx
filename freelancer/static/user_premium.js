@@ -359,7 +359,7 @@
                         ctx.lineTo(m.x, m.y);
                         /* Make connection lines glow brightly based on proximity */
                         const opacity = 0.35 - (ld / lineDist) * 0.35;
-                        ctx.strokeStyle = `rgba(${n.color}, ${opacity})`;
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
                         ctx.lineWidth = 1.2;
                         ctx.stroke();
                     }
