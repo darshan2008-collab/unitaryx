@@ -163,6 +163,8 @@
                     <li><a href="#" class="adm-nav-link" data-tab="finance"><i class="fas fa-wallet"></i>
                         <span>Finance Workbench</span></a></li>
                     {% endif %}
+                    <li><a href="#" class="adm-nav-link" data-tab="feedback"><i class="fas fa-comments"></i>
+                        <span>Feedback Corner</span></a></li>
                 </ul>
 
                 {% if is_superadmin %}
@@ -739,6 +741,90 @@
             </div>
             {% endif %}
 
+            <div id="tab-feedback" class="admin-tab-content">
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-comments" style="color:var(--primary); margin-right:8px;"></i>Public Feedback Corner (Admins Only)</h3>
+                    <p style="margin:0 0 10px; color:var(--text-dim); font-size:0.86rem;">Only logged-in admin/superadmin users can post. Everyone in admin panel can read.</p>
+                    <form method="POST" action="/admin/feedback/post" style="display:grid; gap:10px;">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <textarea name="message" rows="3" minlength="4" maxlength="1500" required
+                            placeholder="Share ideas, blockers, process suggestions, wins..."
+                            style="width:100%; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:#fff; color:var(--text);"></textarea>
+                        <div>
+                            <button type="submit"
+                                style="padding:9px 12px; border:none; border-radius:8px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer;">Post Feedback</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-stream" style="color:var(--primary); margin-right:8px;"></i>Recent Feedback</h3>
+                    <div style="display:grid; gap:10px; margin-top:10px; max-height:420px; overflow:auto;">
+                        {% for fb in feedback_posts %}
+                        <div style="padding:10px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(0,82,204,0.04);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                                <div style="font-weight:700; color:var(--text);">{{ fb.author_name }} <span style="font-size:0.78rem; color:var(--text-dim);">({{ fb.author_scope|title }})</span></div>
+                                <div style="font-size:0.78rem; color:var(--text-dim);">{{ fb.created_at.strftime('%Y-%m-%d %H:%M:%S') if fb.created_at else 'N/A' }} UTC</div>
+                            </div>
+                            <div style="font-size:0.8rem; color:var(--text-dim); margin-top:2px;">{{ fb.author_email }}</div>
+                            <div style="margin-top:8px; color:var(--text); white-space:pre-wrap;">{{ fb.message }}</div>
+                        </div>
+                        {% else %}
+                        <div style="padding:12px; text-align:center; color:var(--text-dim);">No feedback posted yet.</div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                {% if is_superadmin %}
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-users" style="color:var(--primary); margin-right:8px;"></i>Live User Visibility (Superadmin)</h3>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-top:10px;">
+                        <div style="padding:10px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(16,185,129,0.07);">
+                            <div style="font-size:0.8rem; color:var(--text-dim);">Total Users In Database</div>
+                            <div style="font-weight:800; font-size:1.25rem; color:var(--text);">{{ superadmin_total_users or 0 }}</div>
+                        </div>
+                        <div style="padding:10px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(0,82,204,0.07);">
+                            <div style="font-size:0.8rem; color:var(--text-dim);">Users Logged In (Active Sessions)</div>
+                            <div style="font-weight:800; font-size:1.25rem; color:var(--text);">{{ (superadmin_logged_in_users|length) if superadmin_logged_in_users else 0 }}</div>
+                        </div>
+                    </div>
+
+                    <div style="overflow:auto; margin-top:10px;">
+                        <table style="width:100%; border-collapse:collapse; min-width:860px;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">User ID</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Name</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Email</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Role</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Scope</th>
+                                    <th style="text-align:right; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Sessions</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Last Seen (UTC)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in superadmin_logged_in_users %}
+                                <tr>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.user_id }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.name }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.email }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.role }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.admin_scope or '-' }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); text-align:right;">{{ row.session_count }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.last_seen.strftime('%Y-%m-%d %H:%M:%S') if row.last_seen else '-' }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" style="padding:12px; text-align:center; color:var(--text-dim);">No active logged-in users right now.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                {% endif %}
+            </div>
+
             {% if is_superadmin %}
             <div id="tab-admin-control" class="admin-tab-content">
                 <section class="dash-card" style="margin-bottom: 18px;">
@@ -785,6 +871,7 @@
                                 <option value="ops">Ops Admin</option>
                                 <option value="finance">Finance Admin</option>
                                 <option value="support">Support Admin</option>
+                                <option value="superadmin">Superadmin</option>
                             </select>
                         </div>
                         <div>
@@ -823,7 +910,7 @@
                                     <option value="ops" {{ 'selected' if (row.admin_scope or 'ops')|lower == 'ops' else '' }}>Ops</option>
                                     <option value="finance" {{ 'selected' if (row.admin_scope or 'ops')|lower == 'finance' else '' }}>Finance</option>
                                     <option value="support" {{ 'selected' if (row.admin_scope or 'ops')|lower == 'support' else '' }}>Support</option>
-                                    {% if row.email|lower == 'harikavi1301@gmail.com' %}
+                                    {% if (row.admin_scope or '')|lower == 'superadmin' or row.email|lower == superadmin_email %}
                                     <option value="superadmin" selected>Superadmin</option>
                                     {% endif %}
                                 </select>
@@ -839,15 +926,15 @@
                             <div
                                 style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:8px; flex-wrap:wrap;">
                                 <div style="font-size:0.8rem; color:var(--text-dim);">
-                                    {{ 'Superadmin account' if row.email|lower == 'harikavi1301@gmail.com' else 'Admin
+                                    {{ 'Superadmin account' if row.email|lower == superadmin_email else 'Admin
                                     account' }}
-                                    {% if row.email|lower != 'harikavi1301@gmail.com' %}
+                                    {% if row.email|lower != superadmin_email %}
                                     | Scope: {{ (row.admin_scope or 'ops')|title }}
                                     {% endif %}
                                     | Created: {{ row.created_at.strftime('%d %b %Y') if row.created_at else 'N/A' }}
                                 </div>
                                 <div style="display:flex; gap:8px; align-items:center;">
-                                    {% if row.email|lower != 'harikavi1301@gmail.com' %}
+                                    {% if row.email|lower != superadmin_email %}
                                     <form method="POST" action="/admin/admins/{{ row.id }}/delete"
                                         class="admin-delete-account-form" data-target-card="admin-account-{{ row.id }}"
                                         onsubmit="return confirm('Delete admin account {{ row.email }}? This cannot be undone.');">
@@ -900,7 +987,7 @@
                                     <td class="cred-email"
                                         style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); color:var(--text); font-weight:600;">
                                         {{ cred.admin_email }}
-                                        {% if cred.admin_email|lower == 'harikavi1301@gmail.com' %}
+                                        {% if cred.admin_email|lower == superadmin_email %}
                                         <span style="margin-left:6px; font-size:0.74rem; background:rgba(245,158,11,0.15); color:#d97706; border:1px solid rgba(217,119,6,0.3); border-radius:999px; padding:2px 8px;">Superadmin</span>
                                         {% else %}
                                         <span style="margin-left:6px; font-size:0.74rem; background:rgba(0,82,204,0.1); color:var(--primary); border:1px solid var(--glass-border); border-radius:999px; padding:2px 8px;">Admin</span>
@@ -2110,6 +2197,7 @@
                 'projects': "Project Inquiry Logs",
                 'traffic': "Traffic Intelligence",
                 'finance': "Finance Workbench",
+                'feedback': "Feedback Corner",
                 'analytics': "Strategic Analytics",
                 'strategy': "Project Inquiry Strategies",
                 'admin-control': "Superadmin Admin Accounts",
@@ -2978,7 +3066,7 @@
             });
         });
 
-        const SUPERADMIN_LOCKED_EMAIL = 'harikavi1301@gmail.com';
+        const SUPERADMIN_LOCKED_EMAIL = '{{ superadmin_email }}';
 
         function parseBulkEmailList(raw) {
             const cleaned = String(raw || '').replace(/\n/g, ',').replace(/;/g, ',');

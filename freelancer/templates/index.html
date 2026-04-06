@@ -829,6 +829,79 @@
             </div>
         </section>
 
+        <section class="ux-section ux-reveal" id="feedback-corner">
+            <h2 class="ux-title">Public Feedback Corner</h2>
+            <p class="ux-muted">All visitors can read feedback. Logged-in users can post feedback for everyone.</p>
+
+            {% with feedback_flashes = get_flashed_messages(with_categories=true) %}
+            {% if feedback_flashes %}
+            <div class="ux-public-feedback-flashes">
+                {% for category, message in feedback_flashes %}
+                <div class="ux-public-feedback-flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <div class="ux-public-feedback-layout">
+                <div class="ux-public-feedback-compose">
+                    {% if user %}
+                    <form class="ux-form ux-public-feedback-form" method="post" action="{{ url_for('submit_public_feedback') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <div class="ux-field">
+                            <label for="ux-feedback-rating">Rating</label>
+                            <input id="ux-feedback-rating" type="hidden" name="rating" value="5" />
+                            <div class="ux-rating-stars" role="radiogroup" aria-label="Choose your rating">
+                                <button type="button" class="ux-rating-star is-on" data-rating="1" aria-label="1 star"><i class="fas fa-star"></i></button>
+                                <button type="button" class="ux-rating-star is-on" data-rating="2" aria-label="2 stars"><i class="fas fa-star"></i></button>
+                                <button type="button" class="ux-rating-star is-on" data-rating="3" aria-label="3 stars"><i class="fas fa-star"></i></button>
+                                <button type="button" class="ux-rating-star is-on" data-rating="4" aria-label="4 stars"><i class="fas fa-star"></i></button>
+                                <button type="button" class="ux-rating-star is-on" data-rating="5" aria-label="5 stars"><i class="fas fa-star"></i></button>
+                                <span id="ux-rating-text" class="ux-rating-text">Excellent</span>
+                            </div>
+                        </div>
+                        <div class="ux-field">
+                            <label for="ux-public-feedback-message">Your Feedback</label>
+                            <textarea id="ux-public-feedback-message" name="message" rows="5"
+                                placeholder="Share your experience with UNITARY X..." minlength="4" maxlength="1500"
+                                required></textarea>
+                        </div>
+                        <button class="ux-submit ux-ripple ux-magnetic" type="submit">Post Public Feedback</button>
+                    </form>
+                    {% else %}
+                    <div class="ux-public-feedback-locked">
+                        <div class="ux-feedback err">Login is required to post feedback.</div>
+                        <a href="/login" class="ux-btn ux-btn-primary ux-ripple ux-magnetic">Login To Post <span class="sweep"></span></a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="ux-public-feedback-feed">
+                    <h4>Latest Community Feedback</h4>
+                    {% if feedback_posts %}
+                    <div class="ux-public-feedback-list">
+                        {% for post in feedback_posts %}
+                        <article class="ux-public-feedback-item">
+                            <div class="ux-public-feedback-head">
+                                <strong>{{ post.author_name }}</strong>
+                                <span>{{ post.created_at.strftime('%d %b %Y') if post.created_at else '' }}</span>
+                            </div>
+                            <div class="ux-public-feedback-stars" aria-label="{{ post.rating }} star rating">
+                                {% for _ in range(post.rating or 5) %}
+                                <i class="fas fa-star"></i>
+                                {% endfor %}
+                            </div>
+                            <p>{{ post.message }}</p>
+                        </article>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="ux-public-feedback-empty">No feedback yet. Be the first to post your thoughts.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
         <section class="ux-section ux-reveal" id="faq">
             <h2 class="ux-title">FAQ</h2>
             <p class="ux-muted">Common questions before kickoff.</p>
@@ -959,7 +1032,44 @@
                     // Keep page stable if A/B endpoint is unreachable.
                 }
             }
+
+            function initPublicFeedbackRating() {
+                const ratingInput = document.getElementById('ux-feedback-rating');
+                const stars = Array.from(document.querySelectorAll('.ux-rating-star'));
+                const ratingText = document.getElementById('ux-rating-text');
+                if (!ratingInput || !stars.length) return;
+
+                const labels = {
+                    1: 'Poor',
+                    2: 'Needs Improvement',
+                    3: 'Good',
+                    4: 'Very Good',
+                    5: 'Excellent'
+                };
+
+                const paint = (value) => {
+                    const safeValue = Math.max(1, Math.min(5, Number(value) || 5));
+                    ratingInput.value = String(safeValue);
+                    stars.forEach((star) => {
+                        const point = Number(star.getAttribute('data-rating') || 0);
+                        const active = point <= safeValue;
+                        star.classList.toggle('is-on', active);
+                        star.setAttribute('aria-checked', active ? 'true' : 'false');
+                    });
+                    if (ratingText) ratingText.textContent = labels[safeValue] || 'Excellent';
+                };
+
+                stars.forEach((star) => {
+                    star.addEventListener('click', () => {
+                        paint(star.getAttribute('data-rating'));
+                    });
+                });
+
+                paint(ratingInput.value);
+            }
+
             applyAbTests();
+            initPublicFeedbackRating();
         })();
     </script>
     <script src="{{ url_for('static', filename='user_premium.js') }}?v=20260327textfix1"></script>

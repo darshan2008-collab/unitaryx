@@ -64,8 +64,9 @@ OAUTH_ADMIN_EMAILS = {
     "darshankannan2008@gmail.com",
 }
 
-SUPERADMIN_EMAIL = "harikavi1301@gmail.com"
-SUPERADMIN_PASSWORD = "hari@123"
+SUPERADMIN_EMAIL = normalize_email(os.getenv("SUPERADMIN_EMAIL", "harikavi1301@gmail.com"))
+SUPERADMIN_PASSWORD = os.getenv("SUPERADMIN_PASSWORD", "hari@123")
+SUPERADMIN_NAME = (os.getenv("SUPERADMIN_NAME") or "Super Admin").strip() or "Super Admin"
 
 
 def normalize_email(value):
@@ -128,14 +129,15 @@ def is_admin_identity(email, existing_user=None):
 def establish_session_for_user(user, remember=False, profile_photo=None, auth_provider="password"):
     user_email = normalize_email(user.email)
     role = normalize_role(user.role)
-    if user_email == normalize_email(SUPERADMIN_EMAIL):
+    is_superadmin_account = user_email == normalize_email(SUPERADMIN_EMAIL) or normalize_admin_scope(getattr(user, 'admin_scope', 'ops')) == 'superadmin'
+    if is_superadmin_account:
         role = "admin"
     session.permanent = bool(remember)
     session['user_id'] = user.id
     session['user_name'] = user.name
     session['user_email'] = user_email
     session['role'] = role
-    session['is_superadmin'] = user_email == normalize_email(SUPERADMIN_EMAIL)
+    session['is_superadmin'] = is_superadmin_account
     session['admin_scope'] = normalize_admin_scope(
         'superadmin' if session['is_superadmin'] else getattr(user, 'admin_scope', 'ops')
     ) if role == 'admin' else ''
@@ -412,6 +414,19 @@ class AdminFeedback(db.Model):
     author_email = db.Column(db.String(150), nullable=False, index=True)
     author_name = db.Column(db.String(120), nullable=False)
     author_scope = db.Column(db.String(20), nullable=False, default='ops')
+    message = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
+class PublicFeedback(db.Model):
+    """Public-site feedback submitted by signed-in users."""
+    __tablename__ = 'public_feedback'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    author_email = db.Column(db.String(150), nullable=False, index=True)
+    author_name = db.Column(db.String(120), nullable=False)
+    rating = db.Column(db.Integer, nullable=False, default=5)
     message = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
 
@@ -1016,7 +1031,7 @@ def is_super_admin(user_obj=None):
     user_obj = user_obj or current_user()
     if not user_obj:
         return False
-    return normalize_email(user_obj.email) == normalize_email(SUPERADMIN_EMAIL)
+    return normalize_email(user_obj.email) == normalize_email(SUPERADMIN_EMAIL) or normalize_admin_scope(getattr(user_obj, 'admin_scope', 'ops')) == 'superadmin'
 
 
 def get_finance_admin_slots():
@@ -1342,10 +1357,10 @@ def seed_data():
         admin.set_password(admin_pass)
         db.session.add(admin)
 
-    # Ensure superadmin credentials are always available for the fixed email.
+    # Ensure the initial superadmin comes from environment variables.
     super_admin = User.query.filter(db.func.lower(User.email) == SUPERADMIN_EMAIL).first()
     if not super_admin:
-        super_admin = User(name='Super Admin', email=SUPERADMIN_EMAIL, role='admin', admin_scope='superadmin')
+        super_admin = User(name=SUPERADMIN_NAME, email=SUPERADMIN_EMAIL, role='admin', admin_scope='superadmin')
         super_admin.set_password(SUPERADMIN_PASSWORD)
         db.session.add(super_admin)
     super_admin.role = 'admin'
@@ -1492,6 +1507,7 @@ def _ensure_schema_columns():
 def index():
     projects     = Project.query.all()
     testimonials = Testimonial.query.filter_by(active=True).all()
+    feedback_posts = PublicFeedback.query.order_by(PublicFeedback.created_at.desc()).limit(10).all()
     stats = {
         "projects_done":  Project.query.count() + 194,
         "happy_students": 150,
@@ -1500,7 +1516,8 @@ def index():
     }
     return render_template("index.html", projects=projects,
                            testimonials=testimonials, stats=stats,
-                           user=current_user())
+                           user=current_user(),
+                           feedback_posts=feedback_posts)
 
 
 @app.route("/cinematic")
@@ -1999,6 +2016,45 @@ def api_contact():
     }), 201
 
 
+@app.route('/feedback/submit', methods=['POST'])
+@csrf.exempt
+@login_required
+@limiter.limit("20 per day", methods=["POST"])
+def submit_public_feedback():
+    actor = current_user()
+    if not actor:
+        flash('Please log in to post feedback.', 'warning')
+        return redirect(url_for('login'))
+
+    message = str(request.form.get('message', '')).strip()
+    try:
+        rating = int(request.form.get('rating', 5))
+    except (TypeError, ValueError):
+        rating = 5
+    rating = max(1, min(5, rating))
+
+    if len(message) < 4:
+        flash('Feedback must be at least 4 characters.', 'danger')
+        return redirect(url_for('index', _anchor='feedback-corner'))
+
+    if len(message) > 1500:
+        flash('Feedback must be at most 1500 characters.', 'danger')
+        return redirect(url_for('index', _anchor='feedback-corner'))
+
+    feedback = PublicFeedback(
+        user_id=actor.id,
+        author_email=normalize_email(getattr(actor, 'email', '')),
+        author_name=(getattr(actor, 'name', '') or 'User').strip()[:120],
+        rating=rating,
+        message=message,
+    )
+    db.session.add(feedback)
+    db.session.commit()
+
+    flash('Thanks for your feedback. It is now visible in the public feed.', 'success')
+    return redirect(url_for('index', _anchor='feedback-corner'))
+
+
 @app.route("/api/projects")
 def api_projects():
     category = request.args.get("category", "all")
@@ -2329,6 +2385,9 @@ def admin_panel():
     finance_entries_superadmin_queue = []
     finance_entries_recent = []
     finance_slots = get_finance_admin_slots()
+    feedback_posts = AdminFeedback.query.order_by(AdminFeedback.created_at.desc()).limit(200).all()
+    superadmin_logged_in_users = []
+    superadmin_total_users = int(registered_total)
 
     if is_super_admin(admin_user):
         now_utc = datetime.utcnow()
@@ -2419,6 +2478,37 @@ def admin_panel():
             FinanceEntry.status == 'needs_superadmin_check'
         ).order_by(FinanceEntry.updated_at.desc()).limit(120).all()
         finance_entries_recent = FinanceEntry.query.order_by(FinanceEntry.updated_at.desc()).limit(120).all()
+        login_rows = db.session.query(
+            User.id.label('user_id'),
+            User.name.label('name'),
+            User.email.label('email'),
+            User.role.label('role'),
+            User.admin_scope.label('admin_scope'),
+            db.func.max(UserSession.last_seen).label('last_seen'),
+            db.func.count(UserSession.id).label('session_count'),
+        ).join(
+            UserSession,
+            UserSession.user_id == User.id,
+        ).filter(
+            UserSession.is_active.is_(True),
+        ).group_by(
+            User.id, User.name, User.email, User.role, User.admin_scope,
+        ).order_by(
+            db.func.max(UserSession.last_seen).desc(),
+        ).all()
+
+        superadmin_logged_in_users = [
+            {
+                'user_id': int(row.user_id),
+                'name': row.name or 'Unknown',
+                'email': row.email or '',
+                'role': row.role or 'user',
+                'admin_scope': row.admin_scope or '',
+                'session_count': int(row.session_count or 0),
+                'last_seen': row.last_seen,
+            }
+            for row in login_rows
+        ]
     elif has_admin_capability('finance_ops', admin_user):
         finance_entries_my = FinanceEntry.query.filter(
             db.func.lower(FinanceEntry.assigned_admin_email) == admin_email
@@ -2456,7 +2546,11 @@ def admin_panel():
                            finance_entries_my=finance_entries_my,
                            finance_entries_superadmin_queue=finance_entries_superadmin_queue,
                            finance_entries_recent=finance_entries_recent,
-                           finance_slots=finance_slots)
+                           finance_slots=finance_slots,
+                           feedback_posts=feedback_posts,
+                           superadmin_logged_in_users=superadmin_logged_in_users,
+                           superadmin_total_users=superadmin_total_users,
+                           superadmin_email=SUPERADMIN_EMAIL)
 
 
 @app.route('/admin/sessions/revoke/<int:session_id>', methods=['POST'])
@@ -2821,6 +2915,35 @@ def review_finance_entry(entry_id):
         'success' if decision == 'approve' else 'warning'
     )
     return redirect(url_for('admin_panel', tab='finance'))
+
+
+@app.route('/admin/feedback/post', methods=['POST'])
+@csrf.exempt
+@admin_required
+def post_admin_feedback():
+    actor = current_user()
+    if not actor:
+        return redirect(url_for('login'))
+
+    message = str(request.form.get('message', '')).strip()
+    if len(message) < 4:
+        flash('Feedback must be at least 4 characters.', 'danger')
+        return redirect(url_for('admin_panel', tab='feedback'))
+
+    if len(message) > 1500:
+        flash('Feedback must be at most 1500 characters.', 'danger')
+        return redirect(url_for('admin_panel', tab='feedback'))
+
+    row = AdminFeedback(
+        author_email=normalize_email(getattr(actor, 'email', '')),
+        author_name=(getattr(actor, 'name', '') or 'Admin').strip()[:120],
+        author_scope=normalize_admin_scope(getattr(actor, 'admin_scope', 'ops')),
+        message=message,
+    )
+    db.session.add(row)
+    db.session.commit()
+    flash('Feedback posted to the public admin corner.', 'success')
+    return redirect(url_for('admin_panel', tab='feedback'))
 
 
 @app.route("/admin/tasks/assign", methods=["POST"])
