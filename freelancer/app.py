@@ -82,6 +82,11 @@ def normalize_admin_scope(value):
     return scope if scope in {"superadmin", "ops", "finance", "support"} else "ops"
 
 
+def normalize_finance_entry_type(value):
+    entry_type = (value or "receivable").strip().lower()
+    return entry_type if entry_type in {"receivable", "payable"} else "receivable"
+
+
 def find_user_by_email(email):
     normalized = normalize_email(email)
     if not normalized:
@@ -377,6 +382,38 @@ class AdminTask(db.Model):
     status = db.Column(db.String(20), nullable=False, default='Pending')
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class FinanceEntry(db.Model):
+    """Finance records handled by finance admins and checked by superadmin."""
+    __tablename__ = 'finance_entries'
+
+    id = db.Column(db.Integer, primary_key=True)
+    entry_type = db.Column(db.String(20), nullable=False, default='receivable', index=True)  # receivable | payable
+    title = db.Column(db.String(180), nullable=False)
+    counterparty = db.Column(db.String(180), nullable=False)
+    amount = db.Column(db.Integer, nullable=False, default=0)
+    due_date = db.Column(db.String(20))
+    notes = db.Column(db.Text)
+    status = db.Column(db.String(30), nullable=False, default='submitted', index=True)  # submitted | processed | needs_superadmin_check | closed | rejected
+    assigned_admin_email = db.Column(db.String(150), nullable=False, index=True)
+    created_by_email = db.Column(db.String(150), nullable=False, index=True)
+    reviewed_by_email = db.Column(db.String(150), nullable=True, index=True)
+    review_note = db.Column(db.String(300))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class AdminFeedback(db.Model):
+    """Public feedback corner for signed-in admins/superadmin."""
+    __tablename__ = 'admin_feedback'
+
+    id = db.Column(db.Integer, primary_key=True)
+    author_email = db.Column(db.String(150), nullable=False, index=True)
+    author_name = db.Column(db.String(120), nullable=False)
+    author_scope = db.Column(db.String(20), nullable=False, default='ops')
+    message = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
 
 
 class AdminAuditLog(db.Model):
@@ -982,10 +1019,37 @@ def is_super_admin(user_obj=None):
     return normalize_email(user_obj.email) == normalize_email(SUPERADMIN_EMAIL)
 
 
+def get_finance_admin_slots():
+    """Returns two finance admin slots used for receivable/payable ownership."""
+    finance_admins = User.query.filter(
+        db.func.lower(User.role) == 'admin',
+        db.func.lower(User.admin_scope) == 'finance',
+        User.is_active.is_(True),
+    ).order_by(User.created_at.asc(), User.email.asc()).all()
+
+    emails = [normalize_email(u.email) for u in finance_admins if normalize_email(u.email)]
+    slot_1 = emails[0] if len(emails) >= 1 else ""
+    slot_2 = emails[1] if len(emails) >= 2 else slot_1
+
+    return {
+        "receivable": slot_1,
+        "payable": slot_2,
+        "slot_1": slot_1,
+        "slot_2": slot_2,
+        "all": emails,
+    }
+
+
+def assign_finance_admin_email(entry_type):
+    slots = get_finance_admin_slots()
+    normalized = normalize_finance_entry_type(entry_type)
+    return normalize_email(slots.get(normalized, ""))
+
+
 ADMIN_SCOPE_CAPABILITIES = {
-    "superadmin": {"lead_manage", "analytics_view", "task_ops", "export_data", "admin_control"},
+    "superadmin": {"lead_manage", "analytics_view", "task_ops", "export_data", "admin_control", "finance_ops"},
     "ops": {"lead_manage", "analytics_view", "task_ops", "export_data"},
-    "finance": {"analytics_view", "export_data"},
+    "finance": {"analytics_view", "export_data", "finance_ops"},
     "support": {"lead_manage", "analytics_view"},
 }
 
@@ -2261,6 +2325,10 @@ def admin_panel():
     ab_tests = []
     pending_approvals = []
     recent_approvals = []
+    finance_entries_my = []
+    finance_entries_superadmin_queue = []
+    finance_entries_recent = []
+    finance_slots = get_finance_admin_slots()
 
     if is_super_admin(admin_user):
         now_utc = datetime.utcnow()
@@ -2347,6 +2415,14 @@ def admin_panel():
         ab_tests = ABTestConfig.query.order_by(ABTestConfig.test_key.asc()).all()
         pending_approvals = ApprovalTicket.query.filter_by(status='pending').order_by(ApprovalTicket.created_at.desc()).limit(80).all()
         recent_approvals = ApprovalTicket.query.filter(ApprovalTicket.status != 'pending').order_by(ApprovalTicket.reviewed_at.desc(), ApprovalTicket.created_at.desc()).limit(80).all()
+        finance_entries_superadmin_queue = FinanceEntry.query.filter(
+            FinanceEntry.status == 'needs_superadmin_check'
+        ).order_by(FinanceEntry.updated_at.desc()).limit(120).all()
+        finance_entries_recent = FinanceEntry.query.order_by(FinanceEntry.updated_at.desc()).limit(120).all()
+    elif has_admin_capability('finance_ops', admin_user):
+        finance_entries_my = FinanceEntry.query.filter(
+            db.func.lower(FinanceEntry.assigned_admin_email) == admin_email
+        ).order_by(FinanceEntry.updated_at.desc()).limit(120).all()
 
     return render_template("admin.html", 
                            requests=requests_list, 
@@ -2376,7 +2452,11 @@ def admin_panel():
                            db_backups=db_backups,
                            ab_tests=ab_tests,
                            pending_approvals=pending_approvals,
-                           recent_approvals=recent_approvals)
+                           recent_approvals=recent_approvals,
+                           finance_entries_my=finance_entries_my,
+                           finance_entries_superadmin_queue=finance_entries_superadmin_queue,
+                           finance_entries_recent=finance_entries_recent,
+                           finance_slots=finance_slots)
 
 
 @app.route('/admin/sessions/revoke/<int:session_id>', methods=['POST'])
@@ -2618,6 +2698,129 @@ def reject_ticket(ticket_id):
     )
     flash(f'Ticket #{ticket.id} rejected.', 'warning')
     return redirect(url_for('admin_panel', tab='super-controls'))
+
+
+@app.route('/admin/finance/entries/create', methods=['POST'])
+@csrf.exempt
+@admin_required
+@admin_capability_required('finance_ops')
+def create_finance_entry():
+    actor = current_user()
+    actor_email = normalize_email(getattr(actor, 'email', ''))
+    entry_type = normalize_finance_entry_type(request.form.get('entry_type', 'receivable'))
+    title = str(request.form.get('title', '')).strip()
+    counterparty = str(request.form.get('counterparty', '')).strip()
+    due_date = str(request.form.get('due_date', '')).strip()
+    notes = str(request.form.get('notes', '')).strip()
+
+    try:
+        amount = int(float(request.form.get('amount', 0) or 0))
+    except (TypeError, ValueError):
+        amount = 0
+
+    if len(title) < 3:
+        flash('Finance title must be at least 3 characters.', 'danger')
+        return redirect(url_for('admin_panel', tab='finance'))
+    if len(counterparty) < 2:
+        flash('Counterparty is required.', 'danger')
+        return redirect(url_for('admin_panel', tab='finance'))
+    if amount <= 0:
+        flash('Amount must be greater than 0.', 'danger')
+        return redirect(url_for('admin_panel', tab='finance'))
+
+    assigned_email = assign_finance_admin_email(entry_type)
+    if not assigned_email:
+        flash('Assign two active finance admins first (scope=finance).', 'danger')
+        return redirect(url_for('admin_panel', tab='finance'))
+
+    if not is_super_admin(actor) and actor_email != assigned_email:
+        flash('This lane is assigned to the other finance admin.', 'warning')
+        return redirect(url_for('admin_panel', tab='finance'))
+
+    entry = FinanceEntry(
+        entry_type=entry_type,
+        title=title,
+        counterparty=counterparty,
+        amount=amount,
+        due_date=due_date,
+        notes=notes,
+        status='submitted',
+        assigned_admin_email=assigned_email,
+        created_by_email=actor_email,
+    )
+    db.session.add(entry)
+    db.session.commit()
+    flash(f'Finance entry #{entry.id} created and assigned to {assigned_email}.', 'success')
+    return redirect(url_for('admin_panel', tab='finance'))
+
+
+@app.route('/admin/finance/entries/<int:entry_id>/status', methods=['POST'])
+@csrf.exempt
+@admin_required
+@admin_capability_required('finance_ops')
+def update_finance_entry_status(entry_id):
+    actor = current_user()
+    actor_email = normalize_email(getattr(actor, 'email', ''))
+    entry = FinanceEntry.query.get_or_404(entry_id)
+
+    allowed = {'submitted', 'processed', 'needs_superadmin_check', 'closed'}
+    requested = str(request.form.get('status', '')).strip().lower()
+    if requested not in allowed:
+        flash('Invalid finance status.', 'danger')
+        return redirect(url_for('admin_panel', tab='finance'))
+
+    if not is_super_admin(actor) and actor_email != normalize_email(entry.assigned_admin_email):
+        flash('You can update only your assigned finance items.', 'danger')
+        return redirect(url_for('admin_panel', tab='finance'))
+
+    entry.status = requested
+    if requested == 'needs_superadmin_check':
+        entry.reviewed_by_email = None
+        entry.review_note = None
+    db.session.commit()
+    flash(f'Finance entry #{entry.id} moved to {requested}.', 'success')
+    return redirect(url_for('admin_panel', tab='finance'))
+
+
+@app.route('/admin/finance/entries/<int:entry_id>/review', methods=['POST'])
+@csrf.exempt
+@admin_required
+@admin_capability_required('admin_control')
+def review_finance_entry(entry_id):
+    reviewer = current_user()
+    if not is_super_admin(reviewer):
+        flash('Only superadmin can review finance exceptions.', 'danger')
+        return redirect(url_for('admin_panel', tab='finance'))
+
+    entry = FinanceEntry.query.get_or_404(entry_id)
+    decision = str(request.form.get('decision', '')).strip().lower()
+    note = str(request.form.get('review_note', '')).strip()
+
+    if entry.status != 'needs_superadmin_check':
+        flash('This finance entry is not in superadmin check queue.', 'warning')
+        return redirect(url_for('admin_panel', tab='finance'))
+
+    if decision not in {'approve', 'reject'}:
+        flash('Invalid review decision.', 'danger')
+        return redirect(url_for('admin_panel', tab='finance'))
+
+    entry.reviewed_by_email = normalize_email(getattr(reviewer, 'email', ''))
+    entry.review_note = note[:300] if note else ''
+    entry.status = 'closed' if decision == 'approve' else 'rejected'
+    db.session.commit()
+
+    log_superadmin_action(
+        action='FINANCE_ENTRY_REVIEWED',
+        target=f'finance_entry:{entry.id}',
+        details=f'decision={decision},type={entry.entry_type},amount={entry.amount}',
+        actor=reviewer,
+    )
+
+    flash(
+        f'Finance entry #{entry.id} {"approved" if decision == "approve" else "rejected"}.',
+        'success' if decision == 'approve' else 'warning'
+    )
+    return redirect(url_for('admin_panel', tab='finance'))
 
 
 @app.route("/admin/tasks/assign", methods=["POST"])

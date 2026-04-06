@@ -159,6 +159,10 @@
                     <li><a href="#" class="adm-nav-link" data-tab="traffic"><i class="fas fa-chart-area"></i>
                         <span>Traffic Intelligence</span></a></li>
                     {% endif %}
+                    {% if admin_scope in ['finance', 'superadmin'] %}
+                    <li><a href="#" class="adm-nav-link" data-tab="finance"><i class="fas fa-wallet"></i>
+                        <span>Finance Workbench</span></a></li>
+                    {% endif %}
                 </ul>
 
                 {% if is_superadmin %}
@@ -573,6 +577,167 @@
                     {% endif %}
                 </section>
             </div>
+
+            {% if admin_scope in ['finance', 'superadmin'] %}
+            <div id="tab-finance" class="admin-tab-content">
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-wallet" style="color:var(--primary); margin-right:8px;"></i>Finance Management Desk</h3>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-top:10px;">
+                        <div style="padding:10px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(0,82,204,0.05);">
+                            <div style="font-size:0.8rem; color:var(--text-dim);">Receivables Admin</div>
+                            <div style="font-weight:700; color:var(--text);">{{ finance_slots.slot_1 or 'Not assigned' }}</div>
+                        </div>
+                        <div style="padding:10px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(16,185,129,0.06);">
+                            <div style="font-size:0.8rem; color:var(--text-dim);">Payables Admin</div>
+                            <div style="font-weight:700; color:var(--text);">{{ finance_slots.slot_2 or 'Not assigned' }}</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-plus-circle" style="color:var(--primary); margin-right:8px;"></i>Create Finance Entry</h3>
+                    <form method="POST" action="/admin/finance/entries/create"
+                        style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px; align-items:end; margin-top:10px;">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <div>
+                            <label style="display:block; font-size:0.8rem; color:var(--text-dim); margin-bottom:6px;">Type</label>
+                            <select name="entry_type" required
+                                style="width:100%; padding:9px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
+                                <option value="receivable">Receivable</option>
+                                <option value="payable">Payable</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:0.8rem; color:var(--text-dim); margin-bottom:6px;">Title</label>
+                            <input type="text" name="title" required minlength="3" placeholder="Invoice INV-1024"
+                                style="width:100%; padding:9px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:0.8rem; color:var(--text-dim); margin-bottom:6px;">Counterparty</label>
+                            <input type="text" name="counterparty" required minlength="2" placeholder="Client / Vendor"
+                                style="width:100%; padding:9px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:0.8rem; color:var(--text-dim); margin-bottom:6px;">Amount (INR)</label>
+                            <input type="number" name="amount" min="1" required
+                                style="width:100%; padding:9px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:0.8rem; color:var(--text-dim); margin-bottom:6px;">Due Date</label>
+                            <input type="date" name="due_date"
+                                style="width:100%; padding:9px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label style="display:block; font-size:0.8rem; color:var(--text-dim); margin-bottom:6px;">Notes</label>
+                            <textarea name="notes" rows="2" placeholder="Optional notes"
+                                style="width:100%; padding:9px 10px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);"></textarea>
+                        </div>
+                        <div>
+                            <button type="submit"
+                                style="padding:9px 12px; border:none; border-radius:8px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer;">Create Entry</button>
+                        </div>
+                    </form>
+                </section>
+
+                {% if is_superadmin %}
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-stamp" style="color:var(--primary); margin-right:8px;"></i>Superadmin Finance Check Queue</h3>
+                    <div style="overflow:auto; margin-top:10px;">
+                        <table style="width:100%; border-collapse:collapse; min-width:900px;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">ID</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Type</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Title</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Assigned Admin</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Amount</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Review</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for f in finance_entries_superadmin_queue %}
+                                <tr>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">#{{ f.id }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ f.entry_type|title }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ f.title }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ f.assigned_admin_email }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">₹{{ "{:,}".format(f.amount or 0) }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">
+                                        <form method="POST" action="/admin/finance/entries/{{ f.id }}/review" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                            <input type="text" name="review_note" placeholder="Review note"
+                                                style="padding:7px 9px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text); min-width:180px;">
+                                            <button type="submit" name="decision" value="approve"
+                                                style="padding:7px 10px; border:none; border-radius:8px; background:#059669; color:#fff; font-weight:700; cursor:pointer;">Approve</button>
+                                            <button type="submit" name="decision" value="reject"
+                                                style="padding:7px 10px; border:none; border-radius:8px; background:#b45309; color:#fff; font-weight:700; cursor:pointer;">Reject</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" style="padding:12px; text-align:center; color:var(--text-dim);">No finance entries awaiting superadmin check.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                {% endif %}
+
+                <section class="dash-card" style="margin-bottom: 18px;">
+                    <h3 class="card-title"><i class="fas fa-table" style="color:var(--primary); margin-right:8px;"></i>
+                        {% if is_superadmin %}Recent Finance Entries{% else %}My Finance Entries{% endif %}
+                    </h3>
+                    <div style="overflow:auto; margin-top:10px;">
+                        <table style="width:100%; border-collapse:collapse; min-width:900px;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">ID</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Type</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Title</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Amount</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Status</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Owner</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set finance_rows = finance_entries_recent if is_superadmin else finance_entries_my %}
+                                {% for f in finance_rows %}
+                                <tr>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">#{{ f.id }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ f.entry_type|title }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ f.title }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">₹{{ "{:,}".format(f.amount or 0) }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); font-weight:700;">{{ f.status }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ f.assigned_admin_email }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">
+                                        <form method="POST" action="/admin/finance/entries/{{ f.id }}/status" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                            <select name="status"
+                                                style="padding:7px 9px; border:1px solid var(--glass-border); border-radius:8px; background:#fff; color:var(--text);">
+                                                <option value="submitted" {{ 'selected' if f.status == 'submitted' else '' }}>submitted</option>
+                                                <option value="processed" {{ 'selected' if f.status == 'processed' else '' }}>processed</option>
+                                                <option value="needs_superadmin_check" {{ 'selected' if f.status == 'needs_superadmin_check' else '' }}>needs_superadmin_check</option>
+                                                <option value="closed" {{ 'selected' if f.status == 'closed' else '' }}>closed</option>
+                                            </select>
+                                            <button type="submit"
+                                                style="padding:7px 10px; border:none; border-radius:8px; background:var(--primary); color:#fff; font-weight:700; cursor:pointer;">Update</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" style="padding:12px; text-align:center; color:var(--text-dim);">No finance entries yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+            {% endif %}
 
             {% if is_superadmin %}
             <div id="tab-admin-control" class="admin-tab-content">
@@ -1944,6 +2109,7 @@
                 'mytasks': "My Task Desk",
                 'projects': "Project Inquiry Logs",
                 'traffic': "Traffic Intelligence",
+                'finance': "Finance Workbench",
                 'analytics': "Strategic Analytics",
                 'strategy': "Project Inquiry Strategies",
                 'admin-control': "Superadmin Admin Accounts",
