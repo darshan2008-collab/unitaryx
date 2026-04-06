@@ -27,16 +27,21 @@
     };
 
     const mobileLite =
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+        window.matchMedia("(max-width: 768px)").matches ||
+        window.matchMedia("(pointer: coarse)").matches ||
+        Boolean(navigator.connection && navigator.connection.saveData);
 
     if (mobileLite && document.body) {
         document.body.classList.add("ux-mobile-lite");
     }
 
-    window.addEventListener("mousemove", (e) => {
-        state.mx = e.clientX;
-        state.my = e.clientY;
-    }, { passive: true });
+    if (!mobileLite) {
+        window.addEventListener("mousemove", (e) => {
+            state.mx = e.clientX;
+            state.my = e.clientY;
+        }, { passive: true });
+    }
 
     const loader = q("#ux-loader");
     const loaderProgress = q("#ux-loader-progress-bar");
@@ -66,7 +71,6 @@
     };
 
     const initLoader = () => {
-        const _ldrStart = performance.now();
         const ldr = q("#ux-loader");
         const bar = q("#ux-ldr-bar");
         const pctEl = q("#ux-ldr-pct");
@@ -76,6 +80,13 @@
         if (!ldr) return;
 
         if (mobileLite) {
+            if (bar) bar.style.width = "100%";
+            if (pctEl) pctEl.textContent = "100%";
+            if (statusEl) statusEl.textContent = "READY";
+            [ldrCanvas, ptcWrap, q(".ux-ldr-svg-rings"), q(".ux-ldr-streams"), q(".ux-ldr-scan-sweep"), q(".ux-ldr-hud")]
+                .forEach((el) => {
+                    if (el && el.parentNode) el.remove();
+                });
             ldr.classList.add("hide");
             setTimeout(() => {
                 if (ldr.parentNode) ldr.remove();

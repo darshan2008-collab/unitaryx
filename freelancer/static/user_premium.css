@@ -233,7 +233,12 @@ body {
     visibility: hidden;
 }
 
+html.ux-mobile-lite .ux-loader,
 body.ux-mobile-lite .ux-loader,
+html.ux-mobile-lite .ux-bg-canvas,
+html.ux-mobile-lite .ux-grid-overlay,
+html.ux-mobile-lite .ux-bg-orbs,
+html.ux-mobile-lite .ux-light-beam,
 body.ux-mobile-lite .ux-bg-canvas,
 body.ux-mobile-lite .ux-grid-overlay,
 body.ux-mobile-lite .ux-bg-orbs,
@@ -241,10 +246,17 @@ body.ux-mobile-lite .ux-light-beam {
     display: none !important;
 }
 
+html.ux-mobile-lite .ux-shell,
 body.ux-mobile-lite .ux-shell {
     overflow-x: hidden;
 }
 
+html.ux-mobile-lite .ux-hero-wrap,
+html.ux-mobile-lite .ux-process-grid,
+html.ux-mobile-lite .ux-services-grid,
+html.ux-mobile-lite .ux-project-grid,
+html.ux-mobile-lite .ux-contact-grid,
+html.ux-mobile-lite .ux-footer-grid,
 body.ux-mobile-lite .ux-hero-wrap,
 body.ux-mobile-lite .ux-process-grid,
 body.ux-mobile-lite .ux-services-grid,
@@ -254,17 +266,24 @@ body.ux-mobile-lite .ux-footer-grid {
     grid-template-columns: 1fr !important;
 }
 
+html.ux-mobile-lite .ux-section,
+html.ux-mobile-lite .ux-nav-inner,
 body.ux-mobile-lite .ux-section,
 body.ux-mobile-lite .ux-nav-inner {
     padding-left: 14px !important;
     padding-right: 14px !important;
 }
 
+html.ux-mobile-lite .ux-headline,
 body.ux-mobile-lite .ux-headline {
     font-size: clamp(1.6rem, 7.5vw, 2rem) !important;
     line-height: 1.2;
 }
 
+html.ux-mobile-lite .ux-btn,
+html.ux-mobile-lite input,
+html.ux-mobile-lite textarea,
+html.ux-mobile-lite select,
 body.ux-mobile-lite .ux-btn,
 body.ux-mobile-lite input,
 body.ux-mobile-lite textarea,
@@ -272,6 +291,9 @@ body.ux-mobile-lite select {
     font-size: 16px;
 }
 
+html.ux-mobile-lite *,
+html.ux-mobile-lite *::before,
+html.ux-mobile-lite *::after,
 body.ux-mobile-lite *,
 body.ux-mobile-lite *::before,
 body.ux-mobile-lite *::after {
@@ -4122,5 +4144,184 @@ footer {
     .ux-nav-ghost,
     .ux-nav-cta {
         white-space: normal !important;
+    }
+}
+
+@media (max-width: 560px) {
+    .ux-shell {
+        padding-bottom: 78px;
+    }
+
+    .ux-nav {
+        padding: 12px 14px 10px;
+    }
+
+    .ux-nav-inner {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ux-brand {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .ux-links {
+        order: 2;
+    }
+
+    .ux-nav-actions {
+        order: 3;
+        justify-content: stretch;
+    }
+
+    .ux-nav-actions > * {
+        flex: 1 1 100%;
+    }
+
+    .ux-hero {
+        padding-top: 26px;
+    }
+
+    .ux-hero-wrap,
+    .ux-public-feedback-layout,
+    .ux-estimator-wrap,
+    .ux-footer-inner {
+        grid-template-columns: 1fr;
+    }
+
+    .ux-testi-card {
+        flex: 0 0 92%;
+    }
+
+    .ux-hero-main,
+    .ux-hero-side,
+    .ux-lab-card,
+    .ux-service-card,
+    .ux-project-card,
+    .ux-stack-card,
+    .ux-time-item,
+    .ux-tl-card,
+    .ux-public-feedback-compose,
+    .ux-public-feedback-feed {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .ux-headline {
+        font-size: clamp(1.9rem, 10vw, 2.8rem);
+        line-height: 1.04;
+    }
+
+    .ux-sub,
+    .ux-muted {
+        font-size: 0.95rem;
+    }
+
+    .ux-cta-row {
+        gap: 10px;
+    }
+
+    .ux-cta-row .ux-btn,
+    .ux-cta-row .ux-btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .ux-hero-side {
+        gap: 10px;
+    }
+
+    .ux-float h4,
+    .ux-lab-card h4,
+    .ux-service-card h4,
+    .ux-stack-card h4,
+    .ux-project-info h4 {
+        font-size: 1rem;
+    }
+
+    .ux-project-tools {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .ux-project-search,
+    .ux-project-search input {
+        width: 100%;
+    }
+
+    .ux-filters {
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        scrollbar-width: none;
+    }
+
+    .ux-filters::-webkit-scrollbar {
+        display: none;
+    }
+
+    .ux-filters .ux-filter {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .ux-public-feedback-flash,
+    .ux-public-feedback-compose,
+    .ux-public-feedback-feed,
+    .ux-faq-item,
+    .ux-testi-card {
+        border-radius: 12px;
+    }
+
+    .ux-public-feedback-form {
+        gap: 12px;
+    }
+
+    .ux-rating-stars {
+        gap: 8px;
+    }
+
+    .ux-rating-star {
+        width: 32px;
+        height: 32px;
+    }
+
+    .ux-public-feedback-head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .ux-public-feedback-stars {
+        font-size: 0.74rem;
+    }
+
+    .ux-public-feedback-list {
+        max-height: none;
+    }
+
+    .ux-mobile-cta {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+    }
+
+    .ux-footer {
+        padding: 18px 0 82px;
+    }
+
+    .ux-footer-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .ux-footer-links,
+    .ux-footer-social {
+        justify-content: center;
+        flex-wrap: wrap;
     }
 }

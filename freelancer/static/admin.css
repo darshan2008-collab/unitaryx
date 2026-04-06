@@ -3565,3 +3565,203 @@ body.mobile-nav-open {
         -webkit-overflow-scrolling: touch;
     }
 }
+
+@media (max-width: 760px) {
+    .admin-main {
+        padding: 12px !important;
+    }
+
+    .admin-header {
+        padding: 12px 14px !important;
+        gap: 8px !important;
+    }
+
+    .admin-header-title-block {
+        width: 100% !important;
+    }
+
+    .admin-title {
+        font-size: clamp(1.35rem, 5vw, 2rem) !important;
+        line-height: 1.15;
+    }
+
+    .admin-stats,
+    .dashboard-grid,
+    .admin-grid,
+    .super-kpi-grid,
+    .kpi-grid,
+    .dash-grid-2col,
+    .webpage-ops-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .dash-card,
+    .table-card,
+    .adm-stat,
+    .super-kpi,
+    .kpi-chip {
+        padding-left: 18px !important;
+        padding-right: 18px !important;
+    }
+
+    .dash-grid-2col,
+    .webpage-ops-grid {
+        gap: 14px !important;
+    }
+
+    .table-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+        padding: 18px 18px 0 18px !important;
+    }
+
+    .search-wrap {
+        width: 100% !important;
+    }
+
+    .admin-table-wrap,
+    #credentials-vault-table-wrap {
+        padding: 0 14px 14px 14px !important;
+    }
+
+    .admin-table-wrap table,
+    #credentials-vault-table-wrap table,
+    .adm-table {
+        min-width: 560px !important;
+    }
+
+    .admin-table th,
+    .admin-table td,
+    .adm-table th,
+    .adm-table td {
+        padding: 14px 16px !important;
+    }
+
+    .admin-create-account-form,
+    .admin-update-account-form,
+    form[action="/admin/tasks/assign"],
+    form[action="/admin/tasks/assign-bulk"],
+    .super-split {
+        grid-template-columns: 1fr !important;
+    }
+
+    .top-actions {
+        top: 10px !important;
+        right: 10px !important;
+        gap: 8px;
+    }
+
+    .mobile-sidebar-fab {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+@media (max-width: 560px) {
+    .admin-main {
+        padding: 10px !important;
+    }
+
+    .admin-header {
+        border-radius: 0 0 14px 14px !important;
+    }
+
+    .role-crown-banner {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .admin-title {
+        font-size: 1.25rem !important;
+    }
+
+    .admin-table-wrap table,
+    #credentials-vault-table-wrap table,
+    .adm-table {
+        min-width: 520px !important;
+    }
+
+    .admin-table-wrap,
+    #credentials-vault-table-wrap {
+        overflow-x: auto !important;
+    }
+
+    .dash-card,
+    .table-card {
+        border-radius: 18px;
+    }
+
+    .card-title {
+        font-size: 1.15rem;
+        margin-bottom: 18px;
+    }
+
+    .table-tools,
+    .bulk-action-bar,
+    .bulk-actions,
+    .control-form,
+    .admin-account-card form,
+    .admin-update-account-form,
+    .admin-create-account-form {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    .bulk-action-bar,
+    .bulk-actions,
+    .table-tools {
+        width: 100% !important;
+    }
+
+    .bulk-actions {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    .bulk-btn,
+    .filter-control,
+    .control-form button,
+    .control-form select,
+    .admin-account-card button,
+    .admin-account-card input,
+    .admin-account-card select,
+    .admin-account-card label {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .system-health-preview > div,
+    .webpage-ops-grid > section > div,
+    .dash-grid-2col > div > div,
+    .dash-card > div[style*="display:flex; gap: 15px"],
+    .dash-card > div[style*="display: flex; gap: 15px"],
+    .dash-card > div[style*="display:flex; justify-content:space-between"],
+    .dash-card > div[style*="display: flex; justify-content:space-between"],
+    .super-split,
+    .admin-account-card > div {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    .system-health-preview > div,
+    .webpage-ops-grid > section > div,
+    .dash-card > div[style*="display:flex; gap: 15px"],
+    .dash-card > div[style*="display: flex; gap: 15px"],
+    .dash-card > div[style*="display:flex; justify-content:space-between"],
+    .dash-card > div[style*="display: flex; justify-content:space-between"],
+    .super-split,
+    .admin-account-card > div {
+        align-items: stretch !important;
+    }
+
+    .top-action-btn {
+        width: 38px !important;
+        height: 38px !important;
+    }
+
+    .admin-toast {
+        width: calc(100vw - 24px) !important;
+    }
+}
