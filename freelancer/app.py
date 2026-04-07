@@ -53,8 +53,8 @@ else:
 
 DEFAULT_GOOGLE_ALLOWED_ORIGINS = {
     "https://unitaryx.org",
-    "http://localhost:5005",
-    "http://127.0.0.1:5005",
+    "http://localhost:10184",
+    "http://127.0.0.1:10184",
     "http://unitaryx.org",
     
 }
@@ -928,8 +928,6 @@ def _traffic_bucket_for_path(page_path):
         return "Login"
     if path.startswith("/dashboard"):
         return "Dashboard"
-    if path.startswith("/cinematic") or path.startswith("/portfolio"):
-        return "Portfolio"
     return "Other"
 
 
@@ -1530,19 +1528,6 @@ def index():
                            testimonials=testimonials, stats=stats,
                            user=current_user(),
                            feedback_posts=feedback_posts)
-
-
-@app.route("/cinematic")
-def cinematic_portfolio():
-    """Next-generation cinematic portfolio experience"""
-    projects = Project.query.all()
-    return render_template("cinematic.html", projects=projects)
-
-
-@app.route("/portfolio")
-def portfolio():
-    """Alias for cinematic portfolio"""
-    return redirect(url_for('cinematic_portfolio'))
 
 
 @app.route('/favicon.ico')
@@ -4021,15 +4006,15 @@ if __name__ == "__main__":
     with app.app_context():
         print("\n" + "="*58)
         print("  [*]  Unitary X Freelancer Website")
-        print("  [*]  Main Site : http://127.0.0.1:5005")
-        print("  [*]  Login     : http://127.0.0.1:5005/login")
-        print("  [*]  Admin     : http://127.0.0.1:5005/admin")
+        print("  [*]  Main Site : http://127.0.0.1:10184")
+        print("  [*]  Login     : http://127.0.0.1:10184/login")
+        print("  [*]  Admin     : http://127.0.0.1:10184/admin")
         print("  [*]  Admin creds: admin@unitaryx.com / Admin@123")
         print("  [*]  Superadmin: harikavi1301@gmail.com / hari@123")
         print("="*58 + "\n")
     app.run(
         host='0.0.0.0',
         debug=os.getenv("DEBUG", "True") == "True",
-        port=int(os.getenv("PORT", 5005))
+        port=int(os.getenv("PORT", 10184))
     )
 
