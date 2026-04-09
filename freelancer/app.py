@@ -733,6 +733,38 @@ def validate_email(email):
     return bool(re.match(r'^[\w\.-]+@[\w\.-]+\.\w{2,}$', email))
 
 
+def wants_json_response():
+    accept = (request.headers.get("Accept") or "").lower()
+    requested_with = (request.headers.get("X-Requested-With") or "").lower()
+    return request.is_json or "application/json" in accept or requested_with == "xmlhttprequest"
+
+
+def request_payload():
+    payload = request.get_json(silent=True)
+    if isinstance(payload, dict):
+        return payload
+    return request.form
+
+
+def parse_remember_flag(value):
+    if isinstance(value, bool):
+        return value
+    text = str(value or "").strip().lower()
+    return text in {"1", "true", "on", "yes", "y"}
+
+
+def end_current_session():
+    token = str(session.get('session_token') or '').strip()
+    uid = session.get('user_id')
+    if token and uid:
+        row = UserSession.query.filter_by(user_id=uid, session_token=token).first()
+        if row:
+            row.is_active = False
+            row.last_seen = datetime.utcnow()
+            db.session.commit()
+    session.clear()
+
+
 def _parse_deadline_days(deadline_value):
     raw = (deadline_value or "").strip()
     if not raw:
@@ -1550,14 +1582,14 @@ def login():
     origin_settings = get_google_origin_settings(f"{request.scheme}://{request.host}")
 
     if request.method == "POST":
-        login_type = request.form.get('login_type', 'user')
-        email      = normalize_email(request.form.get('email', ''))
-        password   = request.form.get('password', '').strip()
-        remember   = request.form.get('remember') == 'on'
+        data = request_payload()
+        login_type = str(data.get('login_type', 'user')).strip().lower() or 'user'
+        email = normalize_email(data.get('email', ''))
+        password = str(data.get('password', '')).strip()
+        remember = parse_remember_flag(data.get('remember'))
 
-        # Detection for AJAX
-        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
-                  request.headers.get('Accept') == 'application/json'
+        # Detection for AJAX/JSON clients
+        is_ajax = wants_json_response()
 
         user = find_user_by_email(email)
 
@@ -1627,15 +1659,15 @@ def register():
     error = None
 
     if request.method == "POST":
-        name     = request.form.get('name', '').strip()
-        email    = request.form.get('email', '').strip().lower()
-        password = request.form.get('password', '').strip()
-        confirm  = request.form.get('confirm', '').strip()
+        data = request_payload()
+        name = str(data.get('name', '')).strip()
+        email = str(data.get('email', '')).strip().lower()
+        password = str(data.get('password', '')).strip()
+        confirm = str(data.get('confirm', data.get('confirm_password', ''))).strip()
 
         
-        # Detection for AJAX
-        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
-                  request.headers.get('Accept') == 'application/json'
+        # Detection for AJAX/JSON clients
+        is_ajax = wants_json_response()
 
         if not name or len(name) < 2:
             error = "Name must be at least 2 characters."
@@ -1892,16 +1924,73 @@ def google_login():
 
 @app.route("/logout")
 def logout():
-    token = str(session.get('session_token') or '').strip()
-    uid = session.get('user_id')
-    if token and uid:
-        row = UserSession.query.filter_by(user_id=uid, session_token=token).first()
-        if row:
-            row.is_active = False
-            row.last_seen = datetime.utcnow()
-            db.session.commit()
-    session.clear()
+    end_current_session()
     return redirect(url_for('login'))
+
+
+@app.route("/api/auth/logout", methods=["POST"])
+@csrf.exempt
+def api_logout():
+    end_current_session()
+    return jsonify({"success": True, "message": "Logged out."})
+
+
+@app.route("/api/auth/session", methods=["GET"])
+@csrf.exempt
+def api_auth_session():
+    user = current_user()
+    if not user:
+        return jsonify({
+            "authenticated": False,
+            "user": None,
+            "redirect": url_for("login"),
+        })
+
+    return jsonify({
+        "authenticated": True,
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": normalize_email(user.email),
+            "role": normalize_role(user.role),
+            "is_superadmin": bool(session.get("is_superadmin")),
+            "admin_scope": normalize_admin_scope(session.get("admin_scope") or getattr(user, "admin_scope", "ops")) if normalize_role(user.role) == "admin" else "",
+            "profile_photo": (session.get("user_profile_photo") or "").strip(),
+        },
+    })
+
+
+def _main_page_actions_manifest():
+    # Main public site actions only (no admin/superadmin management endpoints).
+    return [
+        {"key": "auth.login", "method": "POST", "path": "/login", "auth": "public", "body": ["login_type", "email", "password", "remember"]},
+        {"key": "auth.register", "method": "POST", "path": "/register", "auth": "public", "body": ["name", "email", "password", "confirm"]},
+        {"key": "auth.google_login", "method": "POST", "path": "/google-login", "auth": "public", "body": ["credential"]},
+        {"key": "auth.send_otp", "method": "POST", "path": "/forgot-password/send-otp", "auth": "public", "body": ["email"]},
+        {"key": "auth.verify_otp", "method": "POST", "path": "/verify-otp", "auth": "public", "body": ["email", "otp"]},
+        {"key": "auth.reset_password", "method": "POST", "path": "/forgot-password/reset", "auth": "public", "body": ["email", "otp", "new_password"]},
+        {"key": "auth.session", "method": "GET", "path": "/api/auth/session", "auth": "public", "body": []},
+        {"key": "auth.logout", "method": "POST", "path": "/api/auth/logout", "auth": "user", "body": []},
+        {"key": "project.submit_inquiry", "method": "POST", "path": "/api/contact", "auth": "user", "body": ["name", "email", "phone", "service", "deadline", "message"]},
+        {"key": "feedback.submit", "method": "POST", "path": "/feedback/submit", "auth": "user", "body": ["message", "rating"]},
+        {"key": "projects.list", "method": "GET", "path": "/api/projects", "auth": "public", "body": []},
+        {"key": "analytics.page_view", "method": "POST", "path": "/api/traffic/page-view", "auth": "public", "body": ["page", "title", "source"]},
+        {"key": "analytics.scroll", "method": "POST", "path": "/api/traffic/scroll", "auth": "public", "body": ["page", "depth", "source"]},
+    ]
+
+
+@app.route("/api/frontend/actions", methods=["GET"])
+@app.route("/api/frontend/actions/main-page", methods=["GET"])
+@csrf.exempt
+def api_frontend_actions():
+    actions = _main_page_actions_manifest()
+
+    return jsonify({
+        "success": True,
+        "scope": "main-page",
+        "message": "Frontend action map for Unitary X main page",
+        "actions": actions,
+    })
 
 
 # ─── User Dashboard ───────────────────────────────────────────────────────────
