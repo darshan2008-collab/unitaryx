@@ -1306,6 +1306,8 @@ body.ux-mobile-lite *::after {
     font-size: 2.05rem;
     font-weight: 900;
     letter-spacing: 0.12em;
+    white-space: nowrap;
+    line-height: 1;
     background: linear-gradient(to right, #22d3ee, #8b5cf6, #3b82f6, #f59e0b, #22d3ee);
     background-size: 200% auto;
     color: transparent;
@@ -1323,6 +1325,25 @@ body.ux-mobile-lite *::after {
     text-transform: uppercase;
     color: rgba(226, 232, 240, 0.92);
     text-shadow: 0 0 12px rgba(56, 189, 248, 0.18);
+}
+
+.ux-nav-toggle {
+    display: none;
+    width: 44px;
+    height: 44px;
+    margin-left: auto;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(34, 211, 238, 0.25);
+    background: rgba(15, 23, 42, 0.72);
+    color: #e2e8f0;
+    cursor: pointer;
+    flex: 0 0 auto;
+}
+
+.ux-nav-toggle i {
+    font-size: 1rem;
 }
 
 .ux-brand-text-footer {
@@ -1593,6 +1614,16 @@ footer {
     -webkit-text-stroke: 0.55px rgba(248, 250, 252, 0.18);
     opacity: 0.99;
     user-select: none;
+    white-space: nowrap;
+}
+
+.ux-brand-hero-word {
+    display: inline-flex;
+    align-items: flex-end;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 0;
+    white-space: nowrap;
 }
 
 .ux-brand-hero-letter {
@@ -1600,6 +1631,7 @@ footer {
     animation: uxHeroLetterFloat 2.2s ease-in-out infinite;
     animation-delay: calc(var(--i) * 0.08s);
     filter: none;
+    white-space: nowrap;
 }
 
 .ux-brand-hero-x {
@@ -1711,6 +1743,10 @@ footer {
         font-size: clamp(6.2rem, 18vw, 9.2rem);
     }
 
+    .ux-brand-hero-word {
+        flex-wrap: nowrap;
+    }
+
     .ux-hero-secondary {
         margin-top: 84px;
     }
@@ -1724,8 +1760,9 @@ footer {
     }
 
     .ux-brand-hero-title {
-        font-size: clamp(4.8rem, 20vw, 7.1rem);
-        letter-spacing: 0.1em;
+        font-size: clamp(3.6rem, 14vw, 5.4rem);
+        letter-spacing: 0.06em;
+        white-space: nowrap;
     }
 
     .ux-brand-hero-tag {
@@ -2068,8 +2105,9 @@ footer {
     gap: 8px;
     border: 1px solid rgba(148, 163, 184, 0.28);
     background: rgba(15, 23, 42, 0.62);
-    border-radius: 999px;
-    padding: 8px 12px;
+    border-radius: 22px;
+    padding: 10px 14px;
+    min-height: 48px;
 }
 
 .ux-project-search i {
@@ -2109,6 +2147,12 @@ footer {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
+}
+
+#projects .ux-project-card {
+    opacity: 1;
+    filter: none;
+    transform: none;
 }
 
 .ux-project-card {
@@ -3386,6 +3430,10 @@ footer {
         display: none;
     }
 
+    .ux-nav-toggle {
+        display: inline-flex;
+    }
+
     .ux-nav-actions {
         margin-left: auto;
         gap: 6px;
@@ -4349,17 +4397,31 @@ footer {
         flex-wrap: wrap;
         gap: 8px;
         align-items: center;
+        position: relative;
     }
 
     .ux-links {
-        display: flex !important;
+        display: none !important;
         width: 100%;
         order: 3;
         gap: 8px;
-        overflow-x: auto;
+        overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
         padding-bottom: 4px;
         scrollbar-width: none;
+    }
+
+    .ux-nav.is-open .ux-links {
+        display: flex !important;
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        order: 3;
+        padding: 12px;
+        border-radius: 18px;
+        border: 1px solid rgba(34, 211, 238, 0.18);
+        background: rgba(2, 6, 23, 0.92);
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
     }
 
     .ux-links::-webkit-scrollbar {
@@ -4383,10 +4445,14 @@ footer {
 
     .ux-nav-actions {
         width: 100% !important;
-        display: flex;
+        display: none;
         flex-wrap: wrap;
         justify-content: flex-start;
         gap: 8px;
+    }
+
+    .ux-nav.is-open .ux-nav-actions {
+        display: flex;
     }
 
     .ux-nav-actions > * {
@@ -4411,6 +4477,11 @@ footer {
     .ux-nav-cta {
         white-space: normal !important;
     }
+
+    .ux-brand-text {
+        font-size: clamp(1.05rem, 4.6vw, 1.45rem);
+        letter-spacing: 0.1em;
+    }
 }
 
 @media (max-width: 560px) {
@@ -4423,14 +4494,15 @@ footer {
     }
 
     .ux-nav-inner {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+        align-items: center;
     }
 
     .ux-brand {
         justify-content: center;
-        text-align: center;
-        align-items: center;
+        text-align: left;
+        align-items: flex-start;
+        min-width: 0;
     }
 
     .ux-brand-quote {
@@ -4445,6 +4517,18 @@ footer {
     .ux-nav-actions {
         order: 3;
         justify-content: stretch;
+    }
+
+    .ux-brand-text,
+    .ux-brand-hero-title,
+    .ux-brand-hero-word {
+        white-space: nowrap !important;
+        flex-wrap: nowrap !important;
+    }
+
+    .ux-brand-hero-title {
+        font-size: clamp(2.9rem, 13vw, 4.6rem);
+        letter-spacing: 0.05em;
     }
 
     .ux-nav-actions > * {

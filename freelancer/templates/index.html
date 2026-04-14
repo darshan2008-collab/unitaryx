@@ -26,7 +26,7 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='user_premium.css') }}?v=20260406tophero1" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='user_premium.css') }}?v=20260414portfoliofix1" />
     <meta name="csrf-token" content="{{ csrf_token() }}" />
 </head>
 
@@ -168,6 +168,10 @@
                     <span class="ux-brand-quote">We dont compete we lead</span>
                 </a>
 
+                <button type="button" class="ux-nav-toggle" id="ux-nav-toggle" aria-label="Open navigation menu" aria-expanded="false">
+                    <i class="fas fa-bars" aria-hidden="true"></i>
+                </button>
+
                 <ul class="ux-links">
                     <li><a href="#home" class="active">Home</a></li>
                     <li><a href="#projects">Projects</a></li>
@@ -222,15 +226,16 @@
 
             <div class="ux-brand-hero-inner">
                 <h1 class="ux-brand-hero-title" aria-label="UNITARY X">
-                    <span class="ux-brand-hero-letter" style="--i:0;">U</span>
-                    <span class="ux-brand-hero-letter" style="--i:1;">N</span>
-                    <span class="ux-brand-hero-letter" style="--i:2;">I</span>
-                    <span class="ux-brand-hero-letter" style="--i:3;">T</span>
-                    <span class="ux-brand-hero-letter" style="--i:4;">A</span>
-                    <span class="ux-brand-hero-letter" style="--i:5;">R</span>
-                    <span class="ux-brand-hero-letter" style="--i:6;">Y</span>
-                    <br style="line-height: 0.5;">
-                    <span class="ux-brand-hero-letter ux-brand-hero-x" style="--i:7;">X</span>
+                    <span class="ux-brand-hero-word" aria-hidden="true">
+                        <span class="ux-brand-hero-letter" style="--i:0;">U</span>
+                        <span class="ux-brand-hero-letter" style="--i:1;">N</span>
+                        <span class="ux-brand-hero-letter" style="--i:2;">I</span>
+                        <span class="ux-brand-hero-letter" style="--i:3;">T</span>
+                        <span class="ux-brand-hero-letter" style="--i:4;">A</span>
+                        <span class="ux-brand-hero-letter" style="--i:5;">R</span>
+                        <span class="ux-brand-hero-letter" style="--i:6;">Y</span>
+                        <span class="ux-brand-hero-letter ux-brand-hero-x" style="--i:7;">X</span>
+                    </span>
                 </h1>
                 <p class="ux-brand-hero-tag">We dont compete we lead</p>
                 <div class="ux-brand-hero-actions">
@@ -1230,9 +1235,41 @@
                 });
             }
 
+            function initMobileNav() {
+                const nav = document.getElementById('ux-nav');
+                const toggle = document.getElementById('ux-nav-toggle');
+                if (!nav || !toggle) return;
+
+                const links = nav.querySelectorAll('.ux-links a, .ux-nav-actions a');
+                const closeNav = () => {
+                    nav.classList.remove('is-open');
+                    toggle.setAttribute('aria-expanded', 'false');
+                };
+
+                toggle.addEventListener('click', () => {
+                    const isOpen = nav.classList.toggle('is-open');
+                    toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                });
+
+                links.forEach((link) => {
+                    link.addEventListener('click', () => {
+                        if (window.matchMedia('(max-width: 1024px)').matches) {
+                            closeNav();
+                        }
+                    });
+                });
+
+                window.addEventListener('resize', () => {
+                    if (!window.matchMedia('(max-width: 1024px)').matches) {
+                        closeNav();
+                    }
+                });
+            }
+
             applyAbTests();
             initPublicFeedbackRating();
             initPublicFeedbackSubmit();
+            initMobileNav();
         })();
     </script>
     <script src="{{ url_for('static', filename='user_premium.js') }}?v=20260327textfix1"></script>

@@ -53,7 +53,7 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_USE_TLS: ${SMTP_USE_TLS:-True}
-      GUNICORN_CMD_ARGS: --bind 0.0.0.0:${APP_PORT:-10184} --workers ${GUNICORN_WORKERS:-2} --threads ${GUNICORN_THREADS:-4} --timeout ${GUNICORN_TIMEOUT:-120} --preload
+      GUNICORN_CMD_ARGS: --bind 0.0.0.0:${APP_PORT:-10184} --workers ${GUNICORN_WORKERS:-2} --threads ${GUNICORN_THREADS:-4} --timeout ${GUNICORN_TIMEOUT:-120}
     ports:
       - "${APP_PORT:-10184}:${APP_PORT:-10184}"
     healthcheck:

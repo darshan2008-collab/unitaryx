@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#0052cc">
     <link rel="manifest" href="{{ url_for('static', filename='admin_manifest.webmanifest') }}">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/logo.png') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}?v=20260406mobilefix1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}?v=20260414adminfix3">
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
         rel="stylesheet">
@@ -2183,17 +2183,21 @@
 
             tabContents.forEach((content) => {
                 content.classList.remove('active');
-                content.style.display = 'none';
-                content.style.height = '0';
-                content.style.overflow = 'hidden';
-                content.style.opacity = '0';
-                if (content.id === `tab-${finalTab}`) {
-                    content.classList.add('active');
-                    content.style.display = 'block';
-                    content.style.height = 'auto';
-                    content.style.overflow = 'visible';
-                    content.style.opacity = '1';
-                }
+                content.style.removeProperty('display');
+                content.style.removeProperty('height');
+                content.style.removeProperty('overflow');
+                content.style.removeProperty('opacity');
+                content.style.removeProperty('visibility');
+            });
+
+            const activeContent = contentByTab[finalTab];
+            if (activeContent) {
+                activeContent.classList.add('active');
+                activeContent.style.setProperty('display', 'block', 'important');
+                activeContent.style.setProperty('height', 'auto', 'important');
+                activeContent.style.setProperty('overflow', 'visible', 'important');
+                activeContent.style.setProperty('opacity', '1', 'important');
+                activeContent.style.setProperty('visibility', 'visible', 'important');
             });
 
             const titles = {

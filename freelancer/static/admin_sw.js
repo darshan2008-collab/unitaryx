@@ -1,6 +1,5 @@
-const CACHE_NAME = 'unitaryx-admin-pwa-v1';
+const CACHE_NAME = 'unitaryx-admin-pwa-v2';
 const CORE_ASSETS = [
-  '/admin',
   '/static/admin.css',
   '/static/admin_manifest.webmanifest',
   '/static/img/logo.png'
@@ -36,26 +35,23 @@ self.addEventListener('fetch', (event) => {
       fetch(req)
         .then((res) => {
           const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put('/admin', copy));
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
           return res;
         })
-        .catch(() => caches.match('/admin'))
+        .catch(() => caches.match(req).then((cached) => cached || caches.match('/admin')))
     );
     return;
   }
 
   if (url.pathname.startsWith('/static/')) {
     event.respondWith(
-      caches.match(req).then((cached) => {
-        const networkFetch = fetch(req)
-          .then((res) => {
-            const copy = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-            return res;
-          })
-          .catch(() => cached);
-        return cached || networkFetch;
-      })
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          return res;
+        })
+        .catch(() => caches.match(req))
     );
   }
 });

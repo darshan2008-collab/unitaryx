@@ -2245,8 +2245,8 @@ body::after {
 .table-card,
 .super-kpi,
 .kpi-chip {
-    opacity: 0;
-    transform: translateX(18px);
+    opacity: 1;
+    transform: none;
     transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.19, 1, 0.22, 1);
     will-change: transform, opacity;
 }
@@ -2266,6 +2266,17 @@ body::after {
 
 .admin-main {
     scroll-behavior: smooth;
+}
+
+/* Final fail-safe: active tab content must stay visible regardless of animation classes. */
+.admin-tab-content.active .adm-stat,
+.admin-tab-content.active .dash-card,
+.admin-tab-content.active .table-card,
+.admin-tab-content.active .super-kpi,
+.admin-tab-content.active .kpi-chip {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
 }
 
 .table-card,
