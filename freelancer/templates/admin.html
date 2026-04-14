@@ -782,7 +782,12 @@
 
                 {% if is_superadmin %}
                 <section class="dash-card" style="margin-bottom: 18px;">
-                    <h3 class="card-title"><i class="fas fa-users" style="color:var(--primary); margin-right:8px;"></i>Live User Visibility (Superadmin)</h3>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                        <h3 class="card-title" style="margin:0;"><i class="fas fa-users" style="color:var(--primary); margin-right:8px;"></i>Live User Visibility (Superadmin)</h3>
+                        <button id="superadmin-live-refresh-btn" type="button" style="padding:8px 12px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(0,82,204,0.08); color:var(--text); font-weight:700; cursor:pointer;">
+                            <i class="fas fa-rotate-right" style="margin-right:6px;"></i>Refresh Now
+                        </button>
+                    </div>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-top:10px;">
                         <div style="padding:10px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(16,185,129,0.07);">
                             <div style="font-size:0.8rem; color:var(--text-dim);">Total Users In Database</div>
@@ -2396,6 +2401,14 @@
             setInterval(refreshLiveUsersPanel, 3000);
             refreshTrafficAnalytics();
             refreshLiveUsersPanel();
+
+            const superadminRefreshBtn = document.getElementById('superadmin-live-refresh-btn');
+            if (superadminRefreshBtn) {
+                superadminRefreshBtn.addEventListener('click', function () {
+                    refreshTrafficAnalytics();
+                    refreshLiveUsersPanel();
+                });
+            }
 
             document.addEventListener('visibilitychange', function () {
                 if (document.visibilityState === 'visible') {
