@@ -16,6 +16,6 @@ COPY . /app
 # Ensure writable app data directory exists for runtime artifacts.
 RUN mkdir -p /app/data
 
-EXPOSE 10184
+EXPOSE 10003
 
 CMD ["gunicorn", "app:app"]

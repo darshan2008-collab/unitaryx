@@ -42,22 +42,22 @@ services:
       SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-harikavi1301@gmail.com}
       SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-ChangeMeNow123!}
       SUPERADMIN_NAME: ${SUPERADMIN_NAME:-Super Admin}
-      PORT: ${APP_PORT:-10184}
+      PORT: ${APP_PORT:-10003}
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://${POSTGRES_USER:-unitaryx}:${POSTGRES_PASSWORD:-ChangeThisDbPassword!}@${DB_HOST:-db}:${DB_PORT:-5432}/${POSTGRES_DB:-unitaryx}}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_ALLOWED_ORIGINS: ${GOOGLE_ALLOWED_ORIGINS:-https://unitaryx.org,http://localhost:10184,http://127.0.0.1:10184}
+      GOOGLE_ALLOWED_ORIGINS: ${GOOGLE_ALLOWED_ORIGINS:-https://unitaryx.org,http://localhost:10003,http://127.0.0.1:10003}
       SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_USE_TLS: ${SMTP_USE_TLS:-True}
-      GUNICORN_CMD_ARGS: --bind 0.0.0.0:${APP_PORT:-10184} --workers ${GUNICORN_WORKERS:-2} --threads ${GUNICORN_THREADS:-4} --timeout ${GUNICORN_TIMEOUT:-120}
+      GUNICORN_CMD_ARGS: --bind 0.0.0.0:${APP_PORT:-10003} --workers ${GUNICORN_WORKERS:-2} --threads ${GUNICORN_THREADS:-4} --timeout ${GUNICORN_TIMEOUT:-120}
     ports:
-      - "${APP_PORT:-10184}:${APP_PORT:-10184}"
+      - "${APP_PORT:-10003}:${APP_PORT:-10003}"
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import os,sys,urllib.request; p=os.getenv('APP_PORT', os.getenv('PORT','10184')); urllib.request.urlopen(f'http://127.0.0.1:{p}/login', timeout=5); sys.exit(0)\""]
+      test: ["CMD-SHELL", "python -c \"import os,sys,urllib.request; p=os.getenv('APP_PORT', os.getenv('PORT','10003')); urllib.request.urlopen(f'http://127.0.0.1:{p}/login', timeout=5); sys.exit(0)\""]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -71,7 +71,7 @@ services:
       - "traefik.http.routers.unitaryx.rule=Host(`${TRAEFIK_HOST:-unitaryx.example.com}`)"
       - "traefik.http.routers.unitaryx.entrypoints=websecure"
       - "traefik.http.routers.unitaryx.tls=true"
-      - "traefik.http.services.unitaryx.loadbalancer.server.port=${APP_PORT:-10184}"
+      - "traefik.http.services.unitaryx.loadbalancer.server.port=${APP_PORT:-10003}"
     networks:
       - unitaryx_net
 

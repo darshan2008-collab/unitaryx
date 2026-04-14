@@ -53,8 +53,8 @@ else:
 
 DEFAULT_GOOGLE_ALLOWED_ORIGINS = {
     "https://unitaryx.org",
-    "http://localhost:10184",
-    "http://127.0.0.1:10184",
+    "http://localhost:10003",
+    "http://127.0.0.1:10003",
     "http://unitaryx.org",
     
 }
@@ -4095,15 +4095,15 @@ if __name__ == "__main__":
     with app.app_context():
         print("\n" + "="*58)
         print("  [*]  Unitary X Freelancer Website")
-        print("  [*]  Main Site : http://127.0.0.1:10184")
-        print("  [*]  Login     : http://127.0.0.1:10184/login")
-        print("  [*]  Admin     : http://127.0.0.1:10184/admin")
+        print("  [*]  Main Site : http://127.0.0.1:10003")
+        print("  [*]  Login     : http://127.0.0.1:10003/login")
+        print("  [*]  Admin     : http://127.0.0.1:10003/admin")
         print("  [*]  Admin creds: admin@unitaryx.com / Admin@123")
         print("  [*]  Superadmin: harikavi1301@gmail.com / hari@123")
         print("="*58 + "\n")
     app.run(
         host='0.0.0.0',
         debug=os.getenv("DEBUG", "True") == "True",
-        port=int(os.getenv("PORT", 10184))
+        port=int(os.getenv("PORT", 10003))
     )
 
