@@ -2288,6 +2288,54 @@ def admin_traffic_summary():
     })
 
 
+@app.route("/admin/api/live-users")
+@admin_required
+@admin_capability_required("analytics_view")
+def admin_live_users():
+    total_users = User.query.count()
+
+    login_rows = db.session.query(
+        User.id.label('user_id'),
+        User.name.label('name'),
+        User.email.label('email'),
+        User.role.label('role'),
+        User.admin_scope.label('admin_scope'),
+        db.func.max(UserSession.last_seen).label('last_seen'),
+        db.func.count(UserSession.id).label('session_count'),
+    ).join(
+        UserSession,
+        UserSession.user_id == User.id,
+    ).filter(
+        UserSession.is_active.is_(True),
+    ).group_by(
+        User.id, User.name, User.email, User.role, User.admin_scope,
+    ).order_by(
+        db.func.max(UserSession.last_seen).desc(),
+    ).all()
+
+    payload = {
+        "total_users": int(total_users or 0),
+        "active_session_users": len(login_rows),
+    }
+
+    admin_user = current_user()
+    if is_super_admin(admin_user):
+        payload["logged_in_users"] = [
+            {
+                "user_id": int(row.user_id),
+                "name": row.name or "Unknown",
+                "email": row.email or "",
+                "role": row.role or "user",
+                "admin_scope": row.admin_scope or "",
+                "session_count": int(row.session_count or 0),
+                "last_seen": row.last_seen.strftime('%Y-%m-%d %H:%M:%S') if row.last_seen else "-",
+            }
+            for row in login_rows
+        ]
+
+    return jsonify(payload)
+
+
 @app.route("/admin/api/traffic-daily-pages")
 @admin_required
 @admin_capability_required("analytics_view")

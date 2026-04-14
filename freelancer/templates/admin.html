@@ -786,11 +786,11 @@
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-top:10px;">
                         <div style="padding:10px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(16,185,129,0.07);">
                             <div style="font-size:0.8rem; color:var(--text-dim);">Total Users In Database</div>
-                            <div style="font-weight:800; font-size:1.25rem; color:var(--text);">{{ superadmin_total_users or 0 }}</div>
+                            <div id="superadmin-total-users" style="font-weight:800; font-size:1.25rem; color:var(--text);">{{ superadmin_total_users or 0 }}</div>
                         </div>
                         <div style="padding:10px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(0,82,204,0.07);">
                             <div style="font-size:0.8rem; color:var(--text-dim);">Users Logged In (Active Sessions)</div>
-                            <div style="font-weight:800; font-size:1.25rem; color:var(--text);">{{ (superadmin_logged_in_users|length) if superadmin_logged_in_users else 0 }}</div>
+                            <div id="superadmin-logged-in-count" style="font-weight:800; font-size:1.25rem; color:var(--text);">{{ (superadmin_logged_in_users|length) if superadmin_logged_in_users else 0 }}</div>
                         </div>
                     </div>
 
@@ -807,7 +807,7 @@
                                     <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Last Seen (UTC)</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="superadmin-live-users-body">
                                 {% for row in superadmin_logged_in_users %}
                                 <tr>
                                     <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.user_id }}</td>
@@ -2313,6 +2313,33 @@
                 }).join('');
             }
 
+            function renderSuperadminLiveUsers(rows) {
+                const tbody = document.getElementById('superadmin-live-users-body');
+                if (!tbody) return;
+
+                if (!Array.isArray(rows) || rows.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="padding:12px; text-align:center; color:var(--text-dim);">No active logged-in users right now.</td></tr>';
+                    return;
+                }
+
+                const esc = (value) => String(value || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+
+                tbody.innerHTML = rows.map((row) => {
+                    return '<tr>'
+                        + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">' + esc(row.user_id) + '</td>'
+                        + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">' + esc(row.name) + '</td>'
+                        + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">' + esc(row.email) + '</td>'
+                        + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">' + esc(row.role) + '</td>'
+                        + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">' + esc(row.admin_scope || '-') + '</td>'
+                        + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); text-align:right;">' + esc(row.session_count) + '</td>'
+                        + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">' + esc(row.last_seen || '-') + '</td>'
+                        + '</tr>';
+                }).join('');
+            }
+
             async function refreshTrafficAnalytics() {
                 try {
                     const res = await fetch('/admin/api/traffic-summary', { cache: 'no-store' });
@@ -2347,8 +2374,35 @@
                 }
             }
 
-            setInterval(refreshTrafficAnalytics, 15000);
+            async function refreshLiveUsersPanel() {
+                try {
+                    const res = await fetch('/admin/api/live-users', { cache: 'no-store' });
+                    if (!res.ok) return;
+                    const data = await res.json();
+
+                    const totalUsersEl = document.getElementById('superadmin-total-users');
+                    if (totalUsersEl) totalUsersEl.textContent = String(data.total_users || 0);
+
+                    const activeSessionsEl = document.getElementById('superadmin-logged-in-count');
+                    if (activeSessionsEl) activeSessionsEl.textContent = String(data.active_session_users || 0);
+
+                    renderSuperadminLiveUsers(data.logged_in_users || []);
+                } catch (err) {
+                    // Keep dashboard stable even if live-users endpoint is temporarily unavailable.
+                }
+            }
+
+            setInterval(refreshTrafficAnalytics, 3000);
+            setInterval(refreshLiveUsersPanel, 3000);
             refreshTrafficAnalytics();
+            refreshLiveUsersPanel();
+
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') {
+                    refreshTrafficAnalytics();
+                    refreshLiveUsersPanel();
+                }
+            });
         });
 
     </script>
