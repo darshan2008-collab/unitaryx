@@ -140,13 +140,13 @@
                 try {
                     const opts = {hour: '2-digit', minute: '2-digit', hour12: false};
                     const elNY = document.getElementById('clock-ny');
-                    if(elNY) elNY.innerText = new Date().toLocaleTimeString("en-US", {...opts, timeZone: "America/New_York"});
+                    if(elNY) elNY.innerText = new Date().toLocaleTimeString("en-US", {...opts, timeZone: "Asia/Kolkata"});
                     const elLDN = document.getElementById('clock-ldn');
-                    if(elLDN) elLDN.innerText = new Date().toLocaleTimeString("en-US", {...opts, timeZone: "Europe/London"});
+                    if(elLDN) elLDN.innerText = new Date().toLocaleTimeString("en-US", {...opts, timeZone: "Asia/Kolkata"});
                     const elTKY = document.getElementById('clock-tky');
-                    if(elTKY) elTKY.innerText = new Date().toLocaleTimeString("en-US", {...opts, timeZone: "Asia/Tokyo"});
+                    if(elTKY) elTKY.innerText = new Date().toLocaleTimeString("en-US", {...opts, timeZone: "Asia/Kolkata"});
                     const elSYD = document.getElementById('clock-syd');
-                    if(elSYD) elSYD.innerText = new Date().toLocaleTimeString("en-US", {...opts, timeZone: "Australia/Sydney"});
+                    if(elSYD) elSYD.innerText = new Date().toLocaleTimeString("en-US", {...opts, timeZone: "Asia/Kolkata"});
                 } catch(e){}
 
                 const dbBar = document.getElementById('db-load-bar');

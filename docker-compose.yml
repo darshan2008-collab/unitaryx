@@ -9,7 +9,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-unitaryx}
       POSTGRES_USER: ${POSTGRES_USER:-unitaryx}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeThisDbPassword!}
-      TZ: ${TZ:-UTC}
+      TZ: ${TZ:-Asia/Kolkata}
     ports:
       - "${POSTGRES_PORT:-5433}:5432"
     healthcheck:
@@ -34,7 +34,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      TZ: ${TZ:-UTC}
+      TZ: ${TZ:-Asia/Kolkata}
       DEBUG: ${DEBUG:-False}
       SECRET_KEY: ${SECRET_KEY:-change_this_to_a_long_random_secret}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@unitaryx.com}
