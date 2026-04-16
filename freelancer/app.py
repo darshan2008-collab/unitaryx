@@ -2288,6 +2288,69 @@ def admin_traffic_summary():
     })
 
 
+def _build_live_website_users(window_minutes=5, limit=50):
+    now_utc = datetime.utcnow()
+    cutoff = now_utc - timedelta(minutes=window_minutes)
+
+    active_count = db.session.query(
+        db.func.count(db.distinct(SiteTrafficEvent.visitor_id)),
+    ).filter(
+        SiteTrafficEvent.created_at >= cutoff,
+    ).scalar() or 0
+
+    active_rows = db.session.query(
+        SiteTrafficEvent.visitor_id.label("visitor_id"),
+        db.func.max(SiteTrafficEvent.created_at).label("last_seen"),
+        db.func.count(SiteTrafficEvent.id).label("event_count"),
+    ).filter(
+        SiteTrafficEvent.created_at >= cutoff,
+    ).group_by(
+        SiteTrafficEvent.visitor_id,
+    ).order_by(
+        db.func.max(SiteTrafficEvent.created_at).desc(),
+    ).limit(limit).all()
+
+    visitor_ids = [row.visitor_id for row in active_rows]
+    latest_events = {}
+    if visitor_ids:
+        recent_events = SiteTrafficEvent.query.filter(
+            SiteTrafficEvent.visitor_id.in_(visitor_ids),
+            SiteTrafficEvent.created_at >= cutoff,
+        ).order_by(SiteTrafficEvent.created_at.desc()).all()
+
+        for event in recent_events:
+            latest_events.setdefault(event.visitor_id, event)
+
+    user_ids = {event.user_id for event in latest_events.values() if event.user_id}
+    users_by_id = {
+        user.id: user
+        for user in User.query.filter(User.id.in_(user_ids)).all()
+    } if user_ids else {}
+
+    live_users = []
+    for row in active_rows:
+        event = latest_events.get(row.visitor_id)
+        if not event:
+            continue
+
+        user = users_by_id.get(event.user_id)
+        display_name = (user.name or "").strip() if user else ""
+        if not display_name:
+            display_name = (event.user_email or "Anonymous Visitor").strip() or "Anonymous Visitor"
+
+        live_users.append({
+            "visitor_id": row.visitor_id,
+            "name": display_name,
+            "email": (user.email if user else event.user_email or "") or "-",
+            "page_path": event.page_path or "/",
+            "event_count": int(row.event_count or 0),
+            "last_seen": row.last_seen.strftime('%Y-%m-%d %H:%M:%S') if row.last_seen else "-",
+            "state": "authenticated" if event.user_id else "guest",
+        })
+
+    return live_users, int(active_count)
+
+
 @app.route("/admin/api/live-users")
 @admin_required
 @admin_capability_required("analytics_view")
@@ -2334,6 +2397,19 @@ def admin_live_users():
         ]
 
     return jsonify(payload)
+
+
+@app.route("/admin/api/live-website-users")
+@admin_required
+@admin_capability_required("analytics_view")
+def admin_live_website_users():
+    live_users, active_count = _build_live_website_users()
+
+    return jsonify({
+        "total_users": int(User.query.count() or 0),
+        "active_website_users": active_count,
+        "live_users": live_users,
+    })
 
 
 @app.route("/admin/api/traffic-daily-pages")
@@ -2555,7 +2631,9 @@ def admin_panel():
     finance_slots = get_finance_admin_slots()
     feedback_posts = AdminFeedback.query.order_by(AdminFeedback.created_at.desc()).limit(200).all()
     superadmin_logged_in_users = []
+    superadmin_live_website_users = []
     superadmin_total_users = int(registered_total)
+    superadmin_live_website_count = 0
 
     if is_super_admin(admin_user):
         now_utc = datetime.utcnow()
@@ -2677,6 +2755,8 @@ def admin_panel():
             }
             for row in login_rows
         ]
+
+        superadmin_live_website_users, superadmin_live_website_count = _build_live_website_users()
     elif has_admin_capability('finance_ops', admin_user):
         finance_entries_my = FinanceEntry.query.filter(
             db.func.lower(FinanceEntry.assigned_admin_email) == admin_email
@@ -2718,6 +2798,8 @@ def admin_panel():
                            feedback_posts=feedback_posts,
                            superadmin_logged_in_users=superadmin_logged_in_users,
                            superadmin_total_users=superadmin_total_users,
+                           superadmin_live_website_users=superadmin_live_website_users,
+                           superadmin_live_website_count=superadmin_live_website_count,
                            superadmin_email=SUPERADMIN_EMAIL)
 
 

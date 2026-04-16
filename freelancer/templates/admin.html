@@ -783,19 +783,19 @@
                 {% if is_superadmin %}
                 <section class="dash-card" style="margin-bottom: 18px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-                        <h3 class="card-title" style="margin:0;"><i class="fas fa-users" style="color:var(--primary); margin-right:8px;"></i>Live User Visibility (Superadmin)</h3>
+                        <h3 class="card-title" style="margin:0;"><i class="fas fa-users" style="color:var(--primary); margin-right:8px;"></i>Live Users On Website</h3>
                         <button id="superadmin-live-refresh-btn" type="button" style="padding:8px 12px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(0,82,204,0.08); color:var(--text); font-weight:700; cursor:pointer;">
                             <i class="fas fa-rotate-right" style="margin-right:6px;"></i>Refresh Now
                         </button>
                     </div>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-top:10px;">
                         <div style="padding:10px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(16,185,129,0.07);">
-                            <div style="font-size:0.8rem; color:var(--text-dim);">Total Users In Database</div>
+                            <div style="font-size:0.8rem; color:var(--text-dim);">Total Registered Users</div>
                             <div id="superadmin-total-users" style="font-weight:800; font-size:1.25rem; color:var(--text);">{{ superadmin_total_users or 0 }}</div>
                         </div>
                         <div style="padding:10px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(0,82,204,0.07);">
-                            <div style="font-size:0.8rem; color:var(--text-dim);">Users Logged In (Active Sessions)</div>
-                            <div id="superadmin-logged-in-count" style="font-weight:800; font-size:1.25rem; color:var(--text);">{{ (superadmin_logged_in_users|length) if superadmin_logged_in_users else 0 }}</div>
+                            <div style="font-size:0.8rem; color:var(--text-dim);">Active Users On Website</div>
+                            <div id="superadmin-live-website-count" style="font-weight:800; font-size:1.25rem; color:var(--text);">{{ superadmin_live_website_count or 0 }}</div>
                         </div>
                     </div>
 
@@ -803,29 +803,29 @@
                         <table style="width:100%; border-collapse:collapse; min-width:860px;">
                             <thead>
                                 <tr>
-                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">User ID</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Visitor ID</th>
                                     <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Name</th>
                                     <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Email</th>
-                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Role</th>
-                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Scope</th>
-                                    <th style="text-align:right; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Sessions</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Page</th>
+                                    <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">State</th>
+                                    <th style="text-align:right; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Events</th>
                                     <th style="text-align:left; padding:10px; border-bottom:1px solid var(--glass-border); color:var(--text-dim);">Last Seen (UTC)</th>
                                 </tr>
                             </thead>
                             <tbody id="superadmin-live-users-body">
-                                {% for row in superadmin_logged_in_users %}
+                                {% for row in superadmin_live_website_users %}
                                 <tr>
-                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.user_id }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.visitor_id }}</td>
                                     <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.name }}</td>
                                     <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.email }}</td>
-                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.role }}</td>
-                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.admin_scope or '-' }}</td>
-                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); text-align:right;">{{ row.session_count }}</td>
-                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.last_seen.strftime('%Y-%m-%d %H:%M:%S') if row.last_seen else '-' }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.page_path }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.state }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); text-align:right;">{{ row.event_count }}</td>
+                                    <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.last_seen }}</td>
                                 </tr>
                                 {% else %}
                                 <tr>
-                                    <td colspan="7" style="padding:12px; text-align:center; color:var(--text-dim);">No active logged-in users right now.</td>
+                                    <td colspan="7" style="padding:12px; text-align:center; color:var(--text-dim);">No active website users right now.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -2323,7 +2323,7 @@
                 if (!tbody) return;
 
                 if (!Array.isArray(rows) || rows.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="padding:12px; text-align:center; color:var(--text-dim);">No active logged-in users right now.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" style="padding:12px; text-align:center; color:var(--text-dim);">No active website users right now.</td></tr>';
                     return;
                 }
 
@@ -2334,12 +2334,12 @@
 
                 tbody.innerHTML = rows.map((row) => {
                     return '<tr>'
-                        + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">' + esc(row.user_id) + '</td>'
+                        + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">' + esc(row.visitor_id) + '</td>'
                         + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">' + esc(row.name) + '</td>'
                         + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">' + esc(row.email) + '</td>'
-                        + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">' + esc(row.role) + '</td>'
-                        + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">' + esc(row.admin_scope || '-') + '</td>'
-                        + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); text-align:right;">' + esc(row.session_count) + '</td>'
+                        + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">' + esc(row.page_path) + '</td>'
+                        + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">' + esc(row.state || '-') + '</td>'
+                        + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05); text-align:right;">' + esc(row.event_count) + '</td>'
                         + '<td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">' + esc(row.last_seen || '-') + '</td>'
                         + '</tr>';
                 }).join('');
@@ -2381,24 +2381,24 @@
 
             async function refreshLiveUsersPanel() {
                 try {
-                    const res = await fetch('/admin/api/live-users', { cache: 'no-store' });
+                    const res = await fetch('/admin/api/live-website-users', { cache: 'no-store' });
                     if (!res.ok) return;
                     const data = await res.json();
 
                     const totalUsersEl = document.getElementById('superadmin-total-users');
                     if (totalUsersEl) totalUsersEl.textContent = String(data.total_users || 0);
 
-                    const activeSessionsEl = document.getElementById('superadmin-logged-in-count');
-                    if (activeSessionsEl) activeSessionsEl.textContent = String(data.active_session_users || 0);
+                    const activeUsersEl = document.getElementById('superadmin-live-website-count');
+                    if (activeUsersEl) activeUsersEl.textContent = String(data.active_website_users || 0);
 
-                    renderSuperadminLiveUsers(data.logged_in_users || []);
+                    renderSuperadminLiveUsers(data.live_users || []);
                 } catch (err) {
-                    // Keep dashboard stable even if live-users endpoint is temporarily unavailable.
+                    // Keep dashboard stable even if the live website endpoint is temporarily unavailable.
                 }
             }
 
             setInterval(refreshTrafficAnalytics, 3000);
-            setInterval(refreshLiveUsersPanel, 3000);
+            setInterval(refreshLiveUsersPanel, 1000);
             refreshTrafficAnalytics();
             refreshLiveUsersPanel();
 
