@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 
 # Keep container/host env vars authoritative while still supporting local .env defaults.
 APP_DIR = os.path.abspath(os.path.dirname(__file__))
+PROJECT_ROOT = os.path.dirname(APP_DIR)
 BACKUP_DIR = os.path.join(APP_DIR, "instance", "db_backups")
 load_dotenv(os.path.join(APP_DIR, ".env"), override=False)
 # Also support launching from workspace root where SMTP/OAuth vars are often stored.
@@ -33,8 +34,8 @@ load_dotenv(os.path.join(os.path.dirname(APP_DIR), ".env"), override=False)
 
 app = Flask(
     __name__,
-    template_folder=os.path.join(APP_DIR, "templates"),
-    static_folder=os.path.join(APP_DIR, "static"),
+    template_folder=os.path.join(PROJECT_ROOT, "frontend", "templates"),
+    static_folder=os.path.join(PROJECT_ROOT, "frontend", "static"),
 )
 # Respect original scheme/host when running behind reverse proxies (NPM/Traefik).
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1, x_port=1)

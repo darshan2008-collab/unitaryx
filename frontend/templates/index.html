@@ -55,53 +55,73 @@
         <!-- LAYER 2: SVG energy ring system -->
         <svg class="ux-ldr-svg-rings" viewBox="0 0 800 800" aria-hidden="true">
             <defs>
-                <filter id="ldr-blur-sm"><feGaussianBlur stdDeviation="3"/></filter>
-                <filter id="ldr-blur-lg"><feGaussianBlur stdDeviation="8"/></filter>
+                <filter id="ldr-blur-sm">
+                    <feGaussianBlur stdDeviation="3" />
+                </filter>
+                <filter id="ldr-blur-lg">
+                    <feGaussianBlur stdDeviation="8" />
+                </filter>
                 <linearGradient id="ldr-g1" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#00f2ff" stop-opacity="0"/>
-                    <stop offset="50%" stop-color="#00f2ff" stop-opacity="1"/>
-                    <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
+                    <stop offset="0%" stop-color="#00f2ff" stop-opacity="0" />
+                    <stop offset="50%" stop-color="#00f2ff" stop-opacity="1" />
+                    <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0" />
                 </linearGradient>
                 <linearGradient id="ldr-g2" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0"/>
-                    <stop offset="50%" stop-color="#ec4899" stop-opacity="1"/>
-                    <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+                    <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0" />
+                    <stop offset="50%" stop-color="#ec4899" stop-opacity="1" />
+                    <stop offset="100%" stop-color="#f59e0b" stop-opacity="0" />
                 </linearGradient>
             </defs>
             <!-- background rings -->
-            <circle cx="400" cy="400" r="370" fill="none" stroke="rgba(0,242,255,0.06)" stroke-width="1"/>
-            <circle cx="400" cy="400" r="330" fill="none" stroke="rgba(139,92,246,0.05)" stroke-width="0.5"/>
-            <circle cx="400" cy="400" r="290" fill="none" stroke="rgba(0,242,255,0.04)" stroke-width="0.5" stroke-dasharray="4 8"/>
+            <circle cx="400" cy="400" r="370" fill="none" stroke="rgba(0,242,255,0.06)" stroke-width="1" />
+            <circle cx="400" cy="400" r="330" fill="none" stroke="rgba(139,92,246,0.05)" stroke-width="0.5" />
+            <circle cx="400" cy="400" r="290" fill="none" stroke="rgba(0,242,255,0.04)" stroke-width="0.5"
+                stroke-dasharray="4 8" />
             <!-- spinning glow arcs -->
             <g class="ux-ldr-arc-grp a1">
-                <path d="M 400 30 A 370 370 0 0 1 770 400" fill="none" stroke="url(#ldr-g1)" stroke-width="2" filter="url(#ldr-blur-sm)"/>
-                <path d="M 400 30 A 370 370 0 0 1 770 400" fill="none" stroke="rgba(0,242,255,0.8)" stroke-width="1"/>
+                <path d="M 400 30 A 370 370 0 0 1 770 400" fill="none" stroke="url(#ldr-g1)" stroke-width="2"
+                    filter="url(#ldr-blur-sm)" />
+                <path d="M 400 30 A 370 370 0 0 1 770 400" fill="none" stroke="rgba(0,242,255,0.8)" stroke-width="1" />
             </g>
             <g class="ux-ldr-arc-grp a2">
-                <path d="M 770 400 A 370 370 0 0 1 400 770" fill="none" stroke="url(#ldr-g2)" stroke-width="2" filter="url(#ldr-blur-sm)"/>
-                <path d="M 770 400 A 370 370 0 0 1 400 770" fill="none" stroke="rgba(236,72,153,0.7)" stroke-width="1"/>
+                <path d="M 770 400 A 370 370 0 0 1 400 770" fill="none" stroke="url(#ldr-g2)" stroke-width="2"
+                    filter="url(#ldr-blur-sm)" />
+                <path d="M 770 400 A 370 370 0 0 1 400 770" fill="none" stroke="rgba(236,72,153,0.7)"
+                    stroke-width="1" />
             </g>
             <g class="ux-ldr-arc-grp a3">
-                <path d="M 30 400 A 370 370 0 0 1 400 30" fill="none" stroke="rgba(139,92,246,0.6)" stroke-width="1.5" filter="url(#ldr-blur-sm)"/>
+                <path d="M 30 400 A 370 370 0 0 1 400 30" fill="none" stroke="rgba(139,92,246,0.6)" stroke-width="1.5"
+                    filter="url(#ldr-blur-sm)" />
             </g>
             <!-- inner structural hex -->
-            <polygon points="400,130 620,265 620,535 400,670 180,535 180,265"
-                fill="none" stroke="rgba(0,242,255,0.12)" stroke-width="1" stroke-dasharray="6 10"
-                class="ux-ldr-hex-frame"/>
+            <polygon points="400,130 620,265 620,535 400,670 180,535 180,265" fill="none" stroke="rgba(0,242,255,0.12)"
+                stroke-width="1" stroke-dasharray="6 10" class="ux-ldr-hex-frame" />
             <!-- spinning inner triangles -->
-            <polygon points="400,180 600,480 200,480" fill="none" stroke="rgba(0,242,255,0.08)" stroke-width="0.8" class="ux-ldr-tri t1"/>
-            <polygon points="400,620 200,320 600,320" fill="none" stroke="rgba(139,92,246,0.1)" stroke-width="0.8" class="ux-ldr-tri t2"/>
+            <polygon points="400,180 600,480 200,480" fill="none" stroke="rgba(0,242,255,0.08)" stroke-width="0.8"
+                class="ux-ldr-tri t1" />
+            <polygon points="400,620 200,320 600,320" fill="none" stroke="rgba(139,92,246,0.1)" stroke-width="0.8"
+                class="ux-ldr-tri t2" />
             <!-- core pulse rings -->
-            <circle cx="400" cy="400" r="100" fill="rgba(0,242,255,0.02)" stroke="rgba(0,242,255,0.25)" stroke-width="1.5" filter="url(#ldr-blur-lg)" class="ux-ldr-core-ring r1"/>
-            <circle cx="400" cy="400" r="72" fill="rgba(139,92,246,0.03)" stroke="rgba(139,92,246,0.2)" stroke-width="1" class="ux-ldr-core-ring r2"/>
+            <circle cx="400" cy="400" r="100" fill="rgba(0,242,255,0.02)" stroke="rgba(0,242,255,0.25)"
+                stroke-width="1.5" filter="url(#ldr-blur-lg)" class="ux-ldr-core-ring r1" />
+            <circle cx="400" cy="400" r="72" fill="rgba(139,92,246,0.03)" stroke="rgba(139,92,246,0.2)" stroke-width="1"
+                class="ux-ldr-core-ring r2" />
         </svg>
 
         <!-- LAYER 3: CSS 3D orbit rings with glowing nodes -->
         <div class="ux-ldr-orbits">
-            <div class="ux-ldr-orbit o1"><div class="ux-ldr-orb-node"></div></div>
-            <div class="ux-ldr-orbit o2"><div class="ux-ldr-orb-node n2"></div></div>
-            <div class="ux-ldr-orbit o3"><div class="ux-ldr-orb-node n3"></div></div>
-            <div class="ux-ldr-orbit o4"><div class="ux-ldr-orb-node n4"></div></div>
+            <div class="ux-ldr-orbit o1">
+                <div class="ux-ldr-orb-node"></div>
+            </div>
+            <div class="ux-ldr-orbit o2">
+                <div class="ux-ldr-orb-node n2"></div>
+            </div>
+            <div class="ux-ldr-orbit o3">
+                <div class="ux-ldr-orb-node n3"></div>
+            </div>
+            <div class="ux-ldr-orbit o4">
+                <div class="ux-ldr-orb-node n4"></div>
+            </div>
         </div>
 
         <!-- LAYER 4: vertical data streams -->
@@ -168,7 +188,8 @@
                     <span class="ux-brand-quote">We dont compete we lead</span>
                 </a>
 
-                <button type="button" class="ux-nav-toggle" id="ux-nav-toggle" aria-label="Open navigation menu" aria-expanded="false">
+                <button type="button" class="ux-nav-toggle" id="ux-nav-toggle" aria-label="Open navigation menu"
+                    aria-expanded="false">
                     <i class="fas fa-bars" aria-hidden="true"></i>
                 </button>
 
@@ -237,10 +258,11 @@
                         <span class="ux-brand-hero-letter ux-brand-hero-x" style="--i:7;">X</span>
                     </span>
                 </h1>
-                <p class="ux-brand-hero-tag">We dont compete we lead</p>
+                <p class="ux-brand-hero-tag">Engineering digital infrastructure for market leaders</p>
                 <div class="ux-brand-hero-actions">
                     <a href="#home-content" class="ux-brand-hero-cta ux-ripple ux-magnetic">Enter Experience</a>
-                    <a href="#contact" class="ux-brand-hero-cta ux-brand-hero-cta-secondary ux-ripple ux-magnetic">Build With Us</a>
+                    <a href="#contact" class="ux-brand-hero-cta ux-brand-hero-cta-secondary ux-ripple ux-magnetic">Build
+                        With Us</a>
                 </div>
             </div>
 
@@ -253,7 +275,8 @@
         <section class="ux-section ux-hero ux-hero-secondary" id="home-content">
             <div class="ux-hero-wrap">
                 <div class="ux-hero-main ux-reveal">
-                    <h1 class="ux-headline" id="ux-headline">From Idea to Impact: Premium Projects Built for Results.</h1>
+                    <h1 class="ux-headline" id="ux-headline">From Idea to Impact: Premium Projects Built for Results.
+                    </h1>
                     <p class="ux-sub" id="ux-sub">A new generation of digital and real-world solutions crafted with
                         precision,
                         powered by innovation, and designed to perform.</p>
@@ -261,7 +284,8 @@
                         Connected.</p>
 
                     <div class="ux-cta-row">
-                        <a href="#contact" id="ux-hero-primary-cta" class="ux-btn ux-btn-primary ux-ripple ux-magnetic">Start Your Project <span
+                        <a href="#contact" id="ux-hero-primary-cta"
+                            class="ux-btn ux-btn-primary ux-ripple ux-magnetic">Start Your Project <span
                                 class="sweep"></span></a>
                         <a href="#projects" class="ux-btn ux-ripple ux-magnetic">Explore Work <span
                                 class="sweep"></span></a>
@@ -287,86 +311,65 @@
         </section>
 
         <!-- NEW: Infinite Tech Stack Marquee -->
-        <section class="ux-tech-marquee-bar" aria-hidden="true"
-            style="overflow: hidden; background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.03); padding: 15px 0; margin-bottom: 20px;">
-            <div class="ux-marquee-track"
-                style="display: flex; width: 200%; animation: scrollMarquee 25s linear infinite;">
-                <div class="ux-marquee-content"
-                    style="display: flex; justify-content: space-around; width: 100%; align-items: center; color: var(--text-dim); font-weight: 700; font-size: 0.9rem; letter-spacing: 2px;">
-                    <span><i class="fa-brands fa-react" style="color:#61dafb; margin-right:5px;"></i> REACT</span>
-                    <span style="color:var(--text-muted)">•</span>
-                    <span><i class="fa-brands fa-python" style="color:#ffd43b; margin-right:5px;"></i> PYTHON /
-                        ML</span>
-                    <span style="color:var(--text-muted)">•</span>
-                    <span><i class="fa-brands fa-node-js" style="color:#3c873a; margin-right:5px;"></i> NODE.JS</span>
-                    <span style="color:var(--text-muted)">•</span>
-                    <span><i class="fa-brands fa-aws" style="color:#ff9900; margin-right:5px;"></i> CLOUD OPS</span>
-                    <span style="color:var(--text-muted)">•</span>
-                    <span><i class="fas fa-microchip" style="color:#f43f5e; margin-right:5px;"></i> EMBEDDED IoT</span>
-                    <span style="color:var(--text-muted)">•</span>
-                    <span><i class="fa-brands fa-figma" style="color:#a259ff; margin-right:5px;"></i> UI/UX
-                        DESIGN</span>
-                    <span style="color:var(--text-muted)">•</span>
+        <section class="ux-tech-marquee-bar ux-reveal" aria-hidden="true">
+            <div class="ux-marquee-track">
+                <div class="ux-marquee-content">
+                    <span><i class="fa-brands fa-react" style="color:#61dafb;"></i> REACT</span>
+                    <span class="ux-dot">•</span>
+                    <span><i class="fa-brands fa-python" style="color:#ffd43b;"></i> PYTHON / ML</span>
+                    <span class="ux-dot">•</span>
+                    <span><i class="fa-brands fa-node-js" style="color:#3c873a;"></i> NODE.JS</span>
+                    <span class="ux-dot">•</span>
+                    <span><i class="fa-brands fa-aws" style="color:#ff9900;"></i> CLOUD OPS</span>
+                    <span class="ux-dot">•</span>
+                    <span><i class="fas fa-microchip" style="color:#f43f5e;"></i> EMBEDDED IoT</span>
+                    <span class="ux-dot">•</span>
+                    <span><i class="fa-brands fa-figma" style="color:#a259ff;"></i> UI/UX DESIGN</span>
+                    <span class="ux-dot">•</span>
                 </div>
-                <div class="ux-marquee-content"
-                    style="display: flex; justify-content: space-around; width: 100%; align-items: center; color: var(--text-dim); font-weight: 700; font-size: 0.9rem; letter-spacing: 2px;">
-                    <span><i class="fa-brands fa-react" style="color:#61dafb; margin-right:5px;"></i> REACT</span>
-                    <span style="color:var(--text-muted)">•</span>
-                    <span><i class="fa-brands fa-python" style="color:#ffd43b; margin-right:5px;"></i> PYTHON /
-                        ML</span>
-                    <span style="color:var(--text-muted)">•</span>
-                    <span><i class="fa-brands fa-node-js" style="color:#3c873a; margin-right:5px;"></i> NODE.JS</span>
-                    <span style="color:var(--text-muted)">•</span>
-                    <span><i class="fa-brands fa-aws" style="color:#ff9900; margin-right:5px;"></i> CLOUD OPS</span>
-                    <span style="color:var(--text-muted)">•</span>
-                    <span><i class="fas fa-microchip" style="color:#f43f5e; margin-right:5px;"></i> EMBEDDED IoT</span>
-                    <span style="color:var(--text-muted)">•</span>
-                    <span><i class="fa-brands fa-figma" style="color:#a259ff; margin-right:5px;"></i> UI/UX
-                        DESIGN</span>
-                    <span style="color:var(--text-muted)">•</span>
+                <div class="ux-marquee-content">
+                    <span><i class="fa-brands fa-react" style="color:#61dafb;"></i> REACT</span>
+                    <span class="ux-dot">•</span>
+                    <span><i class="fa-brands fa-python" style="color:#ffd43b;"></i> PYTHON / ML</span>
+                    <span class="ux-dot">•</span>
+                    <span><i class="fa-brands fa-node-js" style="color:#3c873a;"></i> NODE.JS</span>
+                    <span class="ux-dot">•</span>
+                    <span><i class="fa-brands fa-aws" style="color:#ff9900;"></i> CLOUD OPS</span>
+                    <span class="ux-dot">•</span>
+                    <span><i class="fas fa-microchip" style="color:#f43f5e;"></i> EMBEDDED IoT</span>
+                    <span class="ux-dot">•</span>
+                    <span><i class="fa-brands fa-figma" style="color:#a259ff;"></i> UI/UX DESIGN</span>
+                    <span class="ux-dot">•</span>
                 </div>
             </div>
         </section>
 
         <!-- NEW: Core Web Offerings -->
-        <section class="ux-section ux-reveal" style="padding-top: 30px; padding-bottom: 30px;">
-            <div
-                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; text-align: left;">
-                <div class="ux-tilt-element"
-                    style="padding: 30px; background: rgba(255,255,255,0.02); border: 1px solid var(--ux-glass-border); border-radius: 12px; backdrop-filter: blur(10px); position: relative; overflow: hidden;">
-                    <div
-                        style="position: absolute; right: -20px; top: -20px; font-size: 8rem; color: rgba(34, 211, 238, 0.05); pointer-events:none;">
-                        <i class="fas fa-layer-group"></i>
-                    </div>
-                    <i class="fas fa-layer-group" style="font-size: 2rem; color: #22d3ee; margin-bottom: 15px;"></i>
-                    <h3 style="font-size: 1.2rem; font-weight: 800; color: #f8fafc; margin-bottom: 8px;">Frontend
-                        Architecture</h3>
-                    <p style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.6;">Immersive, high-FPS user
-                        interfaces built with modern web frameworks for cinematic, scalable digital delivery.</p>
+        <section class="ux-section ux-reveal ux-core-offerings">
+            <div class="ux-offerings-grid">
+                <div class="ux-tilt-element ux-offering-box">
+                    <div class="ux-offering-bg-icon" style="color: rgba(34, 211, 238, 0.05);"><i
+                            class="fas fa-layer-group"></i></div>
+                    <i class="fas fa-layer-group ux-offering-icon" style="color: #22d3ee;"></i>
+                    <h3>Frontend Architecture</h3>
+                    <p>Immersive, high-FPS user interfaces built with modern web frameworks for cinematic, scalable
+                        digital delivery.</p>
                 </div>
-                <div class="ux-tilt-element"
-                    style="padding: 30px; background: rgba(255,255,255,0.02); border: 1px solid var(--ux-glass-border); border-radius: 12px; backdrop-filter: blur(10px); position: relative; overflow: hidden;">
-                    <div
-                        style="position: absolute; right: -20px; top: -20px; font-size: 8rem; color: rgba(168, 85, 247, 0.05); pointer-events:none;">
-                        <i class="fas fa-server"></i>
-                    </div>
-                    <i class="fas fa-server" style="font-size: 2rem; color: #a855f7; margin-bottom: 15px;"></i>
-                    <h3 style="font-size: 1.2rem; font-weight: 800; color: #f8fafc; margin-bottom: 8px;">Backend
-                        Intelligence</h3>
-                    <p style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.6;">Robust microservices and
-                        secure database clusters powering highly functional, scalable, data-driven web applications.</p>
+                <div class="ux-tilt-element ux-offering-box">
+                    <div class="ux-offering-bg-icon" style="color: rgba(168, 85, 247, 0.05);"><i
+                            class="fas fa-server"></i></div>
+                    <i class="fas fa-server ux-offering-icon" style="color: #a855f7;"></i>
+                    <h3>Backend Intelligence</h3>
+                    <p>Robust microservices and secure database clusters powering highly functional, scalable,
+                        data-driven web applications.</p>
                 </div>
-                <div class="ux-tilt-element"
-                    style="padding: 30px; background: rgba(255,255,255,0.02); border: 1px solid var(--ux-glass-border); border-radius: 12px; backdrop-filter: blur(10px); position: relative; overflow: hidden;">
-                    <div
-                        style="position: absolute; right: -20px; top: -20px; font-size: 8rem; color: rgba(236, 72, 153, 0.05); pointer-events:none;">
-                        <i class="fas fa-bolt"></i>
-                    </div>
-                    <i class="fas fa-bolt" style="font-size: 2rem; color: #ec4899; margin-bottom: 15px;"></i>
-                    <h3 style="font-size: 1.2rem; font-weight: 800; color: #f8fafc; margin-bottom: 8px;">Global Edge
-                        Delivery</h3>
-                    <p style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.6;">Ultra-low latency content
-                        deployment networks ensuring 99.9% uptime and lightning-fast worldwide performance.</p>
+                <div class="ux-tilt-element ux-offering-box">
+                    <div class="ux-offering-bg-icon" style="color: rgba(236, 72, 153, 0.05);"><i
+                            class="fas fa-bolt"></i></div>
+                    <i class="fas fa-bolt ux-offering-icon" style="color: #ec4899;"></i>
+                    <h3>Global Edge Delivery</h3>
+                    <p>Ultra-low latency content deployment networks ensuring 99.9% uptime and lightning-fast worldwide
+                        performance.</p>
                 </div>
             </div>
         </section>
@@ -409,21 +412,27 @@
                 </article>
                 {% else %}
                 <article class="ux-project-card" data-category="web">
-                    <div class="ux-project-thumb"><i class="fas fa-laptop-code"></i><div class="ux-icon-platform"></div></div>
+                    <div class="ux-project-thumb"><i class="fas fa-laptop-code"></i>
+                        <div class="ux-icon-platform"></div>
+                    </div>
                     <div class="ux-project-info">
                         <h4>Next-Gen Product Site</h4>
                         <p>High-conversion product storytelling and premium UI system.</p>
                     </div>
                 </article>
                 <article class="ux-project-card" data-category="app">
-                    <div class="ux-project-thumb"><i class="fas fa-mobile-screen-button"></i><div class="ux-icon-platform"></div></div>
+                    <div class="ux-project-thumb"><i class="fas fa-mobile-screen-button"></i>
+                        <div class="ux-icon-platform"></div>
+                    </div>
                     <div class="ux-project-info">
                         <h4>Client Dashboard App</h4>
                         <p>Realtime insights with futuristic design language and smooth interactions.</p>
                     </div>
                 </article>
                 <article class="ux-project-card" data-category="branding">
-                    <div class="ux-project-thumb"><i class="fas fa-palette"></i><div class="ux-icon-platform"></div></div>
+                    <div class="ux-project-thumb"><i class="fas fa-palette"></i>
+                        <div class="ux-icon-platform"></div>
+                    </div>
                     <div class="ux-project-info">
                         <h4>Brand Identity Suite</h4>
                         <p>Visual system, tone, and interface styling aligned for premium market appeal.</p>
@@ -605,85 +614,6 @@
 
 
 
-        <!-- ══════════════════════════════════════════════════
-             SECTION: SKILL PROFICIENCY BARS
-        ══════════════════════════════════════════════════ -->
-        <section class="ux-section ux-reveal" id="skills" style="padding: 50px 0;">
-            <h2 class="ux-title">Skill Proficiency</h2>
-            <p class="ux-muted">Core competencies powering every build.</p>
-            <div class="ux-skills-wrap">
-                <div class="ux-skill-col">
-                    <div class="ux-skill-bar" data-pct="95">
-                        <div class="ux-skill-meta"><span>Python / Flask</span><span class="ux-skill-pct">0%</span></div>
-                        <div class="ux-skill-track">
-                            <div class="ux-skill-fill"
-                                style="--pct:95%; background:linear-gradient(90deg,#22d3ee,#3b82f6);"></div>
-                        </div>
-                    </div>
-                    <div class="ux-skill-bar" data-pct="92">
-                        <div class="ux-skill-meta"><span>JavaScript / React</span><span class="ux-skill-pct">0%</span>
-                        </div>
-                        <div class="ux-skill-track">
-                            <div class="ux-skill-fill"
-                                style="--pct:92%; background:linear-gradient(90deg,#f59e0b,#ef4444);"></div>
-                        </div>
-                    </div>
-                    <div class="ux-skill-bar" data-pct="88">
-                        <div class="ux-skill-meta"><span>UI/UX Design</span><span class="ux-skill-pct">0%</span></div>
-                        <div class="ux-skill-track">
-                            <div class="ux-skill-fill"
-                                style="--pct:88%; background:linear-gradient(90deg,#a855f7,#ec4899);"></div>
-                        </div>
-                    </div>
-                    <div class="ux-skill-bar" data-pct="85">
-                        <div class="ux-skill-meta"><span>Database / PostgreSQL</span><span
-                                class="ux-skill-pct">0%</span></div>
-                        <div class="ux-skill-track">
-                            <div class="ux-skill-fill"
-                                style="--pct:85%; background:linear-gradient(90deg,#34d399,#059669);"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="ux-skill-col">
-                    <div class="ux-skill-bar" data-pct="90">
-                        <div class="ux-skill-meta"><span>Arduino / ESP32 / IoT</span><span
-                                class="ux-skill-pct">0%</span></div>
-                        <div class="ux-skill-track">
-                            <div class="ux-skill-fill"
-                                style="--pct:90%; background:linear-gradient(90deg,#f43f5e,#fb923c);"></div>
-                        </div>
-                    </div>
-                    <div class="ux-skill-bar" data-pct="80">
-                        <div class="ux-skill-meta"><span>AI / Machine Learning</span><span
-                                class="ux-skill-pct">0%</span></div>
-                        <div class="ux-skill-track">
-                            <div class="ux-skill-fill"
-                                style="--pct:80%; background:linear-gradient(90deg,#818cf8,#38bdf8);"></div>
-                        </div>
-                    </div>
-                    <div class="ux-skill-bar" data-pct="93">
-                        <div class="ux-skill-meta"><span>Cloud / Deployment</span><span class="ux-skill-pct">0%</span>
-                        </div>
-                        <div class="ux-skill-track">
-                            <div class="ux-skill-fill"
-                                style="--pct:93%; background:linear-gradient(90deg,#22d3ee,#6366f1);"></div>
-                        </div>
-                    </div>
-                    <div class="ux-skill-bar" data-pct="87">
-                        <div class="ux-skill-meta"><span>Mobile-First / Responsive</span><span
-                                class="ux-skill-pct">0%</span></div>
-                        <div class="ux-skill-track">
-                            <div class="ux-skill-fill"
-                                style="--pct:87%; background:linear-gradient(90deg,#fb7185,#fbbf24);"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-
-
-
 
         <!-- ══════════════════════════════════════════════════
              SECTION: WHY US — COMPARISON TABLE
@@ -782,7 +712,8 @@
                             34565</a>
                         <a class="ux-email-row" href="mailto:xunitary@gmail.com"><i class="fas fa-envelope"></i>
                             xunitary@gmail.com</a>
-                        <a href="https://www.instagram.com/unitaryx__official/" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i> @unitaryx__official</a>
+                        <a href="https://www.instagram.com/unitaryx__official/" target="_blank"
+                            rel="noopener noreferrer"><i class="fab fa-instagram"></i> @unitaryx__official</a>
                         <span><i class="fab fa-telegram"></i> @unitaryx</span>
                     </div>
                 </aside>
@@ -900,17 +831,23 @@
             <div class="ux-public-feedback-layout">
                 <div class="ux-public-feedback-compose">
                     {% if user %}
-                    <form class="ux-form ux-public-feedback-form" method="post" action="{{ url_for('submit_public_feedback') }}">
+                    <form class="ux-form ux-public-feedback-form" method="post"
+                        action="{{ url_for('submit_public_feedback') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                         <div class="ux-field">
                             <label for="ux-feedback-rating">Rating</label>
                             <input id="ux-feedback-rating" type="hidden" name="rating" value="5" />
                             <div class="ux-rating-stars" role="radiogroup" aria-label="Choose your rating">
-                                <button type="button" class="ux-rating-star is-on" data-rating="1" aria-label="1 star"><i class="fas fa-star"></i></button>
-                                <button type="button" class="ux-rating-star is-on" data-rating="2" aria-label="2 stars"><i class="fas fa-star"></i></button>
-                                <button type="button" class="ux-rating-star is-on" data-rating="3" aria-label="3 stars"><i class="fas fa-star"></i></button>
-                                <button type="button" class="ux-rating-star is-on" data-rating="4" aria-label="4 stars"><i class="fas fa-star"></i></button>
-                                <button type="button" class="ux-rating-star is-on" data-rating="5" aria-label="5 stars"><i class="fas fa-star"></i></button>
+                                <button type="button" class="ux-rating-star is-on" data-rating="1"
+                                    aria-label="1 star"><i class="fas fa-star"></i></button>
+                                <button type="button" class="ux-rating-star is-on" data-rating="2"
+                                    aria-label="2 stars"><i class="fas fa-star"></i></button>
+                                <button type="button" class="ux-rating-star is-on" data-rating="3"
+                                    aria-label="3 stars"><i class="fas fa-star"></i></button>
+                                <button type="button" class="ux-rating-star is-on" data-rating="4"
+                                    aria-label="4 stars"><i class="fas fa-star"></i></button>
+                                <button type="button" class="ux-rating-star is-on" data-rating="5"
+                                    aria-label="5 stars"><i class="fas fa-star"></i></button>
                                 <span id="ux-rating-text" class="ux-rating-text">Excellent</span>
                             </div>
                         </div>
@@ -925,7 +862,8 @@
                     {% else %}
                     <div class="ux-public-feedback-locked">
                         <div class="ux-feedback err">Login is required to post feedback.</div>
-                        <a href="/login" class="ux-btn ux-btn-primary ux-ripple ux-magnetic">Login To Post <span class="sweep"></span></a>
+                        <a href="/login" class="ux-btn ux-btn-primary ux-ripple ux-magnetic">Login To Post <span
+                                class="sweep"></span></a>
                     </div>
                     {% endif %}
                 </div>
